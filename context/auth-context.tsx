@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { authService } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
 
 export interface User {
   id: number
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  const router = useRouter()
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -58,7 +60,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true)
     try {
       await authService.signInWithGoogle()
-      // The user will be redirected, so we don't need to set the user here
+      // After Google login, always fetch the current user
+      const currentUser = await authService.getCurrentUser()
+      setUser(currentUser)
+      router.push('/')
+    } catch (error) {
+      console.error('Google login error:', error)
     } finally {
       setLoading(false)
     }
