@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, User } from "lucide-react";
+import { Menu, X, ChevronDown, User, DoorOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/auth-context";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -55,7 +55,7 @@ export default function Navbar() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-white shadow-md py-2" : "bg-transparent py-4"
+        scrolled ? "bg-white shadow-md py-5" : "bg-transparent py-4"
       }`}
     >
       <div className="container mx-auto px-4 flex justify-between items-center">
@@ -142,7 +142,7 @@ export default function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-72 bg-white text-black rounded-xl border-2 border-gray-200" align="end" forceMount>
+              <DropdownMenuContent className="w-64 bg-white text-black rounded-xl border-2 border-gray-200" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
@@ -170,6 +170,7 @@ export default function Navbar() {
                   onClick={handleLogout}
                   className="text-red-600 cursor-pointer"
                 >
+                  <DoorOpen className="mr-2 h-4 w-4" />
                   Keluar
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -182,8 +183,8 @@ export default function Navbar() {
                   variant="outline"
                   className={`font-medium rounded-xl px-6 ${
                     scrolled
-                      ? "bg-white text-teal-600 border-teal-600 hover:bg-teal-50"
-                      : "bg-white text-teal-600 border-teal-600 hover:bg-teal-50"
+                      ? "bg-gray-100 text-gray-900 border-2 hover:bg-gray-200 hover:text-gray-900 border-gray-200"
+                      : "bg-gray-100 text-gray-900 border-2 hover:bg-gray-200 hover:text-gray-900 border-gray-200"
                   }`}
                 >
                   Masuk
