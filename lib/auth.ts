@@ -28,15 +28,17 @@ export const authService = {
       // Hash password
       const saltRounds = 10
       const passwordHash = await bcrypt.hash(password, saltRounds)
+      
+      console.log('Starting registration process for:', email)
 
-      // First, create the user in Supabase Auth
+      // Create the user in Supabase Auth with email verification disabled for now
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password: password,
         options: {
           data: {
-            full_name: fullName.trim(),
-            phone: phone?.trim() || null
+            nama_lengkap: fullName.trim(),
+            nomor_telepon: phone?.trim() || null
           }
         }
       })
@@ -49,36 +51,55 @@ export const authService = {
         throw new Error(authError.message)
       }
 
-      // If auth user creation is successful, create custom user record
+      // If auth user creation is successful
       if (authData.user) {
-        const customUserData = {
-          id: authData.user.id,
-          email: email.toLowerCase().trim(),
-          full_name: fullName.trim(),
-          password_hash: passwordHash,
-          role: 'user',
-          is_active: true,
-          is_verified: false,
-          ...(phone && phone.trim() && { phone: phone.trim() })
+        try {
+          console.log('Auth user created with ID:', authData.user.id)
+          
+          // PENTING: Login terlebih dahulu untuk mendapatkan izin yang diperlukan
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: email.toLowerCase().trim(),
+            password: password
+          })
+          
+          if (signInError) {
+            console.error('Error saat login setelah registrasi:', signInError)
+            throw new Error('Gagal otentikasi setelah pendaftaran')
+          }
+          
+          console.log('Berhasil login setelah registrasi, sekarang memperbarui data user')
+          
+          // Sekarang kita memiliki session yang valid, kita dapat memperbarui data user
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Insert new user data into 'user' table
+          const { data: newUser, error: insertError } = await supabase
+            .from('user')
+            .insert({
+              nama_lengkap: fullName.trim(),
+              email: email.toLowerCase().trim(),
+              kata_sandi: passwordHash,
+              nomor_telepon: phone?.trim() || null,
+              role: 'user', // Default role
+            })
+            .select('id, nama_lengkap, email, nomor_telepon, role')
+            .single()
+          
+          if (insertError) {
+            console.error('Insert error:', insertError)
+            throw new Error(`Insert gagal: ${insertError.message}`)
+          }
+          
+          console.log('User data berhasil disimpan')
+          
+          // Logout setelah registrasi berhasil
+          await supabase.auth.signOut()
+          
+          return newUser
+        } catch (dbError: any) {
+          console.error('Database operation error:', dbError)
+          throw new Error(`Gagal menyimpan data user: ${dbError.message || 'Unknown error'}`)
         }
-
-        const { data, error } = await supabase
-          .from('users')
-          .insert(customUserData)
-          .select('id, email, full_name, phone, role, is_active, is_verified, created_at')
-          .single()
-
-        if (error) {
-          console.error('Custom user table error:', error)
-          // Note: We can't use admin.deleteUser on client side
-          // The auth user will remain but without custom data
-          throw new Error('Gagal menyimpan data user. Silakan coba lagi.')
-        }
-
-        // Sign out the user after registration (they need to verify email)
-        await supabase.auth.signOut()
-
-        return data
       } else {
         throw new Error('Gagal membuat akun')
       }
@@ -124,20 +145,25 @@ export const authService = {
         throw new Error('Login gagal')
       }
 
-      // Get user data from custom users table
+      // Get user data from custom user table
       const { data: user, error } = await supabase
-        .from('users')
+        .from('user')
         .select('*')
-        .eq('id', authData.user.id)
-        .eq('is_active', true)
+        .eq('email', email.toLowerCase().trim())
         .single()
 
       if (error || !user) {
-        throw new Error('User tidak ditemukan atau tidak aktif')
+        throw new Error('User tidak ditemukan')
       }
 
-      // Return user data without password hash
-      const { password_hash, ...userWithoutPassword } = user
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.kata_sandi)
+      if (!isValidPassword) {
+        throw new Error('Email atau password salah')
+      }
+
+      // Return user data without password
+      const { kata_sandi, konfigurasi_kata_sandi, ...userWithoutPassword } = user
       return userWithoutPassword
     } catch (error: any) {
       console.error('Login error:', error)
@@ -176,25 +202,25 @@ export const authService = {
     
     if (!user) return null
 
-    // Get additional user data from custom users table
+    // Get user data from custom user table
     const { data: userData, error } = await supabase
-      .from('users')
-      .select('id, email, full_name, phone, role, is_active, is_verified, avatar_url, created_at, updated_at')
-      .eq('id', user.id)
+      .from('user')
+      .select('id, nama_lengkap, email, nomor_telepon, role, created_at')
+      .eq('email', user.email)
       .single()
 
     if (error) {
       console.error('Error fetching user data:', error)
-      return user
+      return null
     }
 
     return userData
   },
 
-  async getUserById(userId: string) {
+  async getUserById(userId: number) {
     const { data, error } = await supabase
-      .from('users')
-      .select('id, email, full_name, phone, role, is_active, is_verified, avatar_url, created_at, updated_at')
+      .from('user')
+      .select('id, nama_lengkap, email, nomor_telepon, role, created_at')
       .eq('id', userId)
       .single()
 
@@ -202,28 +228,27 @@ export const authService = {
     return data
   },
 
-  async updateUser(userId: string, updates: { 
-    full_name?: string; 
-    phone?: string; 
-    avatar_url?: string 
+  async updateUser(userId: number, updates: { 
+    nama_lengkap?: string; 
+    nomor_telepon?: string;
   }) {
     const { data, error } = await supabase
-      .from('users')
+      .from('user')
       .update(updates)
       .eq('id', userId)
-      .select('id, email, full_name, phone, role, is_active, is_verified, avatar_url, created_at, updated_at')
+      .select('id, nama_lengkap, email, nomor_telepon, role, created_at')
       .single()
 
     if (error) throw error
     return data
   },
 
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+  async changePassword(userId: number, oldPassword: string, newPassword: string) {
     try {
       // Get current user
       const { data: user, error: fetchError } = await supabase
-        .from('users')
-        .select('password_hash')
+        .from('user')
+        .select('kata_sandi')
         .eq('id', userId)
         .single()
 
@@ -232,7 +257,7 @@ export const authService = {
       }
 
       // Verify old password
-      const isValidOldPassword = await bcrypt.compare(oldPassword, user.password_hash)
+      const isValidOldPassword = await bcrypt.compare(oldPassword, user.kata_sandi)
       
       if (!isValidOldPassword) {
         throw new Error('Password lama salah')
@@ -244,8 +269,8 @@ export const authService = {
 
       // Update password
       const { error: updateError } = await supabase
-        .from('users')
-        .update({ password_hash: newPasswordHash })
+        .from('user')
+        .update({ kata_sandi: newPasswordHash })
         .eq('id', userId)
 
       if (updateError) throw updateError

@@ -8,44 +8,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export type Database = {
   public: {
     Tables: {
-      users: {
+      user: {
         Row: {
-          id: string
-          email: string
-          full_name: string
-          password_hash: string
-          phone: string | null
+          id: number
+          nama_lengkap: string
           role: string
-          is_active: boolean
-          is_verified: boolean
-          avatar_url: string | null
+          email: string
+          nomor_telepon: string | null
+          kata_sandi: string
+          konfigurasi_kata_sandi: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
-          id?: string
-          email: string
-          full_name: string
-          password_hash: string
-          phone?: string | null
+          id?: number
+          nama_lengkap: string
           role?: string
-          is_active?: boolean
-          is_verified?: boolean
-          avatar_url?: string | null
+          email: string
+          nomor_telepon?: string | null
+          kata_sandi: string
+          konfigurasi_kata_sandi?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
-          id?: string
-          email?: string
-          full_name?: string
-          password_hash?: string
-          phone?: string | null
+          id?: number
+          nama_lengkap?: string
           role?: string
-          is_active?: boolean
-          is_verified?: boolean
-          avatar_url?: string | null
-          updated_at?: string
+          email?: string
+          nomor_telepon?: string | null
+          kata_sandi?: string
+          konfigurasi_kata_sandi?: string | null
+          created_at?: string
         }
       }
       profiles: {
