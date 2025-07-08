@@ -142,7 +142,7 @@ export default function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuContent className="w-72 bg-white text-black rounded-xl border-2 border-gray-200" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
@@ -153,7 +153,7 @@ export default function Navbar() {
                     </p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="border border-gray-200" />
                 <DropdownMenuItem asChild>
                   <Link href="/profile">
                     <User className="mr-2 h-4 w-4" />
@@ -161,11 +161,11 @@ export default function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 {user.role === "admin" && (
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem className="hover:bg-gray-100" asChild>
                     <Link href="/admin/dashboard">Dashboard Admin</Link>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="border border-gray-200" />
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className="text-red-600 cursor-pointer"
