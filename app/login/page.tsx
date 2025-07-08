@@ -8,59 +8,49 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { authService } from "@/lib/auth"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
-  const [fullName, setFullName] = useState("")
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [ktp, setKtp] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [ktpError, setKtpError] = useState("")
+  const [error, setError] = useState("")
   const router = useRouter()
-
-  const handleKtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '') // Remove non-digits
-    
-    if (value.length <= 16) {
-      setKtp(value)
-      if (value.length > 0 && value.length !== 16) {
-        setKtpError("KTP harus terdiri dari 16 digit")
-      } else {
-        setKtpError("")
-      }
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validate KTP
-    if (ktp.length !== 16) {
-      setKtpError("KTP harus terdiri dari 16 digit")
-      return
-    }
-    
+    setError("")
     setIsLoading(true)
 
-    // Static login logic
-    setTimeout(() => {
+    try {
+      // Authenticate user using authService
+      const user = await authService.login({
+        email: email.trim(),
+        password: password
+      })
+
+      // If successful, redirect to home page
+      router.push("/")
+    } catch (error: any) {
+      console.error('Login error:', error)
+      setError(error.message || "Terjadi kesalahan saat login. Silakan coba lagi.")
+    } finally {
       setIsLoading(false)
-      if (email === "admin@smartcity.com" && password === "admin123") {
-        router.push("/admin/dashboard")
-      } else if (email === "user@smartcity.com" && password === "user123") {
-        router.push("/user/dashboard")
-      } else {
-        alert("Invalid credentials. Try:\nAdmin: admin@smartcity.com / admin123\nUser: user@smartcity.com / user123")
-      }
-    }, 1500)
+    }
   }
 
-  const handleGoogleLogin = () => {
-    // Google login logic would go here
-    console.log("Google login clicked")
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true)
+      await authService.signInWithGoogle()
+    } catch (error: any) {
+      console.error('Google login error:', error)
+      setError(error.message || "Terjadi kesalahan saat login dengan Google")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -87,10 +77,10 @@ export default function LoginPage() {
             className="mb-8"
           >
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back to SmartCity
+              Selamat Datang Kembali
             </h1>
             <p className="text-gray-600">
-              Log in to access your mission control
+              Masuk untuk akses semua fitur SmartCity
             </p>
           </motion.div>
 
@@ -105,6 +95,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               variant="outline"
+              disabled={isLoading}
               className="w-full py-5 bg-white border-gray-200 hover:bg-gray-50 text-gray-900 hover:text-gray-900 font-medium rounded-xl transition-all duration-200"
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -125,138 +116,82 @@ export default function LoginPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Continue with Google
+              Masuk dengan Google
             </Button>
           </motion.div>
 
           {/* Divider */}
           <div className="flex items-center mb-6">
             <div className="flex-1 border-t border-gray-300"></div>
-            <span className="px-4 text-sm text-gray-500">or</span>
+            <span className="px-4 text-sm text-gray-500">atau</span>
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm"
+            >
+              {error}
+            </motion.div>
+          )}
+
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Row 1: Name and Phone */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Lengkap
-                </label>
-                <Input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                  placeholder="Masukkan nama lengkap"
-                  required
-                />
-              </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                placeholder="example@example.com"
+                required
+                disabled={isLoading}
+              />
+            </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nomor Telepon
-                </label>
-                <Input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                  placeholder="Contoh: 08123456789"
-                  required
-                />
-              </motion.div>
-            </div>
-
-            {/* Row 2: KTP (full width) */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nomor KTP
+                Password
               </label>
-              <Input
-                type="text"
-                value={ktp}
-                onChange={handleKtpChange}
-                className={`w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 ${
-                  ktpError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                }`}
-                placeholder="Masukkan 16 digit nomor KTP"
-                maxLength={16}
-                required
-              />
-              {ktpError && (
-                <p className="text-red-500 text-sm mt-1">{ktpError}</p>
-              )}
-              <p className="text-gray-500 text-xs mt-1">
-                {ktp.length}/16 digit
-              </p>
-            </motion.div>
-
-            {/* Row 3: Email and Password */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
+              <div className="relative">
                 <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                  placeholder="example@example.com"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                  placeholder="Masukkan password"
                   required
+                  disabled={isLoading}
                 />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                    placeholder="Enter password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </motion.div>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
+              transition={{ delay: 0.4 }}
               className="flex items-center justify-between"
             >
               <label className="flex items-center">
@@ -265,12 +200,13 @@ export default function LoginPage() {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="mr-2 h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded-lg"
+                  disabled={isLoading}
                 />
-                <span className="text-sm text-gray-600">Remember me</span>
+                <span className="text-sm text-gray-600">Ingat saya</span>
               </label>
-              <a href="#" className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
-                Forgot password
-              </a>
+              <Link href="/forgot-password" className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
+                Lupa password?
+              </Link>
             </motion.div>
 
             <motion.div
@@ -280,13 +216,13 @@ export default function LoginPage() {
             >
               <Button
                 type="submit"
-                disabled={isLoading || ktpError !== ""}
-                className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-6 rounded-xl font-medium transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                disabled={isLoading}
+                className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white py-6 rounded-xl font-medium transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                    Tunggu Sebentar...
+                    Masuk...
                   </div>
                 ) : (
                   "Masuk"
@@ -304,7 +240,7 @@ export default function LoginPage() {
             <p className="text-gray-600">
               Belum punya akun?{" "}
               <Link href="/register" className="text-teal-600 hover:text-teal-700 hover:underline font-medium transition-colors duration-200">
-                Buat aja gratis kok!
+                Daftar di sini
               </Link>
             </p>
           </motion.div>
@@ -337,12 +273,12 @@ export default function LoginPage() {
             transition={{ delay: 0.8 }}
           >
             <blockquote className="text-2xl font-medium mb-6 leading-relaxed">
-              "Everything just feels easier to manage now. We finally have a system that keeps the team aligned without slowing things down."
+              "SmartCity memudahkan saya dalam mengelola kota dan mengakses semua layanan dalam satu platform."
             </blockquote>
             
             <div className="mb-6">
-              <p className="font-semibold">Freya Tanaka</p>
-              <p className="text-teal-100">Operations Manager at SmartCity</p>
+              <p className="font-semibold">Ahmad Rahman</p>
+              <p className="text-teal-100">City Manager at SmartCity</p>
             </div>
 
             <div className="flex items-center space-x-4">
