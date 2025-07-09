@@ -2,11 +2,13 @@
 
 import type React from "react"
 import { motion } from "framer-motion"
-import { useState, Suspense } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react"
+import { authService } from "@/lib/auth"
 
 // Reset Password component
 
@@ -74,10 +76,10 @@ function LoginFormFallback() {
   );
 }
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex bg-white">
-      {/* Left Side - Login Form */}
+      {/* Left Side - Reset Password Form */}
       <div className="flex-1 flex items-center justify-center bg-white px-8 lg:px-16">
         <Suspense fallback={<LoginFormFallback />}>
           <ResetPasswordForm />
@@ -141,28 +143,155 @@ function ResetPasswordForm() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isValidatingToken, setIsValidatingToken] = useState(true)
+  const [tokenValid, setTokenValid] = useState(false)
+  
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const token = searchParams.get('token')
+  
+  useEffect(() => {
+    async function validateToken() {
+      if (!token) {
+        setError("Token reset password tidak ditemukan.")
+        setIsValidatingToken(false)
+        return
+      }
+      
+      try {
+        const email = await authService.validateResetToken(token)
+        setTokenValid(true)
+      } catch (error: any) {
+        console.error("Token validation error:", error)
+        setError(error.message || "Token tidak valid atau telah kedaluwarsa.")
+      } finally {
+        setIsValidatingToken(false)
+      }
+    }
+    
+    validateToken()
+  }, [token])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setSuccess(false)
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
 
     if (newPassword !== confirmPassword) {
-      setError("Kata sandi tidak cocok. Silakan coba lagi.")
-      return
+      setError("Kata sandi tidak cocok. Silakan coba lagi.");
+      return;
     }
 
-    setIsLoading(true)
-    try {
-      // Simulate API call for resetting password
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      setSuccess(true)
-    } catch (error: any) {
-      console.error("Reset password error:", error)
-      setError("Terjadi kesalahan saat mengganti kata sandi. Silakan coba lagi.")
-    } finally {
-      setIsLoading(false)
+    if (newPassword.length < 8) {
+      setError("Kata sandi harus minimal 8 karakter.");
+      return;
     }
+
+    setIsLoading(true);
+    try {
+      if (!token) {
+        throw new Error("Token reset password tidak ditemukan.");
+      }
+
+      console.log("Submitting password reset request");
+      
+      // Call the API to reset the password
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token,
+          newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal mengubah kata sandi.");
+      }
+
+      console.log("Password reset successful");
+      setSuccess(true);
+      
+      // Clear input fields after success
+      setNewPassword("");
+      setConfirmPassword("");
+
+      // Redirect to login page after short delay
+      setTimeout(() => {
+        window.location.href = "/login?reset=success";
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      setError(
+        error.message || "Terjadi kesalahan saat mengganti kata sandi. Silakan coba lagi."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // Show loading state while validating token
+  if (isValidatingToken) {
+    return (
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="mb-12">
+          <Link href="/" className="inline-flex items-center">
+            <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center mr-3">
+              <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
+                <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
+              </div>
+            </div>
+            <span className="text-xl font-bold text-teal-600">SmartCity</span>
+          </Link>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+          <p className="text-gray-600">Memvalidasi token reset password...</p>
+        </div>
+      </div>
+    )
+  }
+  
+  // If token is invalid, show error
+  if (!tokenValid) {
+    return (
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="mb-12">
+          <Link href="/" className="inline-flex items-center">
+            <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center mr-3">
+              <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
+                <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
+              </div>
+            </div>
+            <span className="text-xl font-bold text-teal-600">SmartCity</span>
+          </Link>
+        </div>
+        
+        <div className="p-6 bg-red-50 border border-red-200 rounded-xl">
+          <h2 className="text-xl font-bold text-red-700 mb-2">Token Tidak Valid</h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-gray-600">
+            Silakan kembali ke halaman lupa kata sandi untuk meminta token baru.
+          </p>
+          <div className="mt-6">
+            <Button
+              onClick={() => router.push('/auth/forgot-password')}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 rounded-xl font-medium transition-all duration-200"
+            >
+              Kembali ke Lupa Kata Sandi
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

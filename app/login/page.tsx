@@ -18,14 +18,21 @@ function LoginForm() {
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const router = useRouter()
   const { login, loginWithGoogle, loading: isLoading } = useAuth()
 
-  // Handle email from URL params (from verification)
+  // Handle email from URL params and check for reset=success
   useEffect(() => {
     const emailParam = searchParams.get('email')
     if (emailParam) {
       setEmail(emailParam)
+    }
+    
+    // Show success message if coming from password reset
+    const resetParam = searchParams.get('reset')
+    if (resetParam === 'success') {
+      setSuccessMessage("Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru Anda.")
     }
   }, [searchParams])
 
@@ -125,6 +132,17 @@ function LoginForm() {
         <div className="flex-1 border-t border-gray-300"></div>
       </div>
 
+      {/* Success Message */}
+      {successMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm"
+        >
+          {successMessage}
+        </motion.div>
+      )}
+      
       {/* Error Message */}
       {error && (
         <motion.div

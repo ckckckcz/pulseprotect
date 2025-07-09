@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import bcrypt from "bcryptjs";
+import { emailService } from './emailService'
 
 export interface RegisterData {
   email: string;
@@ -228,4 +229,164 @@ export const authService = {
       throw new Error(error.message || "Terjadi kesalahan saat memperbarui profil");
     }
   },
-};
+
+  async forgotPassword(email: string): Promise<boolean> {
+    try {
+      // Check if email exists in the database
+      const { data: userData, error } = await supabase
+        .from('user')
+        .select('*')
+        .eq('email', email)
+        .single();
+      
+      if (error || !userData) {
+        console.error("Error fetching user:", error || "User not found");
+        throw new Error("Email tidak terdaftar dalam sistem kami.");
+      }
+      
+      // Generate reset token and expiration (24 hours)
+      const resetToken = emailService.generateVerificationToken();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+      
+      // Save token and expiration to database with 'pending' status
+      const { error: updateError } = await supabase
+        .from('user')
+        .update({
+          reset_password_token: resetToken,
+          reset_password_expires: expiresAt.toISOString(),
+          reset_password_status: 'pending'
+        })
+        .eq('email', email);
+        
+      if (updateError) {
+        console.error("Error updating user with reset token:", updateError);
+        throw new Error("Gagal membuat token reset password.");
+      }
+      
+      // Send email with reset link
+      try {
+        await emailService.sendPasswordResetEmail(
+          email,
+          userData.nama_lengkap || "Pengguna",
+          resetToken
+        );
+        return true;
+      } catch (emailError) {
+        console.error("Failed to send password reset email:", emailError);
+        return true;
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      throw error;
+    }
+  },
+  
+  async validateResetToken(token: string): Promise<string> {
+    try {
+      // Find user with this token and 'pending' status
+      const { data: userData, error } = await supabase
+        .from('user')
+        .select('*')
+        .eq('reset_password_token', token)
+        .eq('reset_password_status', 'pending')
+        .single();
+      
+      if (error || !userData) {
+        throw new Error("Token reset password tidak valid atau sudah digunakan.");
+      }
+      
+      const now = new Date();
+      const expiresAt = new Date(userData.reset_password_expires);
+      
+      // Check if token has expired
+      if (now > expiresAt) {
+        // Update token status to 'expired'
+        await supabase
+          .from('user')
+          .update({
+            reset_password_status: 'expired'
+          })
+          .eq('id', userData.id);
+        
+        throw new Error("Token reset password sudah kedaluwarsa.");
+      }
+      
+      // Return the email to be used for the reset process
+      return userData.email;
+    } catch (error) {
+      console.error("Token validation error:", error);
+      throw error;
+    }
+  },
+  
+  async resetPassword(token: string, newPassword: string): Promise<boolean> {
+    try {
+      // First validate the token and get the user email
+      const email = await this.validateResetToken(token);
+      console.log("Valid token found for email:", email);
+
+      // Find user with this token before attempting password update
+      const { data: user, error: userError } = await supabase
+        .from("user")
+        .select("id, email")
+        .eq("email", email)
+        .eq("reset_password_token", token)
+        .eq("reset_password_status", "pending")
+        .single();
+    
+      if (userError || !user) {
+        console.error("Error retrieving user with valid token:", userError);
+        throw new Error("Token tidak valid atau sudah digunakan");
+      }
+
+      try {
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        if (!hashedPassword) {
+          throw new Error("Password hashing failed");
+        }
+
+        console.log("Updating password for user ID:", user.id);
+        
+        // Update user password and clear token in a single operation
+        const { data, error } = await supabase
+          .from("user")
+          .update({
+            kata_sandi: hashedPassword,
+            reset_password_token: null,
+            reset_password_expires: null,
+            reset_password_status: "success"
+          })
+          .eq("id", user.id)
+          .eq("reset_password_token", token) // Double-check token for extra security
+          .select();
+
+        if (error) {
+          console.error("Error updating password:", error);
+          throw new Error(`Gagal mengubah kata sandi: ${error.message}`);
+        }
+
+        if (!data || data.length === 0) {
+          throw new Error("No records were updated");
+        }
+
+        console.log("Password reset successful for user:", user.id);
+        return true;
+      } catch (updateError) {
+        // Mark the token as failed if password update fails
+        await supabase
+          .from("user")
+          .update({ reset_password_status: "failed" })
+          .eq("id", user.id);
+        
+        console.error("Password update error:", updateError);
+        throw updateError;
+      }
+    } catch (error: any) {
+      console.error("Reset password error:", error);
+      throw error;
+    }
+  }
+}

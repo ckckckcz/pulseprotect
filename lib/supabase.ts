@@ -24,6 +24,9 @@ export type Database = {
           email_confirmed_at: string | null
           verification_token: string | null
           verification_token_expires: string | null
+          reset_password_token: string | null
+          reset_password_expires: string | null
+          reset_password_status: string | null // Include the new status field (with typo as in schema)
         }
         Insert: {
           id?: number
@@ -40,6 +43,9 @@ export type Database = {
           email_confirmed_at?: string | null
           verification_token?: string | null
           verification_token_expires?: string | null
+          reset_password_token?: string | null
+          reset_password_expires?: string | null
+          reset_password_status?: string | null // Include in Insert
         }
         Update: {
           id?: number
@@ -56,6 +62,9 @@ export type Database = {
           email_confirmed_at?: string | null
           verification_token?: string | null
           verification_token_expires?: string | null
+          reset_password_token?: string | null
+          reset_password_expires?: string | null
+          reset_password_status?: string | null // Include in Update
         }
       }
       profiles: {

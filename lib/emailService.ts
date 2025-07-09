@@ -110,6 +110,79 @@ export const emailService = {
     }
   },
 
+  async sendPasswordResetEmail(email: string, fullName: string, resetToken: string) {
+    // Only run on server side
+    if (typeof window !== "undefined") {
+      throw new Error("Email service can only be used on server side");
+    }
+
+    if (!transport) {
+      throw new Error("Email transport not available");
+    }
+
+    // Use environment variable for app URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mechaminds-17.vercel.app";
+    const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`;
+
+    const mailOptions = {
+      from: `"MechaMinds" <${process.env.SMTP_USER || "mechaminds.team@gmail.com"}>`,
+      to: email,
+      subject: "Reset Kata Sandi! 💂🏻 – MechaMinds",
+      html: `
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>Reset Kata Sandi</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: sans-serif; color: #1f2937;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
+                        <div style="margin-bottom: 24px;">
+                            <img src="https://i.ibb.co/TDJ7RRnR/svgviewer-png-output.png" width="40" height="40" alt="SmartCity Icon" style="display: block;" />
+                        </div>
+
+                        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">Halo 👋🏽, ${fullName}</h1>
+
+                        <p style="margin-bottom: 16px; font-weight: 600;">
+                            Kami menerima permintaan untuk mengatur ulang kata sandi akun SmartCity Anda. Klik tombol di bawah untuk melanjutkan proses pengaturan ulang kata sandi. Link ini akan kedaluwarsa dalam 24 jam.
+                        </p>
+
+                        <div style="margin: 32px 0;">
+                            <a href="${resetUrl}" style="display: inline-block; font-weight: 600; background-color: #0d9488; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none;">Reset Kata Sandi 🔐</a>
+                        </div>
+
+                        <p style="margin-bottom: 8px;">
+                            Jika Anda tidak meminta pengaturan ulang kata sandi, Anda dapat mengabaikan email ini atau menghubungi kami jika ada kekhawatiran.
+                        </p>
+                        
+                        <p style="margin-bottom: 8px;">
+                            Salam,<br />
+                            Tim MechaMinds
+                        </p>
+                    </div>
+
+                    <div style="padding: 20px 0; text-align: center; color: #6b7280;">
+                        <p>© SmartCity. Semua hak dilindungi undang-undang.</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+      `,
+    };
+
+    try {
+      console.log("Attempting to send password reset email to:", email);
+      const result = await transport.sendMail(mailOptions);
+      console.log("Password reset email sent:", result.messageId);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error("Failed to send password reset email:", error);
+      throw new Error("Gagal mengirim email reset kata sandi");
+    }
+  },
+
   generateVerificationToken() {
     return crypto.randomBytes(32).toString("hex");
   },

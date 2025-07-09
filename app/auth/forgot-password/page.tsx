@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { motion } from "framer-motion"
-import { useState, useEffect, Suspense } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,12 +20,25 @@ function ForgotPasswordForm() {
     setIsLoading(true)
 
     try {
-      // Simulate API call for password reset
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      setSuccess(true)
+      // Use API endpoint instead of direct service call
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSuccess(true)
+      } else {
+        setError(data.error || "Terjadi kesalahan saat memproses permintaan.")
+      }
     } catch (error: any) {
       console.error("Password reset error:", error)
-      setError("Terjadi kesalahan saat mengirim permintaan. Silakan coba lagi.")
+      setError("Terjadi kesalahan jaringan. Silakan coba lagi.")
     } finally {
       setIsLoading(false)
     }
@@ -174,5 +187,5 @@ function LoginFormFallback() {
         <div className="h-12 bg-gray-200 rounded-xl"></div>
       </div>
     </div>
-  );
+  )
 }
