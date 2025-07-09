@@ -9,7 +9,8 @@ export async function GET(request: Request) {
   const token_hash = requestUrl.searchParams.get('token_hash')
   const type = requestUrl.searchParams.get('type')
 
-  if (code) {
+  // Handle OAuth callback (Google sign-in)
+  if (code && !token_hash) {
     const supabase = createRouteHandlerClient({ cookies })
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
@@ -17,6 +18,8 @@ export async function GET(request: Request) {
       console.error('Auth callback error:', error)
       return NextResponse.redirect(`${requestUrl.origin}/auth/verify-error?message=Gagal memverifikasi sesi`)
     }
+    
+    return NextResponse.redirect(`${requestUrl.origin}/`)
   }
 
   // Handle email verification
@@ -36,10 +39,15 @@ export async function GET(request: Request) {
       }
 
       if (data.user && data.user.email) {
-        // Update verification status in our custom user table
-        await authService.verifyEmail(data.user.email)
-        
-        return NextResponse.redirect(`${requestUrl.origin}/auth/verify-success`)
+        try {
+          // Update verification status in our custom user table
+          await authService.verifyEmail(data.user.email)
+          
+          return NextResponse.redirect(`${requestUrl.origin}/auth/verify-success`)
+        } catch (verificationError: any) {
+          console.error('Verification process error:', verificationError)
+          return NextResponse.redirect(`${requestUrl.origin}/auth/verify-error?message=Gagal memperbarui status verifikasi`)
+        }
       }
     } catch (error) {
       console.error('Verification process error:', error)
@@ -47,6 +55,34 @@ export async function GET(request: Request) {
     }
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(`${requestUrl.origin}/`)
+  // Handle regular code exchange (for email confirmation)
+  if (code) {
+    const supabase = createRouteHandlerClient({ cookies })
+    
+    try {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (error) {
+        console.error('Code exchange error:', error)
+        return NextResponse.redirect(`${requestUrl.origin}/auth/verify-error?message=Gagal memverifikasi email`)
+      }
+
+      if (data.user && data.user.email) {
+        // Update verification status
+        try {
+          await authService.verifyEmail(data.user.email)
+          return NextResponse.redirect(`${requestUrl.origin}/auth/verify-success`)
+        } catch (verificationError: any) {
+          console.error('Verification update error:', verificationError)
+          return NextResponse.redirect(`${requestUrl.origin}/auth/verify-error?message=Gagal memperbarui status verifikasi`)
+        }
+      }
+    } catch (error) {
+      console.error('Exchange code error:', error)
+      return NextResponse.redirect(`${requestUrl.origin}/auth/verify-error?message=Terjadi kesalahan saat verifikasi`)
+    }
+  }
+
+  // Default redirect
+  return NextResponse.redirect(`${requestUrl.origin}/auth/verify-error?message=Parameter verifikasi tidak valid`)
 }
