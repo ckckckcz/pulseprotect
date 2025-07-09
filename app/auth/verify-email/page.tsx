@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { authService } from "@/lib/auth"
-import { useAuth } from "@/context/auth-context" 
+import { useAuth } from "@/context/auth-context"
+import Confetti from "react-confetti"
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -18,6 +19,17 @@ function VerifyEmailContent() {
   const [userInfo, setUserInfo] = useState<any>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const { login } = useAuth()
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
+
+  useEffect(() => {
+    // Update window size for confetti
+    setWindowSize({ width: window.innerWidth, height: window.innerHeight })
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight })
+    }
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   useEffect(() => {
     if (!token) {
@@ -46,13 +58,9 @@ function VerifyEmailContent() {
     
     setIsLoggingIn(true)
     try {
-      // For auto-login, we would need either:
-      // 1. A special login endpoint that accepts the verification token
-      // 2. Or we navigate to login page with pre-filled email
       router.push(`/login?email=${encodeURIComponent(userInfo.email)}`)
     } catch (error) {
       console.error('Auto-login error:', error)
-      // If auto-login fails, just redirect to login page
       router.push('/login')
     } finally {
       setIsLoggingIn(false)
@@ -63,8 +71,18 @@ function VerifyEmailContent() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow-xl p-8 text-center"
+      className="bg-white rounded-2xl shadow-xl p-8 text-center relative"
     >
+      {/* Confetti Animation */}
+      {status === 'success' && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          numberOfPieces={200}
+          gravity={0.2}
+        />
+      )}
+
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}

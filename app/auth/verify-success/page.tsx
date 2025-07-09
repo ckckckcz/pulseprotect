@@ -4,10 +4,32 @@ import { motion } from "framer-motion"
 import Link from "next/link"
 import { CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Confetti from "react-confetti"
+import { useEffect, useState } from "react"
 
 export default function VerifySuccessPage() {
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
+
+  useEffect(() => {
+    // Update window size for confetti
+    setWindowSize({ width: window.innerWidth, height: window.innerHeight })
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight })
+    }
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
+      {/* Confetti Animation */}
+      <Confetti
+        width={windowSize.width}
+        height={windowSize.height}
+        numberOfPieces={200}
+        gravity={0.2}
+      />
+
       <div className="max-w-md w-full mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
