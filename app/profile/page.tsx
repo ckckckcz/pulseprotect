@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MapPin, Mail, Phone, Calendar, Shield, CheckCircle } from "lucide-react"
+import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import Navbar from "@/components/widget/navbar"
+import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import Link from "next/link"
+import Navbar from "@/components/widget/navbar"
 
 // Define a type for the user with status
 type UserWithStatus = {
@@ -24,15 +25,22 @@ type UserWithStatus = {
 }
 
 export default function UserProfile() {
-  const [activeTab, setActiveTab] = useState("Profile")
-  // Only call useAuth() once, inside the component
+  const [activeSetting, setActiveSetting] = useState("general")
   const { user, loading } = useAuth() as { user: UserWithStatus | null, loading: boolean }
   const router = useRouter()
+  const [displayName, setDisplayName] = useState("")
+  const [username, setUsername] = useState("")
   
   useEffect(() => {
     // Redirect if not logged in
     if (!loading && !user) {
       router.push("/login")
+    }
+    
+    // Initialize form values from user data
+    if (user) {
+      setDisplayName(user.nama_lengkap || "")
+      setUsername(user.email?.split('@')[0] || "")
     }
   }, [user, loading, router])
   
@@ -45,21 +53,11 @@ export default function UserProfile() {
       .toUpperCase()
       .substring(0, 2)
   }
-  
-  // Format date
-  const formatDate = (dateString?: string | null) => {
-    if (!dateString) return "Tidak tersedia"
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    })
-  }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     )
   }
@@ -68,206 +66,157 @@ export default function UserProfile() {
     return null // Let the useEffect redirect handle this
   }
 
+  const sidebarItems = [
+    { id: "general", label: "General", icon: User },
+    { id: "authentication", label: "Authentication", icon: Key },
+    { id: "vercel", label: "Sign in with Vercel", icon: Code },
+    { id: "billing", label: "Billing", icon: CreditCard },
+    { id: "invoices", label: "Invoices", icon: FileText },
+    { id: "tokens", label: "Tokens", icon: Code },
+  ]
+
   return (
     <>
       <Navbar/>
-      <div className="w-full mx-auto bg-white mt-16">
-        <Card className=" border-none bg-white">
-          {/* Profile Banner */}
-          <div className="relative">
-            <div
-              className="h-48 sm:h-56 bg-gradient-to-r from-teal-400 to-teal-600"
-              style={{
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-
-            {/* Profile Photo - Overlapping the banner */}
-            <div className="absolute -bottom-12 left-6 sm:left-8">
-              <div className="relative">
-                <Avatar className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-lg">
-                  <AvatarImage
-                    src={user.foto_profile || `https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap || "User"}`}
-                    alt={user.nama_lengkap || "User"}
-                  />
-                  <AvatarFallback className="bg-teal-600 text-white text-2xl">
-                    {getInitials(user.nama_lengkap)}
-                  </AvatarFallback>
-                </Avatar>
-                {user.status === "active" && (
-                  <div className="absolute bottom-2 right-2 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
-                )}
+      <div className="w-full min-h-screen bg-white text-black pt-32">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold mb-8">Pengaturan Akun</h1>
+          
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Sidebar */}
+            <div className="md:w-72">
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input 
+                  placeholder="Search..." 
+                  className="pl-10 bg-white border-gray-800 text-black rounded-md" 
+                />
               </div>
-            </div>
-          </div>
-
-          {/* Profile Information */}
-          <div className="pt-16 pb-6 px-6 sm:px-8 bg-white">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{user.nama_lengkap || "Pengguna"}</h1>                
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2"></h1>                
-                <div className="flex items-center text-gray-600 mb-4">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <span>{user.email || "Email tidak tersedia"}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl flex items-center gap-2">
-                  Edit Profil
-                </Button>
-              </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="mt-8 border-b border-gray-200">
-              <nav className="flex space-x-8">
-                {[
-                  {
-                    id: "Profile",
-                    label: "Profil"
-                  },
-                  {
-                    id: "Chat",
-                    label: "Chat AI"
-                  }
-                ].map((tab) => (
+              
+              <nav className="space-y-1">
+                {sidebarItems.map(item => (
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`py-3 px-1 border-b-2 font-semibold text-md transition-colors ${
-                      activeTab === tab.id
-                        ? "border-teal-600 text-teal-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    key={item.id}
+                    onClick={() => setActiveSetting(item.id)}
+                    className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
+                      activeSetting === item.id 
+                        ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white"
+                        : "text-gray-400 rounded-xl hover:bg-gray-100 hover:text-black"
                     }`}
                   >
-                    {tab.label}
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.label}
                   </button>
                 ))}
               </nav>
             </div>
-
-            {/* Tab Content */}
-            <div className="mt-6">
-              {activeTab === "Profile" && (
+            
+            {/* Main content */}
+            <div className="flex-1">
+              {activeSetting === "general" && (
                 <div className="space-y-6">
-                  {/* Personal Information */}
-                  <Card className="p-6 shadow-sm border-2 rounded-xl border-gray-100 bg-white">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Pribadi</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-400">Nama Lengkap</p>
-                          <p className="font-medium text-lg text-gray-900">{user.nama_lengkap || "Tidak tersedia"}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Alamat Email</p>
-                          <div className="flex items-center">
-                            <p className="font-medium text-lg mr-2 text-gray-900">{user.email || "Tidak tersedia"}</p>
-                            {user.verifikasi_email && (
-                              <CheckCircle size={16} className="text-green-500" />
-                            )}
+                  {/* Avatar Section */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-6">
+                      <h2 className="text-2xl font-semibold">Avatar</h2>
+                      <p className="text-gray-400 text-sm mb-6">Klik pada avatar untuk mengunggah yang baru dari file Anda.</p>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <div className="relative group cursor-pointer">
+                            <Avatar className="h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-orange-500">
+                              <AvatarImage
+                                src={user.foto_profile || `https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap || "User"}`}
+                                alt={user.nama_lengkap || "User"}
+                              />
+                              <AvatarFallback className="bg-gray-800 text-black">
+                                {getInitials(user.nama_lengkap)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute inset-0 bg-white bg-opacity-40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-xs text-black">Upload</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-400">Nomor Telepon</p>
-                          <p className="font-medium text-lg text-gray-900">{user.nomor_telepon || "Tidak tersedia"}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Status Akun</p>
-                          <p className={`font-medium ${
-                            user.status === "active" ? "text-green-600" : "text-gray-600"
-                          }`}>
-                            {user.status === "active" ? "Aktif" : "Tidak Aktif"}
-                          </p>
-                        </div>
-                      </div>
                     </div>
-                  </Card>
+                    
+                    <div className="bg-gray-50 border-t border-gray-200 p-4">
+                      <p className="text-teal-600 font-semibold text-sm">Avatar bersifat opsional tapi sangat direkomendasikan.</p>
+                    </div>
+                  </div>
 
-                  {/* Account Information */}
-                  <Card className="p-6 shadow-sm border-2 rounded-xl border-gray-100 bg-white">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Akun</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-400">Tanggal Bergabung</p>
-                          <div className="flex items-center gap-2">
-                            <Calendar size={16} className="text-gray-400" />
-                            <p className="font-medium text-lg text-gray-900">{formatDate(user.created_at)}</p>
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-400">Peran Akun</p>
-                          <div className="flex items-center gap-2">
-                            <Shield size={16} className="text-gray-400" />
-                            <p className="font-medium text-lg text-gray-900">
-                              {user.role === "admin" ? "Administrator" : 
-                               user.role === "user" ? "Pengguna" : 
-                               user.role || "Pengguna Standar"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-400">Verifikasi Email</p>
-                          <p className={`font-medium ${
-                            user.verifikasi_email ? "text-green-600" : "text-amber-600"
-                          }`}>
-                            {user.verifikasi_email ? "Terverifikasi" : "Belum Terverifikasi"}
-                          </p>
-                        </div>
-                        {user.email_confirmed_at && (
-                          <div>
-                            <p className="text-sm text-gray-400">Email Dikonfirmasi Pada</p>
-                            <p className="font-medium text-lg text-gray-900">{formatDate(user.email_confirmed_at)}</p>
-                          </div>
-                        )}
-                      </div>
+                  {/* Display Name Section */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-6">
+                      <h2 className="text-2xl font-semibold">Nama Tampilan</h2>
+                      <p className="text-gray-400 text-sm mb-6">Silakan masukkan nama lengkap Anda, atau nama tampilan yang Anda nyaman gunakan.</p>
+                      
+                      <Input 
+                        value={displayName}
+                        onChange={e => setDisplayName(e.target.value)}
+                        className="bg-white border-gray-200 rounded text-black"
+                        placeholder="Nama lengkap"
+                      />
                     </div>
-                  </Card>
-
-                  {/* Account Security Notice */}
-                  <Card className="p-6 shadow-sm border-2 rounded-xl border-gray-100 bg-white">
-                    <div className="flex items-start gap-4">
-                      <div className="bg-blue-50 p-2 rounded-lg">
-                        <Shield className="w-6 h-6 text-blue-500" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Keamanan Akun</h3>
-                        <p className="text-gray-600 text-sm">
-                          Kami merekomendasikan untuk secara rutin memperbarui kata sandi dan mengaktifkan 
-                          autentikasi dua faktor untuk keamanan yang lebih baik. Anda dapat mengelola 
-                          pengaturan keamanan dari preferensi akun Anda.
-                        </p>
-                      </div>
+                    
+                    <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
+                      <p className="text-teal-600 font-semibold text-sm">Maksimal 32 karakter.</p>
+                      <Button className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white">Simpan</Button>
                     </div>
-                  </Card>
+                  </div>
+                  
+                  {/* Email Section */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-6">
+                      <h2 className="text-2xl font-semibold">Alamat Email</h2>
+                      <p className="text-gray-400 text-sm mb-6">Email Anda yang terdaftar pada platform.</p>
+                    
+                      <Input 
+                        value={user.email}
+                        onChange={e => setDisplayName(e.target.value)}
+                        className="bg-white border-gray-200 rounded text-black"
+                        placeholder="Nama lengkap"
+                      />
+                    </div>
+                    <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
+                      <p className="text-teal-600 font-semibold text-sm">Maksimal 32 karakter.</p>
+                      <Button className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white">Simpan</Button>
+                    </div>
+                  </div>
                 </div>
               )}
-
-              {activeTab === "Chat" && (
-                <Card className="p-6 shadow-sm border border-gray-100 bg-white">
-                  <div className="text-center py-12">
-                    <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Mail className="w-6 h-6 text-teal-600" />
+              
+              {activeSetting === "authentication" && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                  <h2 className="text-2xl font-semibold">Autentikasi</h2>
+                  <p className="text-gray-400 text-sm">Pengaturan keamanan dan autentikasi akun Anda.</p>
+                  
+                  <div className="mt-6 p-4 rounded-xl bg-gray-100 border border-gray-200">
+                    <div className="flex items-start gap-4">
+                      <div className="p-2 bg-gray-200 rounded-full">
+                        <Shield className="w-5 h-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold mb-1">Keamanan Akun</h3>
+                        <p className="text-gray-400 text-sm">
+                          Kami merekomendasikan untuk secara rutin memperbarui kata sandi dan mengaktifkan 
+                          autentikasi dua faktor untuk keamanan yang lebih baik.
+                        </p>
+                        <Button className="mt-4 bg-teal-600 rounded-xl hover:bg-teal-700 text-white">
+                          Perbarui Pengaturan Keamanan
+                        </Button>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Pesan Anda</h3>
-                    <p className="text-gray-600 mb-6">Anda belum memiliki pesan</p>
-                    <Button className="bg-teal-600 hover:bg-teal-700 text-white">Mulai Percakapan</Button>
                   </div>
-                </Card>
+                </div>
               )}
+              
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </>
   )
 }
+                    
