@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+  import { useState, useEffect, useMemo } from "react"
 import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,10 +79,24 @@ export default function UserProfile() {
         const response = await fetch('/api/countries');
         if (!response.ok) throw new Error('Failed to fetch countries');
         const data = await response.json();
+        
+        // Log the total number of countries loaded
+        console.log(`Loaded ${data.length} countries`);
+        
+        // Check if Indonesia exists in the data
+        const indonesia = data.find((country: Country) => 
+          country.name === "Indonesia" || country.code === "ID"
+        );
+        
+        if (indonesia) {
+          console.log("Indonesia found in country data:", indonesia);
+        } else {
+          console.warn("Indonesia not found in country data");
+        }
+        
         setCountries(data);
         
         // Set Indonesia as default if available
-        const indonesia = data.find((country: Country) => country.code === 'ID');
         if (indonesia) {
           setSelectedCountry(indonesia);
         } else if (data.length > 0) {
@@ -108,47 +122,81 @@ export default function UserProfile() {
       
       // Parse phone number if exists
       if (user.nomor_telepon) {
-        const phoneWithoutCode = parsePhoneNumber(user.nomor_telepon);
-        setPhoneNumber(phoneWithoutCode.nationalNumber);
+        console.log("Original phone:", user.nomor_telepon);
         
-        // If we can identify the country code, set it
-        if (phoneWithoutCode.countryCode && countries.length > 0) {
-          const matchedCountry = countries.find(
-            c => c.dial_code.replace('+', '') === phoneWithoutCode.countryCode
-          );
-          if (matchedCountry) setSelectedCountry(matchedCountry);
+        // If countries not yet loaded, use the full number temporarily
+        if (countries.length === 0) {
+          setPhoneNumber(user.nomor_telepon);
+        } else {
+          const phoneWithoutCode = parsePhoneNumber(user.nomor_telepon);
+          console.log("Parsed phone:", phoneWithoutCode);
+          
+          // Use the national number part
+          setPhoneNumber(phoneWithoutCode.nationalNumber);
+          
+          // If we can identify the country code, set it
+          if (phoneWithoutCode.countryCode) {
+            const matchedCountry = countries.find(
+              c => c.dial_code.replace('+', '') === phoneWithoutCode.countryCode
+            );
+            if (matchedCountry) {
+              console.log("Matched country:", matchedCountry);
+              setSelectedCountry(matchedCountry);
+            }
+          } else if (selectedCountry === null && countries.length > 0) {
+            // If no country code detected but we have a phone number,
+            // try to set a default country (Indonesia if available)
+            const indonesia = countries.find(c => c.code === 'ID');
+            if (indonesia) {
+              setSelectedCountry(indonesia);
+            }
+          }
         }
       }
     }
   }, [user, loading, router, countries])
 
-  // Helper to parse phone number
+  // Helper to parse phone number - improved version
   const parsePhoneNumber = (phoneWithCode: string) => {
-    // Simple parsing logic
-    // Assuming format could be like +62812345678 or 62812345678
+    // Default values
     let countryCode = '';
     let nationalNumber = phoneWithCode;
     
-    if (phoneWithCode.startsWith('+')) {
-      // Format: +62812345678
-      const match = phoneWithCode.match(/\+(\d+)(\d+)/);
-      if (match && match.length >= 3) {
-        countryCode = match[1];
-        nationalNumber = match[2];
-      }
-    } else if (/^\d{1,4}\d+$/.test(phoneWithCode)) {
-      // Format: 62812345678
-      for (let i = 1; i <= 4; i++) {
-        const potentialCode = phoneWithCode.substring(0, i);
-        const potentialMatch = countries.find(c => c.dial_code === `+${potentialCode}`);
-        if (potentialMatch) {
-          countryCode = potentialCode;
-          nationalNumber = phoneWithCode.substring(i);
-          break;
+    if (!phoneWithCode) return { countryCode, nationalNumber };
+    
+    try {
+      if (phoneWithCode.startsWith('+')) {
+        // Format: +62812345678
+        // Find the country that matches this dial code
+        for (const country of countries) {
+          if (phoneWithCode.startsWith(country.dial_code)) {
+            countryCode = country.dial_code.replace('+', '');
+            nationalNumber = phoneWithCode.substring(country.dial_code.length);
+            return { countryCode, nationalNumber };
+          }
         }
+      } else {
+        // Format without +: 62812345678
+        // Try to identify common country codes (1-4 digits)
+        for (let i = 1; i <= 4; i++) {
+          const potentialCode = phoneWithCode.substring(0, i);
+          const potentialMatch = countries.find(c => c.dial_code === `+${potentialCode}`);
+          if (potentialMatch) {
+            countryCode = potentialCode;
+            nationalNumber = phoneWithCode.substring(i);
+            return { countryCode, nationalNumber };
+          }
+        }
+        
+        // If no country code detected, assume it's already a national number
+        // This handles cases where the user entered a number without country code
+        return { countryCode: '', nationalNumber: phoneWithCode };
       }
+    } catch (error) {
+      console.error("Error parsing phone number:", error);
     }
     
+    // Return the whole number as national number if parsing failed
     return { countryCode, nationalNumber };
   };
 
@@ -193,13 +241,24 @@ export default function UserProfile() {
     return String.fromCodePoint(...codePoints);
   };
 
-  // Filter countries based on search
-  const filteredCountries = countrySearchQuery === '' 
-    ? countries 
-    : countries.filter((country) =>
-        country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
-        country.dial_code.includes(countrySearchQuery)
+  // Improved filter countries function
+  const filteredCountries = useMemo(() => {
+    // If no search query, return all countries
+    if (!countrySearchQuery.trim()) {
+      return countries;
+    }
+    
+    const normalizedQuery = countrySearchQuery.toLowerCase().trim();
+    
+    return countries.filter(country => {
+      // Check if any of these fields contains the search query
+      return (
+        country.name.toLowerCase().includes(normalizedQuery) ||
+        country.dial_code.toLowerCase().includes(normalizedQuery) ||
+        country.code.toLowerCase().includes(normalizedQuery)
       );
+    });
+  }, [countries, countrySearchQuery]);
 
   // Handle form submit - updates both name and phone number
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -236,9 +295,21 @@ export default function UserProfile() {
     
     // Format the phone number with country code
     let formattedPhone = phoneNumber;
-    if (phoneNumber && selectedCountry) {
-      // Remove leading zeros when adding country code
-      formattedPhone = `${selectedCountry.dial_code}${phoneNumber.replace(/^0+/, '')}`;
+    if (phoneNumber) {
+      if (selectedCountry) {
+        // Check if the phone number already has the country code
+        if (phoneNumber.startsWith(selectedCountry.dial_code)) {
+          formattedPhone = phoneNumber;
+        } else if (phoneNumber.startsWith('0')) {
+          // Replace leading zero with country code
+          formattedPhone = `${selectedCountry.dial_code}${phoneNumber.substring(1)}`;
+        } else {
+          // Just add the country code
+          formattedPhone = `${selectedCountry.dial_code}${phoneNumber}`;
+        }
+      }
+      
+      console.log("Formatted phone to save:", formattedPhone);
     }
     
     try {
@@ -405,33 +476,43 @@ export default function UserProfile() {
                                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-[300px] border border-gray-200 bg-gray-50 rounded-xl  p-0">
+                              <PopoverContent className="w-[300px] border border-gray-200 bg-gray-50 rounded-xl p-0">
                                 <Command className="bg-gray-100 text-black rounded-xl">
                                   <CommandInput 
                                     placeholder="Cari negara..." 
                                     className="h-9 bg-gray-100"
                                     value={countrySearchQuery}
-                                    onValueChange={setCountrySearchQuery}
+                                    onValueChange={(value) => {
+                                      setCountrySearchQuery(value);
+                                      console.log(`Searching for: "${value}"`);
+                                    }}
                                   />
                                   <CommandEmpty>Negara tidak ditemukan</CommandEmpty>
                                   <CommandGroup className="max-h-[300px] bg-gray-100 text-black overflow-y-auto">
-                                    {filteredCountries.map((country) => (
-                                      <CommandItem
-                                        className=""
-                                        key={country.code}
-                                        value={country.code}
-                                        onSelect={() => {
-                                          setSelectedCountry(country)
-                                          setCountryOpen(false)
-                                        }}
-                                      >
-                                        <div className="flex items-center">
-                                          <span className="mr-2 text-lg">{getFlagEmoji(country.code)}</span>
-                                          <span className="mr-2">{country.name}</span>
-                                          <span className="text-gray-500 text-sm">{country.dial_code}</span>
-                                        </div>
-                                      </CommandItem>
-                                    ))}
+                                    {filteredCountries.length > 0 ? (
+                                      filteredCountries.map((country) => (
+                                        <CommandItem
+                                          key={country.code}
+                                          value={`${country.code}-${country.name}`}
+                                          onSelect={() => {
+                                            console.log(`Selected country: ${country.name}`);
+                                            setSelectedCountry(country);
+                                            setCountryOpen(false);
+                                          }}
+                                          className="transition-all duration-200 ease-in-out hover:bg-teal-500"
+                                        >
+                                          <div className="flex items-center">
+                                            <span className="mr-2 text-lg">{getFlagEmoji(country.code)}</span>
+                                            <span className="mr-2">{country.name}</span>
+                                            <span className="text-gray-500 text-sm">{country.dial_code}</span>
+                                          </div>
+                                        </CommandItem>
+                                      ))
+                                    ) : (
+                                      <div className="py-6 text-center text-gray-500">
+                                        Tidak ada hasil yang sesuai
+                                      </div>
+                                    )}
                                   </CommandGroup>
                                 </Command>
                               </PopoverContent>
@@ -446,64 +527,34 @@ export default function UserProfile() {
                                 setFormErrors({...formErrors, nomor_telepon: ""})
                               }}
                               className="bg-white border-gray-200 rounded-l-none flex-1 text-black"
-                              placeholder="81234567890"
+                              placeholder={selectedCountry?.code === "ID" ? "81234567890" : "Phone number"}
                             />
                           </div>
                           {formErrors.nomor_telepon && (
                             <p className="mt-1 text-sm text-red-500">{formErrors.nomor_telepon}</p>
                           )}
                           <p className="mt-1 text-xs text-gray-400">
-                            Masukkan nomor telepon tanpa kode negara (cth: 81234567890).
+                            {selectedCountry?.code === "ID" 
+                              ? "Masukkan nomor tanpa kode negara atau awalan 0 (cth: 81234567890)."
+                              : "Masukkan nomor tanpa kode negara (cth: 7123456789)."}
                           </p>
                         </div>
-                        
-                        {/* Email Field (Read-only) */}
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                            Alamat Email
-                          </label>
-                          <div className="bg-gray-100 border border-gray-200 rounded-md px-4 py-3 flex justify-between items-center">
-                            <span className="text-gray-800">{user.email}</span>
-                            {user.verifikasi_email ? (
-                              <span className="flex items-center text-green-600 text-sm">
-                                <CheckCircle size={14} className="mr-1" />
-                                Terverifikasi
-                              </span>
-                            ) : (
-                              <span className="flex items-center text-amber-600 text-sm">
-                                Belum Terverifikasi
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-1 text-xs text-gray-400">
-                            Email tidak dapat diubah. Hubungi admin jika Anda perlu mengubah email.
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-end">
-                        <Button 
+                        <Button
                           type="submit"
-                          disabled={isUpdating || !formChanged}
-                          className={`rounded-xl px-6 ${
-                            formChanged 
-                              ? "bg-teal-600 hover:bg-teal-700 text-white" 
-                              : "bg-white border border-gray-200 text-gray-400"
-                          }`}
+                          className="bg-teal-600 rounded-xl hover:bg-teal-700 text-white"
+                          disabled={!formChanged || isUpdating}
                         >
                           {isUpdating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                              Menyimpan...
-                            </>
-                          ) : "Simpan Perubahan"}
+                            <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                          ) : null}
+                          Simpan Perubahan
                         </Button>
                       </div>
                     </form>
                   </div>
                 </div>
               )}
-              
+
               {activeSetting === "authentication" && (
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                   <h2 className="text-2xl font-semibold">Autentikasi</h2>
