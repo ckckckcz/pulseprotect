@@ -183,4 +183,49 @@ export const authService = {
       return null;
     }
   },
+
+  async updateUser(userId: number, data: { nama_lengkap?: string, nomor_telepon?: string }) {
+    try {
+      const { error } = await supabase
+        .from('user')
+        .update({
+          nama_lengkap: data.nama_lengkap,
+          nomor_telepon: data.nomor_telepon
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Get the updated user data
+      const { data: updatedUser, error: fetchError } = await supabase
+        .from('user')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+
+      // Update user in localStorage
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          const { kata_sandi, konfigurasi_kata_sandi, verification_token, verification_token_expires, ...userWithoutPassword } = updatedUser;
+          localStorage.setItem('user', JSON.stringify({
+            ...parsed,
+            ...userWithoutPassword
+          }));
+        }
+      }
+
+      return updatedUser;
+    } catch (error: any) {
+      console.error("Update user error:", error);
+      throw new Error(error.message || "Terjadi kesalahan saat memperbarui profil");
+    }
+  },
 };

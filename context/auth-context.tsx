@@ -25,6 +25,7 @@ interface AuthContextType {
     fullName: string
     phone?: string
   }) => Promise<any>
+  refreshUser: () => Promise<void> // Add this new method
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -34,6 +35,7 @@ const AuthContext = createContext<AuthContextType>({
   loginWithGoogle: async () => {},
   logout: async () => {},
   register: async () => ({}),
+  refreshUser: async () => {}, // Add this new method
 })
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -124,6 +126,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }
 
+  // Add the refreshUser method
+  const refreshUser = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const currentUser = await authService.getCurrentUser();
+      
+      if (currentUser) {
+        // Update local storage with fresh data
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        setUser(currentUser);
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -131,6 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loginWithGoogle,
     logout,
     register,
+    refreshUser, // Add this to the context value
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
