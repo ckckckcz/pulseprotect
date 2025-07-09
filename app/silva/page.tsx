@@ -384,6 +384,7 @@ export default function ChatInterface() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+          {/* Left side with model selector */}
           <div className="flex items-center space-x-4">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-32 bg-white text-black border-2 border-gray-200 rounded-xl">
@@ -400,10 +401,13 @@ export default function ChatInterface() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
 
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+          {/* Right side with user actions */}
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 text-sm text-teal-800">
               <Sparkles className="w-4 h-4" />
-              <span>Subscribe to a Pro plan for increased message limits and faster response times</span>
+              <span>Subscribe to a Pro plan for increased message limits</span>
             </div>
           </div>
         </div>
@@ -541,7 +545,7 @@ export default function ChatInterface() {
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4">
+        <div className="bg-white border-t border-gray-200 px-6 py-6">
           <div className="flex justify-center space-x-6 text-sm text-gray-500">
             <a href="#" className="hover:text-gray-700">
               Terms & Conditions
