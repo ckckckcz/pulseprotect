@@ -28,6 +28,7 @@ import {
   User,
   LogOut
 } from "lucide-react"
+import { motion } from "framer-motion"
 
 const models = [
   { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio" },
@@ -63,7 +64,8 @@ export default function ChatInterface() {
   const router = useRouter()
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
-  
+  const [showBottomCard, setShowBottomCard] = useState(false);
+
   // Check authentication on component mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -246,6 +248,11 @@ export default function ChatInterface() {
     setIsSidebarExpanded(!isSidebarExpanded);
   };
   
+  // Function to toggle the bottom card visibility
+  const toggleBottomCard = () => {
+    setShowBottomCard(!showBottomCard);
+  };
+
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -272,7 +279,7 @@ export default function ChatInterface() {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div 
-        className={`bg-white border-r border-gray-200 text-gray-900 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`bg-white border-r hidden lg:block border-gray-200 text-gray-900 flex flex-col transition-all duration-300 ease-in-out ${
           isSidebarExpanded ? "w-72" : "w-[69px]"
         }`}
       >
@@ -426,7 +433,7 @@ export default function ChatInterface() {
           </div>
 
           {/* Right side with user actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 lg:block hidden">
             <div className="flex items-center space-x-2 text-sm text-teal-800">
               <Sparkles className="w-4 h-4" />
               <span>Subscribe to a Pro plan for increased message limits</span>
@@ -571,8 +578,109 @@ export default function ChatInterface() {
           )}
         </div>
 
-        {/* Footer - Add z-index to appear above the fixed chat input when needed */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4 shrink-0 z-5">
+        {/* Mobile Bottom Toggle Button - Fixed position above footer */}
+        <div className="fixed bottom-[100px] right-[390px] left-0 flex justify-center lg:hidden z-20">
+          <Button
+            onClick={toggleBottomCard}
+            className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${
+              showBottomCard ? 'rotate-190' : ''
+            }`}
+          >
+            <ChevronDown className="w-6 h-6" />
+          </Button>
+        </div>
+
+        {/* Overlay when bottom card is open */}
+        {showBottomCard && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden"
+            onClick={toggleBottomCard}
+          ></div>
+        )}
+
+        {/* Bottom Action Card - Mobile Only */}
+        <motion.div
+          initial={{ y: '100%' }}
+          animate={{ y: showBottomCard ? 0 : '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="fixed bottom-0 left-0 right-0 bg-white text-gray-900 rounded-t-3xl p-6 z-30 lg:hidden"
+          style={{ maxHeight: '80vh', overflowY: 'auto' }}
+        >
+          <div className="flex justify-center mb-2">
+            <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          
+          {/* Card Content */}
+          <div className="space-y-6">
+            {/* User Info */}
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-white">
+                  {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
+                </span>
+              </div>
+              <div>
+                <div className="text-sm font-medium">{user?.email || 'User'}</div>
+                <div className="text-xs text-gray-400">Free Plan</div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                variant="outline"
+                className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
+                onClick={() => {
+                  startNewChat();
+                  setShowBottomCard(false);
+                }}
+              >
+                <Plus className="w-5 h-5 text-teal-600" />
+                <span>New Chat</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
+              >
+                <Search className="w-5 h-5 text-teal-600" />
+                <span>Search</span>
+              </Button>
+            </div>
+
+            {/* Chat History */}
+            <div>
+              <h3 className="text-md font-medium mb-3">Recent Chats</h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {chatHistory.map((chat, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-xl cursor-pointer"
+                    onClick={() => setShowBottomCard(false)}
+                  >
+                    <span className="text-sm truncate flex-1">{chat}</span>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Keluar</span>
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Footer - Add padding to prevent overlap with toggle button on mobile */}
+        <div className="bg-white border-t border-gray-200 px-6 py-4 mb-12 lg:mb-0 shrink-0 z-5">
           <div className="flex justify-center space-x-6 text-sm text-gray-500">
             <a href="#" className="hover:text-gray-700">
               Terms & Conditions
