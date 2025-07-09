@@ -78,7 +78,7 @@ export default function UserProfile() {
   return (
     <>
       <Navbar/>
-      <div className="w-full min-h-screen bg-white text-black pt-32">
+      <div className="w-full min-h-screen bg-white text-black pt-32 mb-20">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-8">Pengaturan Akun</h1>
           
@@ -89,7 +89,7 @@ export default function UserProfile() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
                   placeholder="Search..." 
-                  className="pl-10 bg-white border-gray-800 text-black rounded-md" 
+                  className="pl-10 bg-white border-gray-200 border rounded-xl text-black" 
                 />
               </div>
               
@@ -149,7 +149,7 @@ export default function UserProfile() {
                   {/* Display Name Section */}
                   <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
                     <div className="p-6">
-                      <h2 className="text-2xl font-semibold">Nama Tampilan</h2>
+                      <h2 className="text-2xl font-semibold">Nama Lengkap</h2>
                       <p className="text-gray-400 text-sm mb-6">Silakan masukkan nama lengkap Anda, atau nama tampilan yang Anda nyaman gunakan.</p>
                       
                       <Input 
@@ -157,6 +157,24 @@ export default function UserProfile() {
                         onChange={e => setDisplayName(e.target.value)}
                         className="bg-white border-gray-200 rounded text-black"
                         placeholder="Nama lengkap"
+                      />
+                    </div>
+                    
+                    <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
+                      <p className="text-teal-600 font-semibold text-sm">Maksimal 32 karakter.</p>
+                      <Button className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white">Simpan</Button>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="p-6">
+                      <h2 className="text-2xl font-semibold">Nomor Telepon</h2>
+                      <p className="text-gray-400 text-sm mb-6">Nomor telepon Anda yang terdaftar pada platform.</p>
+                    
+                      <Input 
+                        value={user.nomor_telepon}
+                        onChange={e => setDisplayName(e.target.value)}
+                        className="bg-white border-gray-200 rounded text-black"
+                        placeholder="Nomor telepon"
                       />
                     </div>
                     
