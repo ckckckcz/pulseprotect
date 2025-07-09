@@ -1,13 +1,14 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { authService } from '@/lib/auth'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
-  const code = requestUrl.searchParams.get('code')
   const token_hash = requestUrl.searchParams.get('token_hash')
   const type = requestUrl.searchParams.get('type')
+  const code = requestUrl.searchParams.get('code')
 
   // Handle OAuth callback (Google sign-in)
   if (code && !token_hash) {
@@ -86,3 +87,8 @@ export async function GET(request: Request) {
   // Default redirect
   return NextResponse.redirect(`${requestUrl.origin}/auth/verify-error?message=Parameter verifikasi tidak valid`)
 }
+
+function createRouteHandlerClient({ cookies }: { cookies: typeof import('next/headers').cookies }): SupabaseClient {
+  return createServerComponentClient({ cookies })
+}
+

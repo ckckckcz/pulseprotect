@@ -1,6 +1,5 @@
 import { supabase } from "./supabaseClient";
 import bcrypt from "bcryptjs";
-import { emailService } from "./emailService";
 
 export interface RegisterData {
   email: string;
@@ -17,89 +16,29 @@ export interface LoginData {
 export const authService = {
   async register({ email, password, fullName, phone }: RegisterData) {
     try {
-      // Validate input data
-      if (!email || !password || !fullName) {
-        throw new Error("Email, password, dan nama lengkap wajib diisi");
-      }
-
-      if (password.length < 6) {
-        throw new Error("Password minimal 6 karakter");
-      }
-
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from("user")
-        .select("email")
-        .eq("email", email.toLowerCase().trim())
-        .single();
-
-      if (existingUser) {
-        throw new Error("Email sudah terdaftar");
-      }
-
-      // Hash password
-      const saltRounds = 10;
-      const passwordHash = await bcrypt.hash(password, saltRounds);
-      
-      // Generate verification token
-      const verificationToken = emailService.generateVerificationToken();
-      const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      console.log("Starting registration process for:", email);
-
-      // Insert new user data into 'user' table
-      const { data: newUser, error: insertError } = await supabase
-        .from("user")
-        .insert({
-          nama_lengkap: fullName.trim(),
-          email: email.toLowerCase().trim(),
-          kata_sandi: passwordHash,
-          nomor_telepon: phone?.trim() || null,
-          role: "user",
-          verifikasi_email: false,
-          status: "pending",
-          email_confirmed_at: null,
-          verification_token: verificationToken,
-          verification_token_expires: tokenExpiry.toISOString()
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          phone
         })
-        .select("id, nama_lengkap, email, nomor_telepon, role, verifikasi_email, status")
-        .single();
+      })
 
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        throw new Error(`Gagal menyimpan data user: ${insertError.message}`);
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Terjadi kesalahan saat mendaftar')
       }
 
-      // Send verification email
-      try {
-        await emailService.sendVerificationEmail(
-          email.toLowerCase().trim(),
-          fullName.trim(),
-          verificationToken
-        );
-        console.log("Verification email sent successfully");
-      } catch (emailError) {
-        console.error("Failed to send verification email:", emailError);
-        // Delete the user record if email fails
-        await supabase.from("user").delete().eq("id", newUser.id);
-        throw new Error("Gagal mengirim email verifikasi. Silakan coba lagi.");
-      }
-
-      return {
-        user: newUser,
-        needsVerification: true,
-        message: "Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.",
-      };
+      return data
     } catch (error: any) {
-      console.error("Registration error:", error);
-      
-      if (error.code === "23505" && error.details?.includes("email")) {
-        throw new Error("Email sudah terdaftar");
-      } else if (error.message) {
-        throw new Error(error.message);
-      } else {
-        throw new Error("Terjadi kesalahan saat mendaftar");
-      }
+      console.error('Registration error:', error)
+      throw new Error(error.message || 'Terjadi kesalahan saat mendaftar')
     }
   },
 
@@ -162,49 +101,24 @@ export const authService = {
 
   async resendVerification(email: string) {
     try {
-      // Find user by email
-      const { data: user, error: findError } = await supabase
-        .from("user")
-        .select("*")
-        .eq("email", email.toLowerCase().trim())
-        .single();
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
+      })
 
-      if (findError || !user) {
-        throw new Error("Email tidak ditemukan");
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal mengirim ulang email verifikasi')
       }
 
-      if (user.verifikasi_email) {
-        throw new Error("Email sudah diverifikasi");
-      }
-
-      // Generate new verification token
-      const verificationToken = emailService.generateVerificationToken();
-      const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      // Update user with new token
-      const { error: updateError } = await supabase
-        .from("user")
-        .update({
-          verification_token: verificationToken,
-          verification_token_expires: tokenExpiry.toISOString()
-        })
-        .eq("id", user.id);
-
-      if (updateError) {
-        throw new Error("Gagal memperbarui token verifikasi");
-      }
-
-      // Send new verification email
-      await emailService.sendVerificationEmail(
-        user.email,
-        user.nama_lengkap,
-        verificationToken
-      );
-
-      return { success: true };
+      return { success: true }
     } catch (error: any) {
-      console.error("Resend verification error:", error);
-      throw new Error(error.message || "Gagal mengirim ulang email verifikasi");
+      console.error("Resend verification error:", error)
+      throw new Error(error.message || "Gagal mengirim ulang email verifikasi")
     }
   },
 

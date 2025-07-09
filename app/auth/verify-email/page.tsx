@@ -37,28 +37,6 @@ function VerifyEmailContent() {
     verifyEmail()
   }, [token])
 
-  if (status === 'loading') {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-xl p-8 text-center"
-      >
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        </div>
-        
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          Memverifikasi Email...
-        </h1>
-        
-        <p className="text-gray-600">
-          Mohon tunggu, sedang memverifikasi email Anda.
-        </p>
-      </motion.div>
-    )
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -69,9 +47,14 @@ function VerifyEmailContent() {
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: "spring" }}
-        className={`w-16 h-16 ${status === 'success' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center mx-auto mb-6`}
+        className={`w-16 h-16 ${
+          status === 'loading' ? 'bg-blue-100' : 
+          status === 'success' ? 'bg-green-100' : 'bg-red-100'
+        } rounded-full flex items-center justify-center mx-auto mb-6`}
       >
-        {status === 'success' ? (
+        {status === 'loading' ? (
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        ) : status === 'success' ? (
           <CheckCircle className="w-8 h-8 text-green-600" />
         ) : (
           <XCircle className="w-8 h-8 text-red-600" />
@@ -79,11 +62,12 @@ function VerifyEmailContent() {
       </motion.div>
       
       <h1 className="text-2xl font-bold text-gray-900 mb-4">
-        {status === 'success' ? 'Email Berhasil Diverifikasi!' : 'Verifikasi Gagal'}
+        {status === 'loading' ? 'Memverifikasi Email...' :
+         status === 'success' ? 'Email Berhasil Diverifikasi!' : 'Verifikasi Gagal'}
       </h1>
       
       <p className="text-gray-600 mb-8">
-        {message}
+        {status === 'loading' ? 'Mohon tunggu, sedang memverifikasi email Anda.' : message}
       </p>
 
       {userInfo && (
@@ -94,29 +78,31 @@ function VerifyEmailContent() {
         </div>
       )}
       
-      <div className="space-y-3">
-        {status === 'success' ? (
-          <Link href="/login">
-            <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-medium">
-              Masuk ke Akun
-            </Button>
-          </Link>
-        ) : (
-          <>
-            <Link href="/register">
-              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-medium">
-                Daftar Ulang
-              </Button>
-            </Link>
-            
+      {status !== 'loading' && (
+        <div className="space-y-3">
+          {status === 'success' ? (
             <Link href="/login">
-              <Button variant="outline" className="w-full py-3 rounded-xl font-medium">
-                Kembali ke Login
+              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-medium">
+                Masuk ke Akun
               </Button>
             </Link>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <Link href="/register">
+                <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-medium">
+                  Daftar Ulang
+                </Button>
+              </Link>
+              
+              <Link href="/login">
+                <Button variant="outline" className="w-full py-3 rounded-xl font-medium">
+                  Kembali ke Login
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
+      )}
     </motion.div>
   )
 }
