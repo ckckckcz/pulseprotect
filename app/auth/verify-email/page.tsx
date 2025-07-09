@@ -13,7 +13,7 @@ import Confetti from "react-confetti"
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get('token')
+  const token = searchParams?.get('token') || '' // Add null check and fallback to an empty string
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const [userInfo, setUserInfo] = useState<any>(null)
