@@ -202,7 +202,7 @@ function LoginForm() {
             />
             <span className="text-sm text-gray-600">Ingat saya</span>
           </label>
-          <Link href="/forgot-password" className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
+          <Link href="/auth/forgot-password" className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
             Lupa password?
           </Link>
         </motion.div>
