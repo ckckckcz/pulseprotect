@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code, Loader2 } from "lucide-react"
+import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
@@ -10,6 +10,21 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { authService } from "@/lib/auth"
 import { toast } from "sonner"
 import Navbar from "@/components/widget/navbar"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 
 // Define a type for the user with status
 type UserWithStatus = {
@@ -25,6 +40,13 @@ type UserWithStatus = {
   email_confirmed_at?: string | null
 }
 
+// Define country type
+type Country = {
+  name: string
+  dial_code: string
+  code: string
+}
+
 export default function UserProfile() {
   const [activeSetting, setActiveSetting] = useState("general")
   const { user, loading, refreshUser } = useAuth() as { 
@@ -37,13 +59,42 @@ export default function UserProfile() {
   // Form fields
   const [displayName, setDisplayName] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
-  const [username, setUsername] = useState("")
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null)
+  const [countryOpen, setCountryOpen] = useState(false)
+  const [countries, setCountries] = useState<Country[]>([])
+  const [countrySearchQuery, setCountrySearchQuery] = useState("")
   
   // Form states
-  const [isUpdatingName, setIsUpdatingName] = useState(false)
-  const [isUpdatingPhone, setIsUpdatingPhone] = useState(false)
-  const [nameError, setNameError] = useState("")
-  const [phoneError, setPhoneError] = useState("")
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [formErrors, setFormErrors] = useState({
+    nama_lengkap: "",
+    nomor_telepon: ""
+  })
+  const [formChanged, setFormChanged] = useState(false)
+  
+  // Fetch countries data
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch('/api/countries');
+        if (!response.ok) throw new Error('Failed to fetch countries');
+        const data = await response.json();
+        setCountries(data);
+        
+        // Set Indonesia as default if available
+        const indonesia = data.find((country: Country) => country.code === 'ID');
+        if (indonesia) {
+          setSelectedCountry(indonesia);
+        } else if (data.length > 0) {
+          setSelectedCountry(data[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+      }
+    };
+    
+    fetchCountries();
+  }, []);
   
   useEffect(() => {
     // Redirect if not logged in
@@ -54,10 +105,74 @@ export default function UserProfile() {
     // Initialize form values from user data
     if (user) {
       setDisplayName(user.nama_lengkap || "")
-      setPhoneNumber(user.nomor_telepon || "")
-      setUsername(user.email?.split('@')[0] || "")
+      
+      // Parse phone number if exists
+      if (user.nomor_telepon) {
+        const phoneWithoutCode = parsePhoneNumber(user.nomor_telepon);
+        setPhoneNumber(phoneWithoutCode.nationalNumber);
+        
+        // If we can identify the country code, set it
+        if (phoneWithoutCode.countryCode && countries.length > 0) {
+          const matchedCountry = countries.find(
+            c => c.dial_code.replace('+', '') === phoneWithoutCode.countryCode
+          );
+          if (matchedCountry) setSelectedCountry(matchedCountry);
+        }
+      }
     }
-  }, [user, loading, router])
+  }, [user, loading, router, countries])
+
+  // Helper to parse phone number
+  const parsePhoneNumber = (phoneWithCode: string) => {
+    // Simple parsing logic
+    // Assuming format could be like +62812345678 or 62812345678
+    let countryCode = '';
+    let nationalNumber = phoneWithCode;
+    
+    if (phoneWithCode.startsWith('+')) {
+      // Format: +62812345678
+      const match = phoneWithCode.match(/\+(\d+)(\d+)/);
+      if (match && match.length >= 3) {
+        countryCode = match[1];
+        nationalNumber = match[2];
+      }
+    } else if (/^\d{1,4}\d+$/.test(phoneWithCode)) {
+      // Format: 62812345678
+      for (let i = 1; i <= 4; i++) {
+        const potentialCode = phoneWithCode.substring(0, i);
+        const potentialMatch = countries.find(c => c.dial_code === `+${potentialCode}`);
+        if (potentialMatch) {
+          countryCode = potentialCode;
+          nationalNumber = phoneWithCode.substring(i);
+          break;
+        }
+      }
+    }
+    
+    return { countryCode, nationalNumber };
+  };
+
+  // Check if form has changed compared to original user data
+  useEffect(() => {
+    if (user) {
+      // Combine dial code and phone for comparison
+      const formattedPhone = selectedCountry 
+        ? `${selectedCountry.dial_code}${phoneNumber.replace(/^0+/, '')}`
+        : phoneNumber;
+        
+      const userPhone = user.nomor_telepon || '';
+      
+      // Compare normalized phone numbers (remove spaces, dashes, etc.)
+      const normalizedFormPhone = formattedPhone.replace(/[\s-]/g, '');
+      const normalizedUserPhone = userPhone.replace(/[\s-]/g, '');
+      
+      const hasChanged = 
+        displayName !== user.nama_lengkap || 
+        normalizedFormPhone !== normalizedUserPhone;
+      
+      setFormChanged(hasChanged);
+    }
+  }, [displayName, phoneNumber, selectedCountry, user]);
   
   // Get user initials for the avatar fallback
   const getInitials = (name: string = "") => {
@@ -69,70 +184,82 @@ export default function UserProfile() {
       .substring(0, 2)
   }
 
-  // Handle name update
-  const handleNameUpdate = async () => {
-    if (!user?.id) return
+  // Get flag emoji from country code
+  const getFlagEmoji = (countryCode: string) => {
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  };
+
+  // Filter countries based on search
+  const filteredCountries = countrySearchQuery === '' 
+    ? countries 
+    : countries.filter((country) =>
+        country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
+        country.dial_code.includes(countrySearchQuery)
+      );
+
+  // Handle form submit - updates both name and phone number
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    
+    // Validate form
+    let hasErrors = false;
+    const errors = {
+      nama_lengkap: "",
+      nomor_telepon: ""
+    };
     
     // Validate name
     if (!displayName.trim()) {
-      setNameError("Nama lengkap tidak boleh kosong")
-      return
+      errors.nama_lengkap = "Nama lengkap tidak boleh kosong";
+      hasErrors = true;
     }
     
-    setIsUpdatingName(true)
-    setNameError("")
+    // Validate phone number format (if provided)
+    if (phoneNumber) {
+      const phoneRegex = /^[0-9\s-]{8,15}$/;
+      if (!phoneRegex.test(phoneNumber)) {
+        errors.nomor_telepon = "Format nomor telepon tidak valid";
+        hasErrors = true;
+      }
+    }
+    
+    setFormErrors(errors);
+    
+    if (hasErrors) return;
+    
+    setIsUpdating(true);
+    
+    // Format the phone number with country code
+    let formattedPhone = phoneNumber;
+    if (phoneNumber && selectedCountry) {
+      // Remove leading zeros when adding country code
+      formattedPhone = `${selectedCountry.dial_code}${phoneNumber.replace(/^0+/, '')}`;
+    }
     
     try {
-      // Update user name
+      // Update user profile
       await authService.updateUser(Number(user.id), {
-        nama_lengkap: displayName.trim()
-      })
+        nama_lengkap: displayName.trim(),
+        nomor_telepon: formattedPhone.trim() || undefined
+      });
       
       // Refresh user data
-      await refreshUser()
+      await refreshUser();
       
-      toast.success("Nama lengkap berhasil diperbarui")
+      toast.success("Profil berhasil diperbarui");
+      setFormChanged(false);
     } catch (error: any) {
-      console.error("Error updating name:", error)
-      setNameError(error.message || "Gagal memperbarui nama lengkap")
-      toast.error("Gagal memperbarui nama lengkap")
+      console.error("Error updating profile:", error);
+      toast.error("Gagal memperbarui profil");
     } finally {
-      setIsUpdatingName(false)
+      setIsUpdating(false);
     }
-  }
-  
-  // Handle phone number update
-  const handlePhoneUpdate = async () => {
-    if (!user?.id) return
-    
-    // Validate phone number format (simple validation)
-    const phoneRegex = /^[0-9+\- ]{8,15}$/
-    if (phoneNumber && !phoneRegex.test(phoneNumber)) {
-      setPhoneError("Format nomor telepon tidak valid")
-      return
-    }
-    
-    setIsUpdatingPhone(true)
-    setPhoneError("")
-    
-    try {
-      // Update user phone number
-      await authService.updateUser(Number(user.id), {
-        nomor_telepon: phoneNumber.trim() || undefined
-      })
-      
-      // Refresh user data
-      await refreshUser()
-      
-      toast.success("Nomor telepon berhasil diperbarui")
-    } catch (error: any) {
-      console.error("Error updating phone number:", error)
-      setPhoneError(error.message || "Gagal memperbarui nomor telepon")
-      toast.error("Gagal memperbarui nomor telepon")
-    } finally {
-      setIsUpdatingPhone(false)
-    }
-  }
+  };
 
   if (loading) {
     return (
@@ -225,106 +352,154 @@ export default function UserProfile() {
                     </div>
                   </div>
 
-                  {/* Display Name Section */}
+                  {/* Combined Profile Form */}
                   <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                    <div className="p-6">
-                      <h2 className="text-2xl font-semibold">Nama Lengkap</h2>
-                      <p className="text-gray-400 text-sm mb-6">Silakan masukkan nama lengkap Anda, atau nama tampilan yang Anda nyaman gunakan.</p>
-                      
-                      <Input 
-                        value={displayName}
-                        onChange={e => {
-                          setDisplayName(e.target.value)
-                          setNameError("")
-                        }}
-                        className="bg-white border-gray-200 rounded text-black"
-                        placeholder="Nama lengkap"
-                      />
-                      {nameError && (
-                        <p className="mt-2 text-sm text-red-500">{nameError}</p>
-                      )}
-                    </div>
-                    
-                    <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
-                      <p className="text-teal-600 font-semibold text-sm">Maksimal 32 karakter.</p>
-                      <Button 
-                        onClick={handleNameUpdate} 
-                        disabled={isUpdatingName || displayName === user.nama_lengkap}
-                        className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white"
-                      >
-                        {isUpdatingName ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                            Menyimpan...
-                          </>
-                        ) : "Simpan"}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Phone Number Section */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                    <div className="p-6">
-                      <h2 className="text-2xl font-semibold">Nomor Telepon</h2>
-                      <p className="text-gray-400 text-sm mb-6">Nomor telepon Anda yang terdaftar pada platform.</p>
-                    
-                      <Input 
-                        value={phoneNumber}
-                        onChange={e => {
-                          setPhoneNumber(e.target.value)
-                          setPhoneError("")
-                        }}
-                        className="bg-white border-gray-200 rounded text-black"
-                        placeholder="Nomor telepon"
-                      />
-                      {phoneError && (
-                        <p className="mt-2 text-sm text-red-500">{phoneError}</p>
-                      )}
-                    </div>
-                    
-                    <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
-                      <p className="text-teal-600 font-semibold text-sm">Format: +62 atau 08xx.</p>
-                      <Button 
-                        onClick={handlePhoneUpdate} 
-                        disabled={isUpdatingPhone || phoneNumber === user.nomor_telepon}
-                        className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white"
-                      >
-                        {isUpdatingPhone ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                            Menyimpan...
-                          </>
-                        ) : "Simpan"}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Email Section */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                    <div className="p-6">
-                      <h2 className="text-2xl font-semibold">Alamat Email</h2>
-                      <p className="text-gray-400 text-sm mb-6">Email Anda yang terdaftar pada platform.</p>
-                    
-                      <div className="bg-gray-100 border border-gray-200 rounded-md px-4 py-3 flex justify-between items-center">
-                        <span className="text-gray-800">{user.email}</span>
-                        {user.verifikasi_email ? (
-                          <span className="flex items-center text-green-600 text-sm">
-                            <CheckCircle size={14} className="mr-1" />
-                            Terverifikasi
-                          </span>
-                        ) : (
-                          <span className="flex items-center text-amber-600 text-sm">
-                            Belum Terverifikasi
-                          </span>
-                        )}
+                    <form onSubmit={handleProfileUpdate}>
+                      <div className="p-6">
+                        <h2 className="text-2xl font-semibold mb-6">Informasi Profil</h2>
+                        
+                        {/* Name Field */}
+                        <div className="mb-6">
+                          <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Nama Lengkap
+                          </label>
+                          <Input 
+                            id="displayName"
+                            value={displayName}
+                            onChange={e => {
+                              setDisplayName(e.target.value)
+                              setFormErrors({...formErrors, nama_lengkap: ""})
+                            }}
+                            className="bg-white border-gray-200 rounded text-black"
+                            placeholder="Nama lengkap"
+                          />
+                          {formErrors.nama_lengkap && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.nama_lengkap}</p>
+                          )}
+                          <p className="mt-1 text-xs text-gray-400">Maksimal 32 karakter.</p>
+                        </div>
+                        
+                        {/* Phone Field with Country Code */}
+                        <div className="mb-6">
+                          <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                            Nomor Telepon
+                          </label>
+                          <div className="flex">
+                            {/* Country Code Dropdown */}
+                            <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={countryOpen}
+                                  className="w-[120px] justify-between border-gray-200 hover:bg-gray-50 hover:text-gray-900 rounded-r-none border-r-0 bg-white"
+                                >
+                                  {selectedCountry ? (
+                                    <div className="flex items-center">
+                                      <span className="mr-2 text-lg">{getFlagEmoji(selectedCountry.code)}</span>
+                                      <span>{selectedCountry.dial_code}</span>
+                                    </div>
+                                  ) : (
+                                    "Pilih"
+                                  )}
+                                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[300px] border border-gray-200 bg-gray-50 rounded-xl  p-0">
+                                <Command className="bg-gray-100 text-black rounded-xl">
+                                  <CommandInput 
+                                    placeholder="Cari negara..." 
+                                    className="h-9 bg-gray-100"
+                                    value={countrySearchQuery}
+                                    onValueChange={setCountrySearchQuery}
+                                  />
+                                  <CommandEmpty>Negara tidak ditemukan</CommandEmpty>
+                                  <CommandGroup className="max-h-[300px] bg-gray-100 text-black overflow-y-auto">
+                                    {filteredCountries.map((country) => (
+                                      <CommandItem
+                                        className=""
+                                        key={country.code}
+                                        value={country.code}
+                                        onSelect={() => {
+                                          setSelectedCountry(country)
+                                          setCountryOpen(false)
+                                        }}
+                                      >
+                                        <div className="flex items-center">
+                                          <span className="mr-2 text-lg">{getFlagEmoji(country.code)}</span>
+                                          <span className="mr-2">{country.name}</span>
+                                          <span className="text-gray-500 text-sm">{country.dial_code}</span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                            
+                            {/* Phone Number Input */}
+                            <Input 
+                              id="phoneNumber"
+                              value={phoneNumber}
+                              onChange={e => {
+                                setPhoneNumber(e.target.value)
+                                setFormErrors({...formErrors, nomor_telepon: ""})
+                              }}
+                              className="bg-white border-gray-200 rounded-l-none flex-1 text-black"
+                              placeholder="81234567890"
+                            />
+                          </div>
+                          {formErrors.nomor_telepon && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.nomor_telepon}</p>
+                          )}
+                          <p className="mt-1 text-xs text-gray-400">
+                            Masukkan nomor telepon tanpa kode negara (cth: 81234567890).
+                          </p>
+                        </div>
+                        
+                        {/* Email Field (Read-only) */}
+                        <div>
+                          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                            Alamat Email
+                          </label>
+                          <div className="bg-gray-100 border border-gray-200 rounded-md px-4 py-3 flex justify-between items-center">
+                            <span className="text-gray-800">{user.email}</span>
+                            {user.verifikasi_email ? (
+                              <span className="flex items-center text-green-600 text-sm">
+                                <CheckCircle size={14} className="mr-1" />
+                                Terverifikasi
+                              </span>
+                            ) : (
+                              <span className="flex items-center text-amber-600 text-sm">
+                                Belum Terverifikasi
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Email tidak dapat diubah. Hubungi admin jika Anda perlu mengubah email.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 border-t border-gray-200 p-4">
-                      <p className="text-teal-600 font-semibold text-sm">
-                        Email tidak dapat diubah. Hubungi admin jika Anda perlu mengubah email.
-                      </p>
-                    </div>
+                      
+                      <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-end">
+                        <Button 
+                          type="submit"
+                          disabled={isUpdating || !formChanged}
+                          className={`rounded-xl px-6 ${
+                            formChanged 
+                              ? "bg-teal-600 hover:bg-teal-700 text-white" 
+                              : "bg-white border border-gray-200 text-gray-400"
+                          }`}
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                              Menyimpan...
+                            </>
+                          ) : "Simpan Perubahan"}
+                        </Button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}
