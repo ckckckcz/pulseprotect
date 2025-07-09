@@ -236,7 +236,7 @@ export default function RegisterPage() {
             <>
               {/* Register Form */}
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="lg:grid lg:grid-cols-2 grid grid-cols-1 gap-4">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

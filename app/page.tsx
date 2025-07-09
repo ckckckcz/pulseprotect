@@ -312,7 +312,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 overflow-x-hidden">
       <Navbar />
-      <section className="relative min-h-screen flex items-center justify-center pt-16 px-4 sm:px-6 md:px-8 overflow-hidden">
+      <section className="relative lg:min-h-screen flex items-center justify-center pt-16 px-4 sm:px-6 md:px-8 overflow-hidden">
         {/* Background with overlay */}
         <div className="absolute inset-0 z-0">
           <Image
