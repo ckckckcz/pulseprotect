@@ -45,7 +45,7 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-xl font-bold mb-6 text-teal-400">Tautan Cepat</h3>
+            <h3 className="text-xl font-bold mb-6 text-teal-600">Tautan Cepat</h3>
             <ul className="space-y-4">
               {[
                 { name: "Tentang Kami", href: "/about" },
@@ -55,7 +55,7 @@ export default function Footer() {
                 { name: "Blog", href: "/blog" },
               ].map((link, index) => (
                 <li key={index}>
-                  <Link href={link.href} className="text-gray-400 hover:text-teal-400 transition-colors duration-300 flex items-center group">
+                  <Link href={link.href} className="text-gray-400 hover:text-teal-600 transition-colors duration-300 flex items-center group">
                     {/* <ArrowRight className="w-4 h-4 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> */}
                     {link.name}
                   </Link>
@@ -66,7 +66,7 @@ export default function Footer() {
 
           {/* Resources */}
           <div>
-            <h3 className="text-xl font-bold mb-6 text-teal-400">Sumber Daya</h3>
+            <h3 className="text-xl font-bold mb-6 text-teal-600">Sumber Daya</h3>
             <ul className="space-y-4">
               {[
                 { name: "Kebijakan Privasi", href: "/privacy" },
@@ -76,7 +76,7 @@ export default function Footer() {
                 { name: "Panduan Pengguna", href: "/guide" },
               ].map((link, index) => (
                 <li key={index}>
-                  <Link href={link.href} className="text-gray-400 hover:text-teal-400 transition-colors duration-300 flex items-center group">
+                  <Link href={link.href} className="text-gray-400 hover:text-teal-600 transition-colors duration-300 flex items-center group">
                     {/* <ArrowRight className="w-4 h-4 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> */}
                     {link.name}
                   </Link>
@@ -87,21 +87,21 @@ export default function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h3 className="text-xl font-bold mb-6 text-teal-400">Tim Pengembang</h3>
+            <h3 className="text-xl font-bold mb-6 text-teal-600">Tim Pengembang</h3>
             <div className="space-y-4">
               <div className="flex items-center">
-                <Mail className="w-5 h-5 text-teal-400 mr-3" />
-                <a href="mailto:mechaminds.contact@gmail.com" className="text-gray-400 hover:text-teal-400 transition-colors">
+                <Mail className="w-5 h-5 text-teal-600 mr-3" />
+                <a href="mailto:mechaminds.contact@gmail.com" className="text-gray-400 hover:text-teal-600 transition-colors">
                   mechaminds.contact@gmail.com
                 </a>
               </div>
               <div className="flex items-center">
-                <Phone className="w-5 h-5 text-teal-400 mr-3" />
+                <Phone className="w-5 h-5 text-teal-600 mr-3" />
                 <span className="text-gray-400">+62 21 7863 8888</span>
               </div>
               <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 mt-6">
                 <p className="text-sm text-gray-400 mb-2">Versi Platform:</p>
-                <p className="text-teal-400 font-semibold">v1.0</p>
+                <p className="text-teal-600 font-semibold">v1.0</p>
               </div>
             </div>
           </div>
@@ -109,7 +109,7 @@ export default function Footer() {
 
         {/* Partners section */}
         {/* <div className="border-t border-gray-200 pt-12 mb-12">
-          <h3 className="text-xl font-bold text-center mb-8 text-teal-400">Stakeholder Terkait</h3>
+          <h3 className="text-xl font-bold text-center mb-8 text-teal-600">Stakeholder Terkait</h3>
           <div className="flex flex-wrap justify-center items-center gap-8 opacity-60">
             {partners.map((partner, index) => (
               <div key={index} className="bg-white/10 rounded-xl p-4 hover:bg-white/20 transition-colors duration-300">
@@ -123,7 +123,7 @@ export default function Footer() {
         <div className="border-t border-gray-200 pt-8">
           <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
             <div className="text-center lg:text-left">
-              <p className="text-gray-400 text-lg">&copy; 2025 MechaMinds. Dibuat dengan 🧡 untuk melindungi kesehatan masyarakat Indonesia.</p>
+              <p className="text-gray-400 text-lg">&copy; 2025 MechaMinds. Dibuat dengan 💚 untuk melindungi kesehatan masyarakat Indonesia.</p>
               <p className="text-gray-300 text-sm mt-1">Platform ini merupakan karya mahasiswa Politeknik Negeri Malang untuk kepentingan sosial.</p>
             </div>
             <div className="flex items-center space-x-6">
