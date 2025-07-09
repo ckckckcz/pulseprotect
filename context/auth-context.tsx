@@ -16,13 +16,25 @@ export interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<User>
+  login: (email: string, password: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
-  refreshUser: () => Promise<void>
+  register: (data: {
+    email: string
+    password: string
+    fullName: string
+    phone?: string
+  }) => Promise<any>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  login: async () => {},
+  loginWithGoogle: async () => {},
+  logout: async () => {},
+  register: async () => ({}),
+})
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -48,9 +60,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      const user = await authService.login({ email, password })
-      setUser(user)
-      return user
+      const userData = await authService.login({ email, password })
+      
+      // Save user to local storage
+      localStorage.setItem('user', JSON.stringify(userData))
+      
+      // Update auth state
+      setUser(userData)
+      
+      // Redirect to home page after successful login
+      router.push('/')
+    } catch (error) {
+      throw error
     } finally {
       setLoading(false)
     }
@@ -59,13 +80,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const loginWithGoogle = async () => {
     setLoading(true)
     try {
-      await authService.signInWithGoogle()
-      // After Google login, always fetch the current user
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
-      router.push('/')
+      // Google auth implementation would go here
+      throw new Error('Google login belum diimplementasikan')
     } catch (error) {
-      console.error('Google login error:', error)
+      throw error
     } finally {
       setLoading(false)
     }
@@ -74,19 +92,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     setLoading(true)
     try {
-      await authService.logout()
+      // Clear local storage
+      localStorage.removeItem('user')
+      
+      // Clear state
       setUser(null)
+      
+      // Redirect to login page
+      router.push('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const refreshUser = async () => {
+  const register = async (data: {
+    email: string
+    password: string
+    fullName: string
+    phone?: string
+  }) => {
+    setLoading(true)
     try {
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
+      const result = await authService.register(data)
+      return result
     } catch (error) {
-      console.error('Error refreshing user:', error)
+      throw error
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -96,7 +130,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     login,
     loginWithGoogle,
     logout,
-    refreshUser
+    register,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -2,18 +2,22 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { CheckCircle, XCircle, Loader2 } from "lucide-react"
+import { CheckCircle, XCircle, Loader2, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { authService } from "@/lib/auth"
+import { useAuth } from "@/context/auth-context" 
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const token = searchParams.get('token')
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const [userInfo, setUserInfo] = useState<any>(null)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const { login } = useAuth()
 
   useEffect(() => {
     if (!token) {
@@ -36,6 +40,24 @@ function VerifyEmailContent() {
 
     verifyEmail()
   }, [token])
+
+  const handleLogin = async () => {
+    if (!userInfo?.email) return
+    
+    setIsLoggingIn(true)
+    try {
+      // For auto-login, we would need either:
+      // 1. A special login endpoint that accepts the verification token
+      // 2. Or we navigate to login page with pre-filled email
+      router.push(`/login?email=${encodeURIComponent(userInfo.email)}`)
+    } catch (error) {
+      console.error('Auto-login error:', error)
+      // If auto-login fails, just redirect to login page
+      router.push('/login')
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
 
   return (
     <motion.div
@@ -81,11 +103,23 @@ function VerifyEmailContent() {
       {status !== 'loading' && (
         <div className="space-y-3">
           {status === 'success' ? (
-            <Link href="/login">
-              <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-medium">
-                Masuk ke Akun
-              </Button>
-            </Link>
+            <Button 
+              onClick={handleLogin}
+              disabled={isLoggingIn}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-medium flex items-center justify-center"
+            >
+              {isLoggingIn ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-5 h-5 mr-2" />
+                  Masuk ke Akun
+                </>
+              )}
+            </Button>
           ) : (
             <>
               <Link href="/register">

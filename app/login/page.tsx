@@ -2,33 +2,41 @@
 
 import type React from "react"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect } from "react"  // Add useEffect
 import { Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"  // Add useSearchParams
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useAuth } from "@/context/auth-context"  // Use useAuth instead
+import { useAuth } from "@/context/auth-context" 
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()  // Add this line
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
-  const { login, loginWithGoogle, loading: isLoading } = useAuth()  // Use the auth context
+  const { login, loginWithGoogle, loading: isLoading } = useAuth()
+
+  // Handle email from URL params (from verification)
+  useEffect(() => {
+    const emailParam = searchParams.get('email')
+    if (emailParam) {
+      setEmail(emailParam)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
     try {
-      // Use the login function from useAuth instead of authService directly
+      // Use the login function from useAuth
       await login(email.trim(), password)
       
-      // If successful, redirect to home page
-      router.push("/")
+      // Router push is handled inside login function
     } catch (error: any) {
       console.error('Login error:', error)
       setError(error.message || "Terjadi kesalahan saat login. Silakan coba lagi.")

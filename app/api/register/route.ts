@@ -56,17 +56,19 @@ export async function POST(request: Request) {
 
     console.log('Starting registration process for:', email)
 
-    // Insert new user data into 'user' table
+    // Insert new user data into 'user' table - match exact schema
     const { data: newUser, error: insertError } = await supabase
       .from('user')
       .insert({
         nama_lengkap: fullName.trim(),
         email: email.toLowerCase().trim(),
-        kata_sandi: passwordHash,
         nomor_telepon: phone?.trim() || null,
+        kata_sandi: passwordHash,
+        konfirmasi_kata_sandi: null, // Can be used for password reset flows
         role: 'user',
-        verifikasi_email: false,
+        foto_profile: null,
         status: 'pending',
+        verifikasi_email: false,
         email_confirmed_at: null,
         verification_token: verificationToken,
         verification_token_expires: tokenExpiry.toISOString()
@@ -101,24 +103,17 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
+      success: true,
       user: newUser,
       needsVerification: true,
       message: 'Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.'
     })
-
   } catch (error: any) {
     console.error('Registration error:', error)
-    
-    if (error.code === '23505' && error.details?.includes('email')) {
-      return NextResponse.json(
-        { error: 'Email sudah terdaftar' },
-        { status: 409 }
-      )
-    } else {
-      return NextResponse.json(
-        { error: error.message || 'Terjadi kesalahan saat mendaftar' },
-        { status: 500 }
-      )
-    }
+
+    return NextResponse.json(
+      { error: error.message || 'Terjadi kesalahan saat mendaftar' },
+      { status: error.status || 500 }
+    )
   }
 }

@@ -13,7 +13,7 @@ export default function AboutUs() {
 
             {/* Main image */}
             <div className="relative z-10">
-              <Image src="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&h=400&fit=crop&crop=face" alt="Healthcare professionals" width={600} height={400} className="rounded-2xl w-full h-auto" />
+              <Image src="https://dinkesp2kb.lumajangkab.go.id/uploads/berita/obat.jpg" alt="Healthcare professionals" width={600} height={400} className="rounded-2xl w-full h-auto" />
             </div>
           </div>
 

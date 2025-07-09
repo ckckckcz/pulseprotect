@@ -16,7 +16,7 @@ if (typeof window === 'undefined') {
 let transport: any = null
 
 if (nodemailer) {
-  transport = nodemailer.createTransporter({
+  transport = nodemailer.createTransport({
     host: "sandbox.smtp.mailtrap.io",
     port: 2525,
     auth: {
@@ -37,7 +37,7 @@ export const emailService = {
       throw new Error('Email transport not available')
     }
 
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://mechaminds-17.vercel.app'}/auth/verify-email?token=${verificationToken}`
+    const verificationUrl = `${'http://localhost:3000'}/auth/verify-email?token=${verificationToken}`
     
     const mailOptions = {
       from: '"SmartCity" <noreply@smartcity.com>',

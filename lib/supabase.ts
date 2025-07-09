@@ -11,48 +11,51 @@ export type Database = {
       user: {
         Row: {
           id: number
+          created_at: string
           nama_lengkap: string
-          role: string
-          email: string
+          email: string | null
           nomor_telepon: string | null
-          kata_sandi: string
-          konfigurasi_kata_sandi: string | null
-          verifikasi_email: boolean
-          status: string
+          kata_sandi: string | null
+          konfirmasi_kata_sandi: string | null
+          role: string | null
+          foto_profile: string | null
+          status: string | null
+          verifikasi_email: boolean | null
           email_confirmed_at: string | null
           verification_token: string | null
           verification_token_expires: string | null
-          created_at: string
         }
         Insert: {
           id?: number
+          created_at?: string
           nama_lengkap: string
-          role?: string
-          email: string
+          email?: string | null
           nomor_telepon?: string | null
-          kata_sandi: string
-          konfigurasi_kata_sandi?: string | null
-          verifikasi_email?: boolean
-          status?: string
+          kata_sandi?: string | null
+          konfirmasi_kata_sandi?: string | null
+          role?: string | null
+          foto_profile?: string | null
+          status?: string | null
+          verifikasi_email?: boolean | null
           email_confirmed_at?: string | null
           verification_token?: string | null
           verification_token_expires?: string | null
-          created_at?: string
         }
         Update: {
           id?: number
+          created_at?: string
           nama_lengkap?: string
-          role?: string
-          email?: string
+          email?: string | null
           nomor_telepon?: string | null
-          kata_sandi?: string
-          konfigurasi_kata_sandi?: string | null
-          verifikasi_email?: boolean
-          status?: string
+          kata_sandi?: string | null
+          konfirmasi_kata_sandi?: string | null
+          role?: string | null
+          foto_profile?: string | null
+          status?: string | null
+          verifikasi_email?: boolean | null
           email_confirmed_at?: string | null
           verification_token?: string | null
           verification_token_expires?: string | null
-          created_at?: string
         }
       }
       profiles: {

@@ -4,7 +4,17 @@ import { emailService } from '@/lib/emailService'
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json()
+    let body
+    try {
+      body = await request.json()
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid JSON format' },
+        { status: 400 }
+      )
+    }
+
+    const { email } = body
 
     if (!email) {
       return NextResponse.json(
@@ -62,7 +72,6 @@ export async function POST(request: Request) {
     )
 
     return NextResponse.json({ success: true })
-
   } catch (error: any) {
     console.error('Resend verification error:', error)
     return NextResponse.json(
@@ -71,3 +80,4 @@ export async function POST(request: Request) {
     )
   }
 }
+

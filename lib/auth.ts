@@ -16,7 +16,7 @@ export interface LoginData {
 export const authService = {
   async register({ email, password, fullName, phone }: RegisterData) {
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,20 +25,28 @@ export const authService = {
           email,
           password,
           fullName,
-          phone
-        })
-      })
+          phone,
+        }),
+      });
 
-      const data = await response.json()
+      // Read the response body once
+      const responseBody = await response.text();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Terjadi kesalahan saat mendaftar')
+      let data;
+      try {
+        data = JSON.parse(responseBody);
+      } catch (parseError) {
+        throw new Error(responseBody || 'Terjadi kesalahan saat mendaftar');
       }
 
-      return data
+      if (!response.ok) {
+        throw new Error(data.error || 'Terjadi kesalahan saat mendaftar');
+      }
+
+      return data;
     } catch (error: any) {
-      console.error('Registration error:', error)
-      throw new Error(error.message || 'Terjadi kesalahan saat mendaftar')
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat mendaftar');
     }
   },
 
@@ -157,6 +165,22 @@ export const authService = {
     } catch (error: any) {
       console.error("Login error:", error);
       throw new Error(error.message || "Terjadi kesalahan saat login");
+    }
+  },
+
+  async getCurrentUser() {
+    try {
+      // Check for logged in user in localStorage
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          return JSON.parse(storedUser);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting current user:", error);
+      return null;
     }
   },
 };
