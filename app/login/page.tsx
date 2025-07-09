@@ -24,7 +24,7 @@ function LoginForm() {
 
   // Handle email from URL params and check for reset=success
   useEffect(() => {
-    const emailParam = searchParams.get('email')
+    const emailParam = searchParams?.get('email') // Add null check for searchParams
     if (emailParam) {
       setEmail(emailParam)
     }
