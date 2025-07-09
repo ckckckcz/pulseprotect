@@ -20,6 +20,8 @@ export type Database = {
           verifikasi_email: boolean
           status: string
           email_confirmed_at: string | null
+          verification_token: string | null
+          verification_token_expires: string | null
           created_at: string
         }
         Insert: {
@@ -33,6 +35,8 @@ export type Database = {
           verifikasi_email?: boolean
           status?: string
           email_confirmed_at?: string | null
+          verification_token?: string | null
+          verification_token_expires?: string | null
           created_at?: string
         }
         Update: {
@@ -46,6 +50,8 @@ export type Database = {
           verifikasi_email?: boolean
           status?: string
           email_confirmed_at?: string | null
+          verification_token?: string | null
+          verification_token_expires?: string | null
           created_at?: string
         }
       }
