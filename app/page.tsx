@@ -385,6 +385,8 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      {/* DISINI ELEMENTNYA */}
       
       {/* Healthcare Section */}
       <About />

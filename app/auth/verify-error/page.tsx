@@ -9,7 +9,7 @@ import { Suspense } from "react"
 
 function VerifyErrorContent() {
   const searchParams = useSearchParams()
-  const message = searchParams.get('message') || 'Terjadi kesalahan saat verifikasi email'
+  const message = searchParams?.get('message') || 'Terjadi kesalahan saat verifikasi email'
 
   return (
     <motion.div
