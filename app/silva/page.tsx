@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Zap,
-  BookOpen,
+  PanelLeft,
   Plus,
   Search,
   Library,
@@ -36,18 +36,6 @@ const models = [
 
 const chatHistory = [
   "Supabase URL Environment Error",
-  "Pseudocode Penjelasan",
-  "Instalasi Supabase NextJS",
-  "Apa itu Lovable.dev",
-  "Pembagian Tugas Diagram",
-  "Cara gabung 3 PDF",
-  "Cara install Laravel",
-  "Soal UI UX dan Pemrograman",
-  "Website Gila Banget",
-  "Latar belakang SIMTA JTI",
-  "Contoh Text Editor IDE",
-  "Smart City AI Indonesia",
-  "Rumus Excel Statistik",
 ]
 
 const suggestions = [
@@ -72,6 +60,8 @@ export default function ChatInterface() {
   const [user, setUser] = useState<any>(null)
   const [isAuthChecking, setIsAuthChecking] = useState(true)
   const router = useRouter()
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isLogoHovered, setIsLogoHovered] = useState(false);
   
   // Check authentication on component mount
   useEffect(() => {
@@ -230,6 +220,10 @@ export default function ChatInterface() {
     }
   };
   
+  const toggleSidebar = () => {
+    setIsSidebarExpanded(!isSidebarExpanded);
+  };
+  
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -255,16 +249,27 @@ export default function ChatInterface() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="w-72 bg-white border-r border-gray-200 text-gray-900 flex flex-col">
+      <div 
+        className={`bg-white border-r border-gray-200 text-gray-900 flex flex-col transition-all duration-300 ease-in-out ${
+          isSidebarExpanded ? "w-72" : "w-[69px]"
+        }`}
+      >
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-9 h-9 bg-teal-600 rounded-full flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white" fill="currentColor" />
+            <div 
+              className="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center cursor-pointer transition-colors duration-200"
+              onClick={toggleSidebar}
+              onMouseEnter={() => setIsLogoHovered(true)}
+              onMouseLeave={() => setIsLogoHovered(false)}
+            >
+              {isLogoHovered ? (
+                <PanelLeft className="w-4 h-4 text-white" />
+              ) : (
+                <Zap className="w-4 h-4 text-white" fill="currentColor" />
+              )}
             </div>
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-900">
-              <BookOpen className="w-4 h-4" />
-            </Button>
+            {/* Remove the separate toggle button */}
           </div>
 
           {/* Navigation Items */}
@@ -272,56 +277,62 @@ export default function ChatInterface() {
             <Button
               onClick={startNewChat}
               variant="ghost"
-              className="w-full justify-start text-gray-900 hover:text-gray-900 hover:bg-gray-100 rounded-xl"
+              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${
+                isSidebarExpanded ? "justify-start" : "justify-center"
+              }`}
             >
-              <Plus className="w-4 h-4 mr-3" />
-              New chat
+              <Plus className="w-4 h-4 min-w-[16px]" />
+              {isSidebarExpanded && <span className="ml-3">New chat</span>}
             </Button>
 
-            <Button variant="ghost" className="w-full justify-start text-gray-900 hover:text-gray-900 hover:bg-gray-100 rounded-xl">
-              <Search className="w-4 h-4 mr-3" />
-              Search chats
-            </Button>
-
-            <Button variant="ghost" className="w-full justify-start text-gray-900 hover:text-gray-900 hover:bg-gray-100 rounded-xl">
-              <Library className="w-4 h-4 mr-3" />
-              Library
-            </Button>
-
-            <Button variant="ghost" className="w-full justify-start text-gray-900 hover:text-gray-900 hover:bg-gray-100 rounded-xl">
-              <Play className="w-4 h-4 mr-3" />
-              Sora
-            </Button>
-
-            <Button variant="ghost" className="w-full justify-start text-gray-900 hover:text-gray-900 hover:bg-gray-100 rounded-xl">
-              <Grid3X3 className="w-4 h-4 mr-3" />
-              GPTs
+            <Button 
+              variant="ghost" 
+              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${
+                isSidebarExpanded ? "justify-start" : "justify-center"
+              }`}
+            >
+              <Search className="w-4 h-4 min-w-[16px]" />
+              {isSidebarExpanded && <span className="ml-3">Search chats</span>}
             </Button>
           </div>
         </div>
 
         {/* Chat History */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-4">
-            <h3 className="text-md font-medium text-gray-900 mb-3">Chats</h3>
-            <div className="space-y-1">
-              {chatHistory.map((chat, index) => (
+          {isSidebarExpanded ? (
+            <div className="p-4">
+              <h3 className="text-md font-medium text-gray-900 mb-3">Chats</h3>
+              <div className="space-y-1">
+                {chatHistory.map((chat, index) => (
+                  <div
+                    key={index}
+                    className="w-full justify-center items-center cursor-pointer px-4 py-1 hover:bg-gray-100 rounded-xl flex group"
+                  >
+                    <span className="text-sm text-gray-900 truncate flex-1">{chat}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-900 hover:bg-gray-100 hover:text-gray-900 p-1"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center pt-4">
+              {/* Simplified view when collapsed - just show chat icons */}
+              {chatHistory.slice(0, 5).map((_, index) => (
                 <div
                   key={index}
-                  className="w-full justify-center items-center cursor-pointer px-4 py-1 hover:bg-gray-100 rounded-xl flex group"
+                  className="w-8 hidden h-8 mb-2 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer"
                 >
-                  <span className="text-sm text-gray-900 truncate flex-1">{chat}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className=" text-gray-900 hover:bg-gray-100 hover:text-gray-900 p-1"
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
+                  <span className="text-xs">{index + 1}</span>
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
 
         {/* User Profile */}
@@ -335,16 +346,20 @@ export default function ChatInterface() {
                 {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
               </span>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <div className="text-sm font-medium truncate">{user?.email || 'User'}</div>
-              <div className="text-xs text-gray-400">Free Plan</div>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+            {isSidebarExpanded && (
+              <>
+                <div className="flex-1 overflow-hidden">
+                  <div className="text-sm font-medium truncate">{user?.email || 'User'}</div>
+                  <div className="text-xs text-gray-400">Free Plan</div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+              </>
+            )}
           </div>
           
           {/* Profile Dropdown Menu */}
           {isProfileMenuOpen && (
-            <div className="absolute bottom-full left-52 w-full bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10">
+            <div className={`absolute bottom-full ${isSidebarExpanded ? 'left-52' : 'left-16'} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}>
               <Link href="/" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 <Home className="w-4 h-4 mr-2" />
                 Home
@@ -442,7 +457,7 @@ export default function ChatInterface() {
               </div>
 
               {/* Suggestions */}
-              <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
+              {/* <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
                 {suggestions.map((suggestion, index) => (
                   <Button
                     key={index}
@@ -453,7 +468,7 @@ export default function ChatInterface() {
                     {suggestion}
                   </Button>
                 ))}
-              </div>
+              </div> */}
             </div>
           ) : (
             /* Chat Messages */
@@ -501,10 +516,10 @@ export default function ChatInterface() {
                   <Input
                     value={input}
                     onChange={handleInputChange}
-                    placeholder="Ask Fluid anything..."
-                    className="w-full pl-4 pr-20 py-4 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                    placeholder="Ask Silva anything..."
+                    className="w-full pl-4 pr-20 py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   />
-
+                  <p className="text-gray-400 text-center mt-3 text-sm">Silva berusaha sebaik mungkin, tapi tetap periksa info penting sebelum mengambil keputusan.</p>
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
                     <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
                       <Paperclip className="w-4 h-4" />
