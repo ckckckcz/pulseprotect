@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code } from "lucide-react"
+import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import Link from "next/link"
+import { authService } from "@/lib/auth"
+import { toast } from "sonner"
 import Navbar from "@/components/widget/navbar"
 
 // Define a type for the user with status
@@ -26,10 +27,23 @@ type UserWithStatus = {
 
 export default function UserProfile() {
   const [activeSetting, setActiveSetting] = useState("general")
-  const { user, loading } = useAuth() as { user: UserWithStatus | null, loading: boolean }
+  const { user, loading, refreshUser } = useAuth() as { 
+    user: UserWithStatus | null, 
+    loading: boolean,
+    refreshUser: () => Promise<void>
+  }
   const router = useRouter()
+  
+  // Form fields
   const [displayName, setDisplayName] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
   const [username, setUsername] = useState("")
+  
+  // Form states
+  const [isUpdatingName, setIsUpdatingName] = useState(false)
+  const [isUpdatingPhone, setIsUpdatingPhone] = useState(false)
+  const [nameError, setNameError] = useState("")
+  const [phoneError, setPhoneError] = useState("")
   
   useEffect(() => {
     // Redirect if not logged in
@@ -40,6 +54,7 @@ export default function UserProfile() {
     // Initialize form values from user data
     if (user) {
       setDisplayName(user.nama_lengkap || "")
+      setPhoneNumber(user.nomor_telepon || "")
       setUsername(user.email?.split('@')[0] || "")
     }
   }, [user, loading, router])
@@ -54,10 +69,75 @@ export default function UserProfile() {
       .substring(0, 2)
   }
 
+  // Handle name update
+  const handleNameUpdate = async () => {
+    if (!user?.id) return
+    
+    // Validate name
+    if (!displayName.trim()) {
+      setNameError("Nama lengkap tidak boleh kosong")
+      return
+    }
+    
+    setIsUpdatingName(true)
+    setNameError("")
+    
+    try {
+      // Update user name
+      await authService.updateUser(Number(user.id), {
+        nama_lengkap: displayName.trim()
+      })
+      
+      // Refresh user data
+      await refreshUser()
+      
+      toast.success("Nama lengkap berhasil diperbarui")
+    } catch (error: any) {
+      console.error("Error updating name:", error)
+      setNameError(error.message || "Gagal memperbarui nama lengkap")
+      toast.error("Gagal memperbarui nama lengkap")
+    } finally {
+      setIsUpdatingName(false)
+    }
+  }
+  
+  // Handle phone number update
+  const handlePhoneUpdate = async () => {
+    if (!user?.id) return
+    
+    // Validate phone number format (simple validation)
+    const phoneRegex = /^[0-9+\- ]{8,15}$/
+    if (phoneNumber && !phoneRegex.test(phoneNumber)) {
+      setPhoneError("Format nomor telepon tidak valid")
+      return
+    }
+    
+    setIsUpdatingPhone(true)
+    setPhoneError("")
+    
+    try {
+      // Update user phone number
+      await authService.updateUser(Number(user.id), {
+        nomor_telepon: phoneNumber.trim() || undefined
+      })
+      
+      // Refresh user data
+      await refreshUser()
+      
+      toast.success("Nomor telepon berhasil diperbarui")
+    } catch (error: any) {
+      console.error("Error updating phone number:", error)
+      setPhoneError(error.message || "Gagal memperbarui nomor telepon")
+      toast.error("Gagal memperbarui nomor telepon")
+    } finally {
+      setIsUpdatingPhone(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
       </div>
     )
   }
@@ -67,12 +147,11 @@ export default function UserProfile() {
   }
 
   const sidebarItems = [
-    { id: "general", label: "General", icon: User },
-    { id: "authentication", label: "Authentication", icon: Key },
-    { id: "vercel", label: "Sign in with Vercel", icon: Code },
-    { id: "billing", label: "Billing", icon: CreditCard },
-    { id: "invoices", label: "Invoices", icon: FileText },
-    { id: "tokens", label: "Tokens", icon: Code },
+    { id: "general", label: "Umum", icon: User },
+    { id: "authentication", label: "Autentikasi", icon: Key },
+    { id: "security", label: "Keamanan", icon: Shield },
+    { id: "billing", label: "Tagihan", icon: CreditCard },
+    { id: "invoices", label: "Faktur", icon: FileText },
   ]
 
   return (
@@ -88,7 +167,7 @@ export default function UserProfile() {
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
-                  placeholder="Search..." 
+                  placeholder="Cari..." 
                   className="pl-10 bg-white border-gray-200 border rounded-xl text-black" 
                 />
               </div>
@@ -101,7 +180,7 @@ export default function UserProfile() {
                     className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
                       activeSetting === item.id 
                         ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white"
-                        : "text-gray-400 rounded-xl hover:bg-gray-100 hover:text-black"
+                        : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
                     }`}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
@@ -154,33 +233,69 @@ export default function UserProfile() {
                       
                       <Input 
                         value={displayName}
-                        onChange={e => setDisplayName(e.target.value)}
+                        onChange={e => {
+                          setDisplayName(e.target.value)
+                          setNameError("")
+                        }}
                         className="bg-white border-gray-200 rounded text-black"
                         placeholder="Nama lengkap"
                       />
+                      {nameError && (
+                        <p className="mt-2 text-sm text-red-500">{nameError}</p>
+                      )}
                     </div>
                     
                     <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
                       <p className="text-teal-600 font-semibold text-sm">Maksimal 32 karakter.</p>
-                      <Button className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white">Simpan</Button>
+                      <Button 
+                        onClick={handleNameUpdate} 
+                        disabled={isUpdatingName || displayName === user.nama_lengkap}
+                        className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white"
+                      >
+                        {isUpdatingName ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                            Menyimpan...
+                          </>
+                        ) : "Simpan"}
+                      </Button>
                     </div>
                   </div>
+                  
+                  {/* Phone Number Section */}
                   <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
                     <div className="p-6">
                       <h2 className="text-2xl font-semibold">Nomor Telepon</h2>
                       <p className="text-gray-400 text-sm mb-6">Nomor telepon Anda yang terdaftar pada platform.</p>
                     
                       <Input 
-                        value={user.nomor_telepon}
-                        onChange={e => setDisplayName(e.target.value)}
+                        value={phoneNumber}
+                        onChange={e => {
+                          setPhoneNumber(e.target.value)
+                          setPhoneError("")
+                        }}
                         className="bg-white border-gray-200 rounded text-black"
                         placeholder="Nomor telepon"
                       />
+                      {phoneError && (
+                        <p className="mt-2 text-sm text-red-500">{phoneError}</p>
+                      )}
                     </div>
                     
                     <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
-                      <p className="text-teal-600 font-semibold text-sm">Maksimal 32 karakter.</p>
-                      <Button className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white">Simpan</Button>
+                      <p className="text-teal-600 font-semibold text-sm">Format: +62 atau 08xx.</p>
+                      <Button 
+                        onClick={handlePhoneUpdate} 
+                        disabled={isUpdatingPhone || phoneNumber === user.nomor_telepon}
+                        className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white"
+                      >
+                        {isUpdatingPhone ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                            Menyimpan...
+                          </>
+                        ) : "Simpan"}
+                      </Button>
                     </div>
                   </div>
                   
@@ -190,16 +305,25 @@ export default function UserProfile() {
                       <h2 className="text-2xl font-semibold">Alamat Email</h2>
                       <p className="text-gray-400 text-sm mb-6">Email Anda yang terdaftar pada platform.</p>
                     
-                      <Input 
-                        value={user.email}
-                        onChange={e => setDisplayName(e.target.value)}
-                        className="bg-white border-gray-200 rounded text-black"
-                        placeholder="Nama lengkap"
-                      />
+                      <div className="bg-gray-100 border border-gray-200 rounded-md px-4 py-3 flex justify-between items-center">
+                        <span className="text-gray-800">{user.email}</span>
+                        {user.verifikasi_email ? (
+                          <span className="flex items-center text-green-600 text-sm">
+                            <CheckCircle size={14} className="mr-1" />
+                            Terverifikasi
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-amber-600 text-sm">
+                            Belum Terverifikasi
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-between items-center">
-                      <p className="text-teal-600 font-semibold text-sm">Maksimal 32 karakter.</p>
-                      <Button className="bg-white border border-gray-200 rounded-xl text-black hover:bg-teal-600 hover:text-white">Simpan</Button>
+                    
+                    <div className="bg-gray-50 border-t border-gray-200 p-4">
+                      <p className="text-teal-600 font-semibold text-sm">
+                        Email tidak dapat diubah. Hubungi admin jika Anda perlu mengubah email.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -237,4 +361,4 @@ export default function UserProfile() {
     </>
   )
 }
-                    
+
