@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-// Import for useChat removed
+import { useRouter } from "next/navigation"
+import { authService } from "@/src/services/authService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -63,8 +64,32 @@ const translations = [
 
 export default function ChatInterface() {
   const [selectedModel, setSelectedModel] = useState("gpt-4o")
+  const [user, setUser] = useState<any>(null)
+  const [isAuthChecking, setIsAuthChecking] = useState(true)
+  const router = useRouter()
   
-  // Replace useChat with static state management
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser()
+        if (!currentUser) {
+          router.push('/login') // Redirect to login page if not authenticated
+          return
+        }
+        
+        setUser(currentUser)
+      } catch (error) {
+        console.error("Auth check error:", error)
+        router.push('/login')
+      } finally {
+        setIsAuthChecking(false)
+      }
+    }
+    
+    checkAuth()
+  }, [router])
+  
   const [messages, setMessages] = useState<{id: string; role: "user" | "assistant"; content: string}[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -178,6 +203,28 @@ export default function ChatInterface() {
     setShowSuggestions(true)
   }
 
+  // If still checking auth, show a loading state
+  if (isAuthChecking) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="flex space-x-1">
+            <div className="w-3 h-3 bg-teal-600 rounded-full animate-bounce"></div>
+            <div 
+              className="w-3 h-3 bg-teal-600 rounded-full animate-bounce"
+              style={{ animationDelay: "0.1s" }}
+            ></div>
+            <div 
+              className="w-3 h-3 bg-teal-600 rounded-full animate-bounce"
+              style={{ animationDelay: "0.2s" }}
+            ></div>
+          </div>
+          <p className="text-sm text-gray-500">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -254,10 +301,12 @@ export default function ChatInterface() {
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium">U</span>
+              <span className="text-sm font-medium">
+                {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
+              </span>
             </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium">User</div>
+            <div className="flex-1 overflow-hidden">
+              <div className="text-sm font-medium truncate">{user?.email || 'User'}</div>
               <div className="text-xs text-gray-400">Free Plan</div>
             </div>
           </div>
