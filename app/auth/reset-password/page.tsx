@@ -148,7 +148,7 @@ function ResetPasswordForm() {
   
   const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get('token')
+  const token = searchParams?.get('token') || '' // Add null check and fallback to an empty string
   
   useEffect(() => {
     async function validateToken() {
