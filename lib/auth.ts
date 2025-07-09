@@ -31,11 +31,12 @@ export const authService = {
       
       console.log('Starting registration process for:', email)
 
-      // Create the user in Supabase Auth with email verification disabled for now
+      // Create the user in Supabase Auth with email verification enabled
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password: password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/verify`,
           data: {
             nama_lengkap: fullName.trim(),
             nomor_telepon: phone?.trim() || null
@@ -56,23 +57,7 @@ export const authService = {
         try {
           console.log('Auth user created with ID:', authData.user.id)
           
-          // PENTING: Login terlebih dahulu untuk mendapatkan izin yang diperlukan
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: email.toLowerCase().trim(),
-            password: password
-          })
-          
-          if (signInError) {
-            console.error('Error saat login setelah registrasi:', signInError)
-            throw new Error('Gagal otentikasi setelah pendaftaran')
-          }
-          
-          console.log('Berhasil login setelah registrasi, sekarang memperbarui data user')
-          
-          // Sekarang kita memiliki session yang valid, kita dapat memperbarui data user
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          
-          // Insert new user data into 'user' table
+          // Insert new user data into 'user' table with verification status
           const { data: newUser, error: insertError } = await supabase
             .from('user')
             .insert({
@@ -80,9 +65,12 @@ export const authService = {
               email: email.toLowerCase().trim(),
               kata_sandi: passwordHash,
               nomor_telepon: phone?.trim() || null,
-              role: 'user', // Default role
+              role: 'user',
+              verifikasi_email: false,
+              status: 'pending',
+              email_confirmed_at: null
             })
-            .select('id, nama_lengkap, email, nomor_telepon, role')
+            .select('id, nama_lengkap, email, nomor_telepon, role, verifikasi_email, status')
             .single()
           
           if (insertError) {
@@ -90,12 +78,13 @@ export const authService = {
             throw new Error(`Insert gagal: ${insertError.message}`)
           }
           
-          console.log('User data berhasil disimpan')
+          console.log('User data berhasil disimpan, email verifikasi dikirim')
           
-          // Logout setelah registrasi berhasil
-          await supabase.auth.signOut()
-          
-          return newUser
+          return {
+            user: newUser,
+            needsVerification: true,
+            message: 'Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.'
+          }
         } catch (dbError: any) {
           console.error('Database operation error:', dbError)
           throw new Error(`Gagal menyimpan data user: ${dbError.message || 'Unknown error'}`)
@@ -128,6 +117,28 @@ export const authService = {
         throw new Error('Email dan password wajib diisi')
       }
 
+      // Get user data from custom user table first to check verification status
+      const { data: user, error: userError } = await supabase
+        .from('user')
+        .select('*')
+        .eq('email', email.toLowerCase().trim())
+        .single()
+
+      if (userError || !user) {
+        throw new Error('Email atau password salah')
+      }
+
+      // Check if email is verified
+      if (!user.verifikasi_email) {
+        throw new Error('Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.')
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.kata_sandi)
+      if (!isValidPassword) {
+        throw new Error('Email atau password salah')
+      }
+
       // Sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email.toLowerCase().trim(),
@@ -135,6 +146,9 @@ export const authService = {
       })
 
       if (authError) {
+        if (authError.message.includes('Email not confirmed')) {
+          throw new Error('Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.')
+        }
         if (authError.message.includes('Invalid login credentials')) {
           throw new Error('Email atau password salah')
         }
@@ -145,51 +159,58 @@ export const authService = {
         throw new Error('Login gagal')
       }
 
-      // Get user data from custom user table
-      const { data: user, error } = await supabase
-        .from('user')
-        .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .single()
-
-      if (error || !user) {
-        throw new Error('User tidak ditemukan')
-      }
-
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.kata_sandi)
-      if (!isValidPassword) {
-        throw new Error('Email atau password salah')
-      }
-
       // Return user data without password
       const { kata_sandi, konfigurasi_kata_sandi, ...userWithoutPassword } = user
       return userWithoutPassword
     } catch (error: any) {
       console.error('Login error:', error)
-      
-      if (error.message.includes('Email atau password salah') || error.message.includes('Invalid login credentials')) {
-        throw new Error('Email atau password salah')
-      } else {
-        throw new Error('Terjadi kesalahan saat login')
-      }
+      throw new Error(error.message || 'Terjadi kesalahan saat login')
     }
   },
 
-  async signInWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    })
+  async verifyEmail(email: string) {
+    try {
+      // Update user verification status
+      const { error } = await supabase
+        .from('user')
+        .update({
+          verifikasi_email: true,
+          status: 'success',
+          email_confirmed_at: new Date().toISOString()
+        })
+        .eq('email', email.toLowerCase().trim())
 
-    if (error) throw error
-    return data
+      if (error) {
+        console.error('Verification update error:', error)
+        throw new Error('Gagal memverifikasi email')
+      }
+
+      return { success: true }
+    } catch (error: any) {
+      console.error('Email verification error:', error)
+      throw new Error(error.message || 'Terjadi kesalahan saat verifikasi email')
+    }
+  },
+
+  async resendVerification(email: string) {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.toLowerCase().trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/verify`
+        }
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      return { success: true }
+    } catch (error: any) {
+      console.error('Resend verification error:', error)
+      throw new Error(error.message || 'Gagal mengirim ulang email verifikasi')
+    }
   },
 
   async logout() {
@@ -205,7 +226,7 @@ export const authService = {
     // Get user data from custom user table
     const { data: userData, error } = await supabase
       .from('user')
-      .select('id, nama_lengkap, email, nomor_telepon, role, created_at')
+      .select('id, nama_lengkap, email, nomor_telepon, role, verifikasi_email, status, email_confirmed_at, created_at')
       .eq('email', user.email)
       .single()
 

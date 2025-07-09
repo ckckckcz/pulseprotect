@@ -23,6 +23,8 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
   const router = useRouter()
 
   const handleInputChange = (field: string, value: string) => {
@@ -70,13 +72,10 @@ export default function RegisterPage() {
         phone: formData.phone.trim() || undefined
       })
 
-      // Registration successful
-      setSuccess("Akun berhasil dibuat! Anda akan diarahkan ke halaman login.")
-      
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        router.push("/login")
-      }, 2000)
+      // Registration successful - show verification message
+      setUserEmail(formData.email.trim())
+      setShowVerificationMessage(true)
+      setSuccess("Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.")
       
     } catch (error: any) {
       console.error('Registration error:', error)
@@ -98,16 +97,20 @@ export default function RegisterPage() {
     }
   }
 
-  const handleGoogleRegister = async () => {
+  const handleResendVerification = async () => {
     try {
       setIsLoading(true)
-      await authService.signInWithGoogle()
+      await authService.resendVerification(userEmail)
+      setSuccess("Email verifikasi telah dikirim ulang. Silakan cek email Anda.")
     } catch (error: any) {
-      console.error('Google registration error:', error)
-      setError(error.message || "Terjadi kesalahan saat daftar dengan Google")
+      setError(error.message || "Gagal mengirim ulang email verifikasi")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleGoogleRegister = async () => {
+    setError("Google sign-in belum tersedia pada saat ini.")
   }
 
   return (
@@ -184,8 +187,30 @@ export default function RegisterPage() {
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
 
+          {/* Verification Message */}
+          {showVerificationMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl"
+            >
+              <h3 className="text-blue-800 font-medium mb-2">Verifikasi Email Diperlukan</h3>
+              <p className="text-blue-700 text-sm mb-3">
+                Kami telah mengirim link verifikasi ke <strong>{userEmail}</strong>. 
+                Silakan cek email Anda dan klik link tersebut untuk mengaktifkan akun.
+              </p>
+              <button
+                onClick={handleResendVerification}
+                disabled={isLoading}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium underline"
+              >
+                Kirim ulang email verifikasi
+              </button>
+            </motion.div>
+          )}
+
           {/* Success Message */}
-          {success && (
+          {success && !showVerificationMessage && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -206,164 +231,185 @@ export default function RegisterPage() {
             </motion.div>
           )}
 
-          {/* Register Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Lengkap <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange("fullName", e.target.value)}
-                  className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                  placeholder="Masukkan nama lengkap"
-                  required
-                  disabled={isLoading}
-                />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                  placeholder="example@example.com"
-                  required
-                  disabled={isLoading}
-                />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nomor Telepon
-                </label>
-                <Input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                  placeholder="08123456789 (opsional)"
-                  disabled={isLoading}
-                />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                    placeholder="Minimal 6 karakter"
-                    required
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
-                    disabled={isLoading}
+          {/* Hide form if verification message is shown */}
+          {!showVerificationMessage && (
+            <>
+              {/* Register Form */}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nama Lengkap <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      value={formData.fullName}
+                      onChange={(e) => handleInputChange("fullName", e.target.value)}
+                      className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                      placeholder="Masukkan nama lengkap"
+                      required
+                      disabled={isLoading}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                      placeholder="example@example.com"
+                      required
+                      disabled={isLoading}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                  >
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nomor Telepon
+                    </label>
+                    <Input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange("phone", e.target.value)}
+                      className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                      placeholder="08123456789 (opsional)"
+                      disabled={isLoading}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => handleInputChange("password", e.target.value)}
+                        className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                        placeholder="Minimal 6 karakter"
+                        required
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </motion.div>
                 </div>
-              </motion.div>
-            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Konfirmasi Password <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <Input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                  placeholder="Ulangi password"
-                  required
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
-                  disabled={isLoading}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </motion.div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Konfirmasi Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                      className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                      placeholder="Ulangi password"
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <Button
-                type="submit"
-                disabled={isLoading || success !== ""}
-                className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white py-6 rounded-xl font-medium transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none"
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Button
+                    type="submit"
+                    disabled={isLoading || success !== ""}
+                    className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white py-6 rounded-xl font-medium transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                        Mendaftar...
+                      </div>
+                    ) : success ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-5 h-5 mr-2 text-green-400">✓</div>
+                        Berhasil!
+                      </div>
+                    ) : (
+                      "Buat Akun"
+                    )}
+                  </Button>
+                </motion.div>
+              </form>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="mt-6 text-center"
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                    Mendaftar...
-                  </div>
-                ) : success ? (
-                  <div className="flex items-center justify-center">
-                    <div className="w-5 h-5 mr-2 text-green-400">✓</div>
-                    Berhasil!
-                  </div>
-                ) : (
-                  "Buat Akun"
-                )}
-              </Button>
-            </motion.div>
-          </form>
+                <p className="text-gray-600">
+                  Sudah punya akun?{" "}
+                  <Link href="/login" className="text-teal-600 hover:text-teal-700 hover:underline font-medium transition-colors duration-200">
+                    Masuk di sini
+                  </Link>
+                </p>
+              </motion.div>
+            </>
+          )}
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="mt-6 text-center"
-          >
-            <p className="text-gray-600">
-              Sudah punya akun?{" "}
-              <Link href="/login" className="text-teal-600 hover:text-teal-700 hover:underline font-medium transition-colors duration-200">
-                Masuk di sini
-              </Link>
-            </p>
-          </motion.div>
+          {/* Show login link when verification message is displayed */}
+          {showVerificationMessage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-6 text-center"
+            >
+              <p className="text-gray-600">
+                Sudah verifikasi email?{" "}
+                <Link href="/login" className="text-teal-600 hover:text-teal-700 hover:underline font-medium transition-colors duration-200">
+                  Masuk di sini
+                </Link>
+              </p>
+            </motion.div>
+          )}
         </div>
       </div>
 

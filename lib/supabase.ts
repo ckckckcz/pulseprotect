@@ -17,6 +17,9 @@ export type Database = {
           nomor_telepon: string | null
           kata_sandi: string
           konfigurasi_kata_sandi: string | null
+          verifikasi_email: boolean
+          status: string
+          email_confirmed_at: string | null
           created_at: string
         }
         Insert: {
@@ -27,6 +30,9 @@ export type Database = {
           nomor_telepon?: string | null
           kata_sandi: string
           konfigurasi_kata_sandi?: string | null
+          verifikasi_email?: boolean
+          status?: string
+          email_confirmed_at?: string | null
           created_at?: string
         }
         Update: {
@@ -37,6 +43,9 @@ export type Database = {
           nomor_telepon?: string | null
           kata_sandi?: string
           konfigurasi_kata_sandi?: string | null
+          verifikasi_email?: boolean
+          status?: string
+          email_confirmed_at?: string | null
           created_at?: string
         }
       }
