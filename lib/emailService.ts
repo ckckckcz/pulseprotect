@@ -44,7 +44,7 @@ export const emailService = {
     const verificationUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`;
 
     const mailOptions = {
-      from: '"MechaMinds" <no-reply@mechaminds.com>',
+      from: `"MechaMinds" <${process.env.SMTP_USER || "mechaminds.team@gmail.com"}>`,
       to: email,
       subject: "Aktifkan Akunmu Sekarang! ⚡ – MechaMinds",
       html: `
