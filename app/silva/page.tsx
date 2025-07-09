@@ -381,7 +381,7 @@ export default function ChatInterface() {
           
           {/* Profile Dropdown Menu */}
           {isProfileMenuOpen && (
-            <div className={`absolute bottom-full ${isSidebarExpanded ? 'left-52' : 'left-16'} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}>
+            <div className={`absolute bottom-full ${isSidebarExpanded ? 'left-2' : 'left-16'} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}>
               <Link href="/" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 <Home className="w-4 h-4 mr-2" />
                 Home
