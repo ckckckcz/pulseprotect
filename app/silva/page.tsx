@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { authService } from "@/src/services/authService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +22,10 @@ import {
   Sparkles,
   Crown,
   MoreHorizontal,
+  ChevronDown,
+  Home,
+  User,
+  LogOut
 } from "lucide-react"
 
 const models = [
@@ -98,13 +103,29 @@ export default function ChatInterface() {
   const [displayText, setDisplayText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const [isErasing, setIsErasing] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const fullTextRef = useRef(translations[0].text);
   
-  // Reference to current language text
-  const fullTextRef = useRef(translations[currentLanguageIndex].text);
-  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   // Typing animation effect
   useEffect(() => {
     let timeout: NodeJS.Timeout;
+
+    // Update the reference to the current language text
+    fullTextRef.current = translations[currentLanguageIndex].text;
     
     // If we're typing
     if (isTyping && !isErasing) {
@@ -134,16 +155,11 @@ export default function ChatInterface() {
         setCurrentLanguageIndex((prevIndex) => 
           prevIndex === translations.length - 1 ? 0 : prevIndex + 1
         );
-        // Update the reference to the new language text
-        fullTextRef.current = translations[
-          currentLanguageIndex === translations.length - 1 ? 0 : currentLanguageIndex + 1
-        ].text;
       }
     }
     
     return () => clearTimeout(timeout);
-  }, [displayText, isTyping, isErasing, currentLanguageIndex]);
-  
+  }, [displayText, isTyping, isErasing, currentLanguageIndex]);  
   // Custom input handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value)
@@ -203,6 +219,17 @@ export default function ChatInterface() {
     setShowSuggestions(true)
   }
 
+  const handleLogout = async () => {
+    try {
+      // Clear user from localStorage
+      localStorage.removeItem('user');
+      // Redirect to login page
+      router.push('/login');
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+  
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -298,10 +325,13 @@ export default function ChatInterface() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-3">
+        <div className="p-4 border-t border-gray-200 relative" ref={profileMenuRef}>
+          <div 
+            className="flex items-center space-x-3 cursor-pointer"
+            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+          >
             <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-white">
                 {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
               </span>
             </div>
@@ -309,7 +339,29 @@ export default function ChatInterface() {
               <div className="text-sm font-medium truncate">{user?.email || 'User'}</div>
               <div className="text-xs text-gray-400">Free Plan</div>
             </div>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
           </div>
+          
+          {/* Profile Dropdown Menu */}
+          {isProfileMenuOpen && (
+            <div className="absolute bottom-full left-52 w-full bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10">
+              <Link href="/" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Link>
+              <Link href="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Link>
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Keluar
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
