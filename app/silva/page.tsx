@@ -403,9 +403,9 @@ export default function ChatInterface() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
           {/* Left side with model selector */}
           <div className="flex items-center space-x-4">
             <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as AIModel)}>
@@ -434,11 +434,11 @@ export default function ChatInterface() {
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-6">
+        {/* Chat Area - Take remaining height with proper scrolling */}
+        <div className="flex-1 flex flex-col relative overflow-hidden">
           {showSuggestions && messages.length === 0 ? (
             /* Welcome Screen */
-            <div className="flex-1 flex flex-col justify-center items-center space-y-8">
+            <div className="flex-1 flex flex-col justify-center items-center space-y-8 overflow-y-auto px-6">
               <div className="flex flex-col items-center">
                 <span className="text-sm font-medium text-gray-500 mb-2">
                   {translations[currentLanguageIndex].lang}
@@ -497,77 +497,82 @@ export default function ChatInterface() {
               </div> */}
             </div>
           ) : (
-            /* Chat Messages */
-            <div className="flex-1 flex flex-col">
-              <div className="flex-1 overflow-y-auto py-6 space-y-6">
-                {messages.map((message) => (
-                  <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-3xl px-4 py-3 rounded-2xl ${
-                        message.role === "user"
-                          ? "bg-teal-600 text-white"
-                          : "bg-white border border-gray-200 text-gray-900 shadow-sm"
-                      }`}
-                    >
-                      <div className="whitespace-pre-wrap">{message.content}</div>
-                    </div>
-                  </div>
-                ))}
-
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-white border border-gray-200 text-gray-900 max-w-3xl px-4 py-3 rounded-2xl shadow-sm">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"></div>
-                          <div
-                            className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.1s" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.2s" }}
-                          ></div>
-                        </div>
-                        <span className="text-sm text-gray-500">AI is thinking...</span>
+            /* Chat Messages Area */
+            <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto">
+              {/* Scrollable message container with hidden scrollbar */}
+              <div className="flex-1 overflow-y-auto px-6 pt-6 pb-28 scrollbar-none" style={{ maxHeight: "calc(100vh - 120px)" }}>
+                <div className="space-y-6 w-full">
+                  {messages.map((message) => (
+                    <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={`max-w-[75%] sm:max-w-[70%] px-4 py-3 rounded-2xl ${
+                          message.role === "user"
+                            ? "bg-teal-600 text-white"
+                            : "bg-white border border-gray-200 text-gray-900 shadow-sm"
+                        }`}
+                      >
+                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-white border border-gray-200 text-gray-900 max-w-[75%] px-4 py-3 rounded-2xl shadow-sm">
+                        <div className="flex items-center space-x-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"></div>
+                            <div
+                              className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.1s" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-500">AI is thinking...</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Input Form */}
-              <div className="py-4">
-                <form onSubmit={onSubmit} className="relative">
-                  <Input
-                    value={input}
-                    onChange={handleInputChange}
-                    placeholder="Ask Silva anything..."
-                    className="w-full pl-4 pr-20 py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
-                  />
+              {/* Input Form - Fixed at bottom with absolute positioning */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gray-50 z-10">
+                {/* Red Gradient with Blur */}
+                <div className="max-w-4xl mx-auto w-full px-6 py-1 pb-4">
+                  <form onSubmit={onSubmit} className="relative">
+                    <Input
+                      value={input}
+                      onChange={handleInputChange}
+                      placeholder="Ask Silva anything..."
+                      className="w-full pl-4 pr-20 py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
+                      <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-200 rounded-full hover:text-gray-700">
+                        <Paperclip className="w-4 h-4" />
+                      </Button>
 
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-200 rounded-full hover:text-gray-700">
-                      <Paperclip className="w-4 h-4" />
-                    </Button>
-
-                    <Button
-                      type="submit"
-                      size="sm"
-                      className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
-                      disabled={!input.trim() || isLoading}
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </form>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
+                        disabled={!input.trim() || isLoading}
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="bg-white border-t border-gray-200 px-6 py-6">
+        {/* Footer - Add z-index to appear above the fixed chat input when needed */}
+        <div className="bg-white border-t border-gray-200 px-6 py-4 shrink-0 z-5">
           <div className="flex justify-center space-x-6 text-sm text-gray-500">
             <a href="#" className="hover:text-gray-700">
               Terms & Conditions
