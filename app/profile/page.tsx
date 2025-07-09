@@ -1,89 +1,64 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { useAuth } from "@/context/auth-context"
+import { MapPin, Mail, Phone, Calendar, Shield, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import Navbar from "@/components/widget/navbar"
+import { useAuth } from "@/context/auth-context"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { authService } from "@/lib/auth"
-import Link from "next/link"
 
-export default function ProfilePage() {
-  const { user, loading, refreshUser } = useAuth()
+// Define a type for the user with status
+type UserWithStatus = {
+  id?: string | number
+  nama_lengkap?: string
+  email?: string
+  nomor_telepon?: string
+  role?: string
+  created_at?: string
+  foto_profile?: string
+  status?: string
+  verifikasi_email?: boolean
+  email_confirmed_at?: string | null
+}
+
+export default function UserProfile() {
+  const [activeTab, setActiveTab] = useState("Profile")
+  // Only call useAuth() once, inside the component
+  const { user, loading } = useAuth() as { user: UserWithStatus | null, loading: boolean }
   const router = useRouter()
-  const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState({
-    nama_lengkap: "",
-    nomor_telepon: ""
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-
+  
   useEffect(() => {
     // Redirect if not logged in
     if (!loading && !user) {
       router.push("/login")
     }
-    
-    // Initialize form data with user data
-    if (user) {
-      setFormData({
-        nama_lengkap: user.nama_lengkap || "",
-        nomor_telepon: user.nomor_telepon || ""
-      })
-    }
   }, [user, loading, router])
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    setError("")
-    setSuccess("")
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError("")
-    setSuccess("")
-
-    try {
-      if (!user) return
-
-      // Update user data
-      await authService.updateUser(user.id, {
-        nama_lengkap: formData.nama_lengkap.trim(),
-        nomor_telepon: formData.nomor_telepon.trim() || undefined
-      })
-
-      // Refresh user data in context
-      await refreshUser()
-      
-      setSuccess("Profil berhasil diperbarui")
-      setIsEditing(false)
-    } catch (error: any) {
-      console.error("Error updating profile:", error)
-      setError(error.message || "Terjadi kesalahan saat memperbarui profil")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
+  
   // Get user initials for the avatar fallback
-  const getInitials = (name: string) => {
+  const getInitials = (name: string = "") => {
     return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
+      .split(" ")
+      .map((part) => part[0] || "")
+      .join("")
       .toUpperCase()
       .substring(0, 2)
+  }
+  
+  // Format date
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return "Tidak tersedia"
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
       </div>
     )
@@ -94,183 +69,205 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-teal-600 px-8 py-12 text-white relative">
-            <div className="absolute top-4 right-4">
-              <Link href="/">
-                <Button variant="ghost" className="text-white hover:bg-teal-500">
-                  Kembali ke Beranda
+    <>
+      <Navbar/>
+      <div className="w-full mx-auto bg-white mt-16">
+        <Card className=" border-none bg-white">
+          {/* Profile Banner */}
+          <div className="relative">
+            <div
+              className="h-48 sm:h-56 bg-gradient-to-r from-teal-400 to-teal-600"
+              style={{
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            />
+
+            {/* Profile Photo - Overlapping the banner */}
+            <div className="absolute -bottom-12 left-6 sm:left-8">
+              <div className="relative">
+                <Avatar className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-lg">
+                  <AvatarImage
+                    src={user.foto_profile || `https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap || "User"}`}
+                    alt={user.nama_lengkap || "User"}
+                  />
+                  <AvatarFallback className="bg-teal-600 text-white text-2xl">
+                    {getInitials(user.nama_lengkap)}
+                  </AvatarFallback>
+                </Avatar>
+                {user.status === "active" && (
+                  <div className="absolute bottom-2 right-2 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Information */}
+          <div className="pt-16 pb-6 px-6 sm:px-8 bg-white">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{user.nama_lengkap || "Pengguna"}</h1>                
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2"></h1>                
+                <div className="flex items-center text-gray-600 mb-4">
+                  <Mail className="w-4 h-4 mr-2" />
+                  <span>{user.email || "Email tidak tersedia"}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl flex items-center gap-2">
+                  Edit Profil
                 </Button>
-              </Link>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-24 w-24 border-4 border-white">
-                <AvatarImage 
-                  src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`} 
-                  alt={user.nama_lengkap} 
-                />
-                <AvatarFallback className="bg-teal-100 text-teal-800 text-2xl">
-                  {getInitials(user.nama_lengkap)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-3xl font-bold">{user.nama_lengkap}</h1>
-                <p className="text-teal-100">{user.email}</p>
-                {user.role && (
-                  <span className="inline-block mt-2 bg-teal-500 px-3 py-1 rounded-full text-xs">
-                    {user.role}
-                  </span>
-                )}
               </div>
             </div>
-          </div>
 
-          {/* Content */}
-          <div className="px-8 py-10">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {/* Messages */}
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl">
-                  {error}
+            {/* Navigation Tabs */}
+            <div className="mt-8 border-b border-gray-200">
+              <nav className="flex space-x-8">
+                {[
+                  {
+                    id: "Profile",
+                    label: "Profil"
+                  },
+                  {
+                    id: "Chat",
+                    label: "Chat AI"
+                  }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-3 px-1 border-b-2 font-semibold text-md transition-colors ${
+                      activeTab === tab.id
+                        ? "border-teal-600 text-teal-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            <div className="mt-6">
+              {activeTab === "Profile" && (
+                <div className="space-y-6">
+                  {/* Personal Information */}
+                  <Card className="p-6 shadow-sm border-2 rounded-xl border-gray-100 bg-white">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Pribadi</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Nama Lengkap</p>
+                          <p className="font-medium text-lg text-gray-900">{user.nama_lengkap || "Tidak tersedia"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Alamat Email</p>
+                          <div className="flex items-center">
+                            <p className="font-medium text-lg mr-2 text-gray-900">{user.email || "Tidak tersedia"}</p>
+                            {user.verifikasi_email && (
+                              <CheckCircle size={16} className="text-green-500" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Nomor Telepon</p>
+                          <p className="font-medium text-lg text-gray-900">{user.nomor_telepon || "Tidak tersedia"}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Status Akun</p>
+                          <p className={`font-medium ${
+                            user.status === "active" ? "text-green-600" : "text-gray-600"
+                          }`}>
+                            {user.status === "active" ? "Aktif" : "Tidak Aktif"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Account Information */}
+                  <Card className="p-6 shadow-sm border-2 rounded-xl border-gray-100 bg-white">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Akun</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Tanggal Bergabung</p>
+                          <div className="flex items-center gap-2">
+                            <Calendar size={16} className="text-gray-400" />
+                            <p className="font-medium text-lg text-gray-900">{formatDate(user.created_at)}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-400">Peran Akun</p>
+                          <div className="flex items-center gap-2">
+                            <Shield size={16} className="text-gray-400" />
+                            <p className="font-medium text-lg text-gray-900">
+                              {user.role === "admin" ? "Administrator" : 
+                               user.role === "user" ? "Pengguna" : 
+                               user.role || "Pengguna Standar"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-400">Verifikasi Email</p>
+                          <p className={`font-medium ${
+                            user.verifikasi_email ? "text-green-600" : "text-amber-600"
+                          }`}>
+                            {user.verifikasi_email ? "Terverifikasi" : "Belum Terverifikasi"}
+                          </p>
+                        </div>
+                        {user.email_confirmed_at && (
+                          <div>
+                            <p className="text-sm text-gray-400">Email Dikonfirmasi Pada</p>
+                            <p className="font-medium text-lg text-gray-900">{formatDate(user.email_confirmed_at)}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Account Security Notice */}
+                  <Card className="p-6 shadow-sm border-2 rounded-xl border-gray-100 bg-white">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-blue-50 p-2 rounded-lg">
+                        <Shield className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">Keamanan Akun</h3>
+                        <p className="text-gray-600 text-sm">
+                          Kami merekomendasikan untuk secara rutin memperbarui kata sandi dan mengaktifkan 
+                          autentikasi dua faktor untuk keamanan yang lebih baik. Anda dapat mengelola 
+                          pengaturan keamanan dari preferensi akun Anda.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
                 </div>
               )}
-              
-              {success && (
-                <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl">
-                  {success}
-                </div>
-              )}
 
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-semibold text-gray-800">Profil Pengguna</h2>
-                  {!isEditing && (
-                    <Button 
-                      onClick={() => setIsEditing(true)}
-                      variant="outline"
-                      className="text-teal-600 border-teal-600 hover:bg-teal-50"
-                    >
-                      Edit Profil
-                    </Button>
-                  )}
-                </div>
-
-                {isEditing ? (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nama Lengkap
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.nama_lengkap}
-                        onChange={(e) => handleInputChange("nama_lengkap", e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl"
-                        disabled={isSubmitting}
-                        required
-                      />
+              {activeTab === "Chat" && (
+                <Card className="p-6 shadow-sm border border-gray-100 bg-white">
+                  <div className="text-center py-12">
+                    <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Mail className="w-6 h-6 text-teal-600" />
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email
-                      </label>
-                      <Input
-                        type="email"
-                        value={user.email}
-                        className="w-full px-4 py-2 rounded-xl bg-gray-100"
-                        disabled
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Email tidak dapat diubah</p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nomor Telepon
-                      </label>
-                      <Input
-                        type="tel"
-                        value={formData.nomor_telepon || ""}
-                        onChange={(e) => handleInputChange("nomor_telepon", e.target.value)}
-                        className="w-full px-4 py-2 rounded-xl"
-                        placeholder="08123456789 (opsional)"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-
-                    <div className="flex space-x-4 pt-4">
-                      <Button
-                        type="submit"
-                        className="bg-teal-600 hover:bg-teal-700 text-white"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsEditing(false)
-                          setFormData({
-                            nama_lengkap: user.nama_lengkap || "",
-                            nomor_telepon: user.nomor_telepon || ""
-                          })
-                          setError("")
-                          setSuccess("")
-                        }}
-                        disabled={isSubmitting}
-                      >
-                        Batal
-                      </Button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">Nama Lengkap</h3>
-                      <p className="mt-1 text-lg">{user.nama_lengkap}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">Email</h3>
-                      <p className="mt-1 text-lg">{user.email}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">Nomor Telepon</h3>
-                      <p className="mt-1 text-lg">{user.nomor_telepon || "-"}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">Peran</h3>
-                      <p className="mt-1 text-lg">{user.role || "User"}</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500">Bergabung Sejak</h3>
-                      <p className="mt-1 text-lg">
-                        {user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        }) : "-"}
-                      </p>
-                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Pesan Anda</h3>
+                    <p className="text-gray-600 mb-6">Anda belum memiliki pesan</p>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white">Mulai Percakapan</Button>
                   </div>
-                )}
-              </div>
-            </motion.div>
+                </Card>
+              )}
+            </div>
           </div>
-        </div>
+        </Card>
       </div>
-    </div>
+    </>
   )
 }
