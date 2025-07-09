@@ -23,12 +23,12 @@ function VerifyEmailContent() {
 
   useEffect(() => {
     // Update window size for confetti
-    setWindowSize({ width: window.innerWidth, height: window.innerHeight })
-    const handleResize = () => {
+    const updateWindowSize = () => {
       setWindowSize({ width: window.innerWidth, height: window.innerHeight })
     }
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    updateWindowSize()
+    window.addEventListener("resize", updateWindowSize)
+    return () => window.removeEventListener("resize", updateWindowSize)
   }, [])
 
   useEffect(() => {
@@ -78,7 +78,7 @@ function VerifyEmailContent() {
         <Confetti
           width={windowSize.width}
           height={windowSize.height}
-          numberOfPieces={200}
+          numberOfPieces={300}
           gravity={0.2}
         />
       )}
