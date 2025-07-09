@@ -24,13 +24,14 @@ function LoginForm() {
 
   // Handle email from URL params and check for reset=success
   useEffect(() => {
+    // Handle email from URL params
     const emailParam = searchParams?.get('email') // Add null check for searchParams
     if (emailParam) {
       setEmail(emailParam)
     }
-    
+
     // Show success message if coming from password reset
-    const resetParam = searchParams.get('reset')
+    const resetParam = searchParams?.get('reset') // Add null check for searchParams
     if (resetParam === 'success') {
       setSuccessMessage("Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru Anda.")
     }
