@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { authService } from "@/src/services/authService"
+import { aiService, AIModel, Message } from "@/src/services/aiService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -29,9 +30,9 @@ import {
 } from "lucide-react"
 
 const models = [
-  { id: "gpt-4o", name: "GPT-4o", description: "Most capable model" },
-  { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "Faster and cheaper" },
-  { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", description: "Good for simple tasks" },
+  { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio" },
+  { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM" },
+  { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b" },
 ]
 
 const chatHistory = [
@@ -56,7 +57,7 @@ const translations = [
 ];
 
 export default function ChatInterface() {
-  const [selectedModel, setSelectedModel] = useState("gpt-4o")
+  const [selectedModel, setSelectedModel] = useState<AIModel>("google-gemini") // Updated default model
   const [user, setUser] = useState<any>(null)
   const [isAuthChecking, setIsAuthChecking] = useState(true)
   const router = useRouter()
@@ -156,7 +157,7 @@ export default function ChatInterface() {
   }
 
   // Custom submit handler
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (input.trim()) {
       // Add user message
@@ -170,16 +171,37 @@ export default function ChatInterface() {
       setInput("")
       setIsLoading(true)
       
-      // Simulate AI response after delay
-      setTimeout(() => {
+      try {
+        // Convert messages to AI service format
+        const messageHistory: Message[] = messages
+          .concat(userMessage)
+          .map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+        
+        // Call AI service
+        const response = await aiService.generateCompletion(selectedModel, messageHistory);
+        
         const aiMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant" as const,
-          content: `This is a static response to: "${input}"`
+          content: response.text
         }
+        
         setMessages(prev => [...prev, aiMessage])
+      } catch (error) {
+        console.error("AI error:", error);
+        // Add error message
+        const errorMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant" as const,
+          content: "Sorry, I encountered an error while processing your request. Please try again."
+        }
+        setMessages(prev => [...prev, errorMessage])
+      } finally {
         setIsLoading(false)
-      }, 1500)
+      }
     }
   }
 
@@ -386,15 +408,15 @@ export default function ChatInterface() {
         <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
           {/* Left side with model selector */}
           <div className="flex items-center space-x-4">
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="w-32 bg-white text-black border-2 border-gray-200 rounded-xl">
+            <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as AIModel)}>
+              <SelectTrigger className="w-48 h-12 bg-white text-black border-2 border-gray-200 rounded-xl"> {/* Increased width */}
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="max-h-60 overflow-y-auto bg-white border-2 border-gray-200 text-black rounded-xl ">
+              <SelectContent className="max-h-60 overflow-y-auto bg-white border-2 border-gray-200 text-black rounded-xl">
                 {models.map((model) => (
                   <SelectItem key={model.id} value={model.id}>
-                    <div>
-                      <div className="font-medium">{model.name}</div>
+                    <div className="flex flex-col">
+                      <div className="font-medium text-gray-900">{model.name}</div>
                       <div className="text-xs text-gray-500">{model.description}</div>
                     </div>
                   </SelectItem>
@@ -523,9 +545,9 @@ export default function ChatInterface() {
                     placeholder="Ask Silva anything..."
                     className="w-full pl-4 pr-20 py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
                   />
-                  <p className="text-gray-400 text-center mt-3 text-sm">Silva berusaha sebaik mungkin, tapi tetap periksa info penting sebelum mengambil keputusan.</p>
+
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+                    <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-200 rounded-full hover:text-gray-700">
                       <Paperclip className="w-4 h-4" />
                     </Button>
 

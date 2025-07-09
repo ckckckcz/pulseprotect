@@ -119,9 +119,9 @@ const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       "relative flex w-full select-none items-center rounded-sm p-2 pl-8 text-sm outline-none transition-all duration-200 ease-in-out cursor-pointer data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      "hover:bg-gray-100 hover:text-white !important", // Make hover styles more specific
+      "hover:bg-gray-100 hover:text-gray-900", // Fixed hover colors
       "data-[selected='true']:bg-gray-200 data-[selected=true]:text-black",
-      "focus:bg-gray-200 focus:text-black rounded", // Also update focus styles to match
+      "focus:bg-gray-200 focus:text-black rounded",
       className
     )}
     {...props}
