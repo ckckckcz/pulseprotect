@@ -534,14 +534,6 @@ export default function HomePage() {
               ✕
             </button>
             
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🚧</span>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Dalam Pengembangan</h3>
-              <p className="text-gray-600">Pengembangan AI masih dalam development, daftarkan email anda disini untuk mendapatkan akses awal!</p>
-            </div>
-
             {registrationStatus === 'success' ? (
               <div className="text-center p-4">
                 <div className="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -559,26 +551,36 @@ export default function HomePage() {
                 <p className="text-gray-600">{errorMessage || 'Terjadi kesalahan. Silakan coba lagi nanti.'}</p>
               </div>
             ) : (
-              <form onSubmit={handleEarlyAccess} className="space-y-4">
-                <div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Masukkan email anda..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    required
-                    disabled={registrationStatus === 'loading'}
-                  />
+              <>
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">🚧</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Dalam Pengembangan</h3>
+                  <p className="text-gray-600">Pengembangan AI masih dalam development, daftarkan email anda disini untuk mendapatkan akses awal!</p>
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold transition-all duration-300"
-                  disabled={registrationStatus === 'loading'}
-                >
-                  {registrationStatus === 'loading' ? 'Mendaftarkan...' : 'Daftar Early Access 🚀'}
-                </Button>
-              </form>
+                
+                <form onSubmit={handleEarlyAccess} className="space-y-4">
+                  <div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Masukkan email anda..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      required
+                      disabled={registrationStatus === 'loading'}
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                    disabled={registrationStatus === 'loading'}
+                  >
+                    {registrationStatus === 'loading' ? 'Tunggu Sebentar...' : 'Daftar Early Access 🚀'}
+                  </Button>
+                </form>
+              </>
             )}
           </motion.div>
         </div>
