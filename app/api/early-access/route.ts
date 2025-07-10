@@ -14,7 +14,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 1. Store email in the database
+    // Check if email already exists in the database
+    const { data: existingEmail, error: checkError } = await supabase
+      .from('early_access')
+      .select('email')
+      .eq('email', email)
+      .single();
+
+    if (existingEmail) {
+      // Email already registered, but we'll return success anyway (to prevent email enumeration)
+      return NextResponse.json(
+        { success: true, message: 'Already registered for early access' },
+        { status: 200 }
+      );
+    }
+
+    // Store email in the database
     const { error: dbError } = await supabase
       .from('early_access')
       .insert({ email });
@@ -27,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Send confirmation email
+    // Send confirmation email
     try {
       await emailService.sendEarlyAccessConfirmationEmail(email);
     } catch (emailError) {
