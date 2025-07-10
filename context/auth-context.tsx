@@ -12,6 +12,9 @@ interface User {
   verifikasi_email: boolean
   status: string
   dibuat_pada: string
+  role?: string  // Add role property to the User interface
+  account_membership?: string // Also add account_membership for subscription info
+  foto_profile?: string // Add profile photo URL
 }
 
 interface AuthContextType {
