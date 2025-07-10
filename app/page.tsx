@@ -310,29 +310,29 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   }, [targetDate]);
 
   return (
-    <div className="flex flex-col items-center mt-4">
+    <div className="flex flex-col lg:items-center mt-4">
       <p className="text-sm text-gray-600 mb-2">AI akan diluncurkan pada:</p>
       <div className="flex space-x-3">
         <div className="flex flex-col items-center">
-          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-xl border border-gray-200 font-bold text-xl">
             {timeLeft.days}
           </div>
           <span className="text-xs mt-1 text-gray-500">Hari</span>
         </div>
         <div className="flex flex-col items-center">
-          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-xl border border-gray-200 font-bold text-xl">
             {timeLeft.hours}
           </div>
           <span className="text-xs mt-1 text-gray-500">Jam</span>
         </div>
         <div className="flex flex-col items-center">
-          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-xl border border-gray-200 font-bold text-xl">
             {timeLeft.minutes}
           </div>
           <span className="text-xs mt-1 text-gray-500">Menit</span>
         </div>
         <div className="flex flex-col items-center">
-          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-xl border border-gray-200 font-bold text-xl">
             {timeLeft.seconds}
           </div>
           <span className="text-xs mt-1 text-gray-500">Detik</span>
@@ -490,7 +490,7 @@ export default function HomePage() {
                 onClick={() => setShowAIModal(true)}
                 className="bg-teal-600 hover:bg-teal-500 text-white px-8 py-6 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl border-0 group"
               >
-                Coba AI 🤖
+                Early Access 🤖
               </Button>
             </div>
             
