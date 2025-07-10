@@ -26,7 +26,8 @@ export type Database = {
           verification_token_expires: string | null
           reset_password_token: string | null
           reset_password_expires: string | null
-          reset_password_status: string | null // Include the new status field (with typo as in schema)
+          reset_password_status: string | null
+          account_membership: string | null // Added missing field
         }
         Insert: {
           id?: number
@@ -45,7 +46,8 @@ export type Database = {
           verification_token_expires?: string | null
           reset_password_token?: string | null
           reset_password_expires?: string | null
-          reset_password_status?: string | null // Include in Insert
+          reset_password_status?: string | null
+          account_membership?: string | null // Added missing field
         }
         Update: {
           id?: number
@@ -64,7 +66,8 @@ export type Database = {
           verification_token_expires?: string | null
           reset_password_token?: string | null
           reset_password_expires?: string | null
-          reset_password_status?: string | null // Include in Update
+          reset_password_status?: string | null
+          account_membership?: string | null // Added missing field
         }
       }
       profiles: {

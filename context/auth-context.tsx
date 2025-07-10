@@ -17,7 +17,7 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<{ error: boolean; message: string } | undefined>
   loginWithGoogle: () => Promise<void>
   logout: () => void
   updateUser: (data: { nama_lengkap?: string, nomor_telepon?: string }) => Promise<void>
@@ -72,14 +72,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      const userData = await authService.login({ email, password })
-      setUser(userData)
-      console.log('Login successful, session saved:', userData.email)
-      router.push('/')
-    } catch (error) {
-      throw error
+      // Add defensive programming
+      if (!email || !password) {
+        setLoading(false)
+        return {
+          error: true,
+          message: "Email dan password wajib diisi"
+        }
+      }
+      
+      console.log('Starting login process for:', email);
+      
+      // Use try-catch explicitly to catch any errors from authService
+      let userData;
+      try {
+        userData = await authService.login({ email, password });
+      } catch (loginError: any) {
+        console.error('Auth service login error:', loginError);
+        setLoading(false);
+        return {
+          error: true,
+          message: loginError.message || "Terjadi kesalahan saat login"
+        };
+      }
+      
+      // Verify userData before proceeding
+      if (!userData || typeof userData !== 'object') {
+        console.error('Invalid user data returned:', userData);
+        setLoading(false);
+        return {
+          error: true,
+          message: "Terjadi kesalahan saat memproses data pengguna"
+        };
+      }
+      
+      setUser(userData);
+      console.log('Login successful, session saved:', userData.email);
+      
+      // Add a small delay before redirecting
+      setTimeout(() => {
+        router.push('/');
+      }, 300);
+      
+      // Return success (no error returned means success)
+    } catch (error: any) {
+      // This should never execute since we catch errors earlier
+      console.error('Unhandled auth context login error:', error);
+      setLoading(false);
+      return {
+        error: true,
+        message: error.message || "Terjadi kesalahan yang tidak terduga"
+      };
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 

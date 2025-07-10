@@ -6,13 +6,61 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
-import { getCurrentUser } from "@/lib/auth-service"
+import { createAIPackagePayment, handleMidtransPayment, PackageDetails } from "@/services/payment"
+import Cookies from 'js-cookie'
+
+type PlanType = 'free' | 'plus' | 'pro'
+
+interface PricingPlan {
+  type: PlanType
+  name: string
+  monthlyPrice: number
+  yearlyPrice: number
+}
+
+const pricingPlans: PricingPlan[] = [
+  {
+    type: 'free',
+    name: 'Free',
+    monthlyPrice: 0,
+    yearlyPrice: 0
+  },
+  {
+    type: 'plus',
+    name: 'Plus',
+    monthlyPrice: 70000,
+    yearlyPrice: 58000
+  },
+  {
+    type: 'pro',
+    name: 'Pro',
+    monthlyPrice: 140000,
+    yearlyPrice: 116000
+  }
+]
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false)
   const [isLoading, setIsLoading] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const { toast } = useToast()
   const router = useRouter()
+
+  // Load user data from cookie when component mounts
+  useEffect(() => {
+    try {
+      const userSessionCookie = Cookies.get('user-session');
+      if (userSessionCookie) {
+        const userData = JSON.parse(userSessionCookie);
+        console.log('User session cookie found:', userData);
+        setCurrentUser(userData);
+      } else {
+        console.log('No user session cookie found');
+      }
+    } catch (error) {
+      console.error('Error parsing user session cookie:', error);
+    }
+  }, []);
 
   const freeFeatures = [
     "Akses model AI dasar",
@@ -144,26 +192,48 @@ export default function PricingPage() {
     }
   };
 
-  // Updated handlePayment to handle all plan types including Free
-  const handlePayment = async (packageType: 'free' | 'plus' | 'pro') => {
+  // Updated handlePayment to use the cookie user data
+  const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
+    // Prevent default button behavior that causes page to scroll to top
+    e.preventDefault();
+    
     try {
-      // For free plan, just show a success message or redirect
+      const selectedPlan = pricingPlans.find(plan => plan.type === packageType);
+      if (!selectedPlan) {
+        console.error('Invalid package type:', packageType);
+        return;
+      }
+      
+      // For free plan, just show a success message
       if (packageType === 'free') {
         toast({
           title: "Paket Gratis Diaktifkan!",
           description: "Selamat menikmati paket AI dasar kami.",
         });
-        
-        // Optional: redirect to dashboard or account page
-        // router.push('/dashboard');
         return;
       }
       
       setIsLoading(packageType);
       console.log('Starting payment process for:', packageType);
       
-      const currentUser = getCurrentUser();
-      console.log('Current user:', currentUser);
+      // Get current user directly from cookie if not already loaded
+      if (!currentUser) {
+        try {
+          const userSessionCookie = Cookies.get('user-session');
+          if (userSessionCookie) {
+            const userData = JSON.parse(userSessionCookie);
+            console.log('User session data from cookie:', userData);
+            setCurrentUser(userData);
+          } else {
+            throw new Error('User session not found');
+          }
+        } catch (error) {
+          console.error('Error getting user session:', error);
+          throw new Error('User session not found');
+        }
+      }
+      
+      console.log('Current user from cookie:', currentUser);
       
       if (!currentUser) {
         toast({
@@ -175,32 +245,25 @@ export default function PricingPage() {
         return;
       }
       
-      // Define package details based on type and billing period
-      const packageDetails = {
-        plus: {
-          packageId: 'pkg_plus',
-          packageName: isYearly ? 'AI Model Plus (Tahunan)' : 'AI Model Plus (Bulanan)',
-          price: isYearly ? 696000 : 70000,
-          period: isYearly ? 'yearly' : 'monthly',
-        },
-        pro: {
-          packageId: 'pkg_pro',
-          packageName: isYearly ? 'AI Model Pro (Tahunan)' : 'AI Model Pro (Bulanan)',
-          price: isYearly ? 1392000 : 140000,
-          period: isYearly ? 'yearly' : 'monthly',
-        }
+      // Get package details from the selected plan
+      const packageDetails: PackageDetails = {
+        packageId: `pkg_${packageType}`,
+        packageName: isYearly 
+          ? `AI Model ${selectedPlan.name} (Tahunan)` 
+          : `AI Model ${selectedPlan.name} (Bulanan)`,
+        price: isYearly ? selectedPlan.yearlyPrice : selectedPlan.monthlyPrice,
+        period: isYearly ? "yearly" : "monthly",
       };
       
-      const selectedPackage = packageDetails[packageType];
-      
+      // Extract customer info from cookie data
       const customerInfo = {
-        firstName: currentUser.nama_lengkap.split(' ')[0] || 'User',
-        lastName: currentUser.nama_lengkap.split(' ').slice(1).join(' ') || '',
-        email: currentUser.email,
+        firstName: currentUser.nama_lengkap ? currentUser.nama_lengkap.split(' ')[0] : 'User',
+        lastName: currentUser.nama_lengkap ? currentUser.nama_lengkap.split(' ').slice(1).join(' ') : '',
+        email: currentUser.email || 'user@example.com',
         phone: '08123456789', // Default phone number
       };
 
-      console.log('Package details:', selectedPackage);
+      console.log('Package details:', packageDetails);
       console.log('Customer info:', customerInfo);
       
       toast({
@@ -208,39 +271,36 @@ export default function PricingPage() {
         description: "Mohon tunggu, sedang mempersiapkan pembayaran...",
       });
       
-      // Load Midtrans script first
+      // Load Midtrans script and process payment
       console.log('Loading Midtrans script...');
       await loadMidtransScript();
       
-      // Create payment token
-      console.log('Creating payment token...');
-      const paymentData = await createPayment(selectedPackage, customerInfo);
+      // Create payment
+      const paymentData = await createAIPackagePayment(
+        currentUser.userId?.toString() || currentUser.id?.toString() || '0',
+        packageDetails,
+        customerInfo
+      );
       
       if (!paymentData.token) {
         throw new Error('No payment token received');
       }
       
-      console.log('Opening Snap with token:', paymentData.token);
-      
-      // Open Snap payment
-      const snap = (window as any).snap;
-      if (!snap) {
-        throw new Error('Midtrans Snap not available');
-      }
-      
-      snap.pay(paymentData.token, {
+      // Handle the payment with Midtrans Snap
+      await handleMidtransPayment(paymentData.token, {
         onSuccess: function(result: any) {
           console.log('Payment success:', result);
           toast({
             title: "Pembayaran Berhasil! 🎉",
-            description: `Terima kasih! Paket ${selectedPackage.packageName} Anda sudah aktif.`,
+            description: `Terima kasih! Paket ${packageDetails.packageName} Anda sudah aktif.`,
           });
           
-          // Optional: Save subscription in local database
-          saveSubscription(currentUser.id, selectedPackage, result);
-          
-          // Optional: Redirect to success page or dashboard
-          // router.push('/dashboard');
+          // Save subscription in local database
+          saveSubscription(
+            parseInt(currentUser.userId || currentUser.id) || 0, 
+            packageDetails, 
+            result
+          );
         },
         onPending: function(result: any) {
           console.log('Payment pending:', result);
@@ -482,7 +542,7 @@ export default function PricingPage() {
 
             <Button 
               className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50"
-              onClick={() => handlePayment('free')}
+              onClick={(e) => handlePayment(e, 'free')}
               disabled={isLoading !== null}
             >
               Mulai Gratis
@@ -525,7 +585,7 @@ export default function PricingPage() {
 
             <Button 
               className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl" 
-              onClick={() => handlePayment('plus')} 
+              onClick={(e) => handlePayment(e, 'plus')} 
               disabled={isLoading !== null}
             >
               {isLoading === 'plus' ? 'Memproses...' : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
@@ -566,7 +626,7 @@ export default function PricingPage() {
 
             <Button 
               className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50" 
-              onClick={() => handlePayment('pro')} 
+              onClick={(e) => handlePayment(e, 'pro')} 
               disabled={isLoading !== null}
             >
               {isLoading === 'pro' ? 'Memproses...' : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}

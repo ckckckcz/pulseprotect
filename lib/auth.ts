@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient";
 import bcrypt from "bcryptjs";
-import { emailService } from './emailService'
+import { emailService } from './emailService';
+import Cookies from 'js-cookie';
 
 export interface RegisterData {
   email: string;
@@ -60,38 +61,90 @@ export const authService = {
         throw new Error("Email dan password wajib diisi");
       }
 
-      // Get user data from custom user table
-      const { data: user, error: userError } = await supabase
-        .from("user")
-        .select("*")
-        .eq("email", email.toLowerCase().trim())
-        .single();
-
-      if (userError || !user) {
-        throw new Error("Email atau password salah");
+      console.log("Attempting to login with email:", email);
+      
+      let userData;
+      try {
+        // Get user data with better error handling
+        const { data, error } = await supabase
+          .from("user")
+          .select("*")
+          .eq("email", email.toLowerCase().trim())
+          .maybeSingle(); // Use maybeSingle instead of single to avoid 406 error
+        
+        if (error) {
+          console.error("Supabase error fetching user:", error);
+          throw new Error(`Database error: ${error.message}`);
+        }
+        
+        if (!data) {
+          console.log("No user found with email:", email);
+          throw new Error("Email atau password salah");
+        }
+        
+        userData = data;
+      } catch (dbError: any) {
+        console.error("Database query error:", dbError);
+        
+        // Handle specific Supabase errors
+        if (dbError.code === 'PGRST116' || dbError.message?.includes('JSON')) {
+          throw new Error("Email atau password salah");
+        }
+        
+        throw new Error(dbError.message || "Database error during login");
       }
 
-      // Check if email is verified
-      if (!user.verifikasi_email) {
+      // Check if email is verified (only if verification is required)
+      if (userData.verifikasi_email === false) {
         throw new Error("Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.");
       }
 
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.kata_sandi);
+      // Safely handle password comparison
+      let isValidPassword = false;
+      try {
+        // Make sure password and stored hash are valid before comparing
+        if (!userData.kata_sandi) {
+          console.error("User has no password hash stored");
+          throw new Error("Akun belum mengatur password");
+        }
+
+        isValidPassword = await bcrypt.compare(password, userData.kata_sandi);
+      } catch (bcryptError) {
+        console.error("Password comparison error:", bcryptError);
+        throw new Error("Error validasi kredensial");
+      }
+
       if (!isValidPassword) {
+        console.error("Invalid password for user:", email);
         throw new Error("Email atau password salah");
       }
 
-      // Return user data without password and save session
-      const { kata_sandi, konfigurasi_kata_sandi, verification_token, verification_token_expires, ...userWithoutPassword } = user;
+      console.log("Login successful for:", email);
+
+      // Return user data without sensitive fields
+      const { 
+        kata_sandi, 
+        konfirmasi_kata_sandi, 
+        verification_token, 
+        verification_token_expires, 
+        reset_password_token,
+        reset_password_expires,
+        reset_password_status,
+        ...userWithoutPassword 
+      } = userData;
       
-      // Save user session to localStorage
-      this.saveUserSession(userWithoutPassword);
+      try {
+        // Save user session
+        this.saveUserSession(userWithoutPassword);
+      } catch (sessionError) {
+        console.error("Error saving session:", sessionError);
+        // Continue anyway - the login was successful even if session saving fails
+      }
       
       return userWithoutPassword;
     } catch (error: any) {
       console.error("Login error:", error);
-      throw new Error(error.message || "Terjadi kesalahan saat login");
+      throw error; // Let the caller handle the error
     }
   },
 
@@ -109,23 +162,42 @@ export const authService = {
   saveUserSession(user: any) {
     if (typeof window !== 'undefined') {
       try {
-        // Save user data to localStorage
-        localStorage.setItem('user', JSON.stringify(user));
+        console.log("Saving user session for user ID:", user.id);
         
-        // Save session timestamp
-        localStorage.setItem('sessionTimestamp', new Date().toISOString());
+        // First verify we have a valid user object
+        if (!user || !user.id) {
+          throw new Error("Invalid user data for session");
+        }
         
-        // Save session expiry (7 days from now)
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 7);
-        localStorage.setItem('sessionExpiry', expiryDate.toISOString());
+        // Save directly without stringifying first
+        try {
+          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('sessionTimestamp', new Date().toISOString());
+          
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 7);
+          localStorage.setItem('sessionExpiry', expiryDate.toISOString());
+        } catch (localStorageError) {
+          console.error("LocalStorage error:", localStorageError);
+        }
         
-        // Also save to cookies for server-side access
-        document.cookie = `user-session=${JSON.stringify({
-          userId: user.id,
-          email: user.email,
-          expires: expiryDate.toISOString()
-        })}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
+        // Save to cookies with error handling
+        try {
+          Cookies.set('user-session', JSON.stringify({
+            userId: user.id,
+            email: user.email || '',
+            nama_lengkap: user.nama_lengkap || '',
+            role: user.role || 'user',
+            account_membership: user.account_membership || null,
+            expires: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString()
+          }), { 
+            expires: 7,
+            path: '/',
+            sameSite: 'lax'
+          });
+        } catch (cookieError) {
+          console.error("Cookie error:", cookieError);
+        }
         
         console.log('User session saved successfully');
       } catch (error) {
@@ -136,8 +208,37 @@ export const authService = {
 
   async getCurrentUser() {
     try {
-      // Check for logged in user in localStorage
+      // First try to get user from cookies
       if (typeof window !== 'undefined') {
+        const sessionCookie = Cookies.get('user-session');
+        if (sessionCookie) {
+          try {
+            const sessionData = JSON.parse(sessionCookie);
+            console.log('Found user session in cookie:', sessionData.email);
+            
+            // Validate expiration
+            const now = new Date();
+            const expiry = new Date(sessionData.expires);
+            if (now > expiry) {
+              console.log('Session expired, logging out');
+              this.logout();
+              return null;
+            }
+            
+            // If we have a valid session cookie but need full user data
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              return JSON.parse(storedUser);
+            }
+            
+            // If we only have the cookie but not localStorage data
+            return sessionData;
+          } catch (error) {
+            console.error('Error parsing session cookie:', error);
+          }
+        }
+        
+        // Fall back to localStorage
         const storedUser = localStorage.getItem('user');
         const sessionExpiry = localStorage.getItem('sessionExpiry');
         
@@ -169,8 +270,8 @@ export const authService = {
         localStorage.removeItem('sessionTimestamp');
         localStorage.removeItem('sessionExpiry');
         
-        // Clear cookies
-        document.cookie = 'user-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        // Clear cookies using js-cookie
+        Cookies.remove('user-session', { path: '/' });
         
         console.log('User session cleared');
       } catch (error) {

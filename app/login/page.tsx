@@ -40,14 +40,26 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-
+    
+    if (!email || !password) {
+      setError("Email dan password wajib diisi")
+      return
+    }
+    
     try {
-      // Use the login function from useAuth
-      await login(email.trim(), password)
+      console.log(`Attempting login with email: ${email}`)
       
-      // Router push is handled inside login function
+      // Use safe error handling with the login function
+      const loginResult = await login(email.trim(), password)
+      
+      if (loginResult && loginResult.error) {
+        console.error('Login returned error:', loginResult.message)
+        setError(loginResult.message)
+      }
+      // Success is handled by the auth context (redirect)
+      
     } catch (error: any) {
-      console.error('Login error:', error)
+      console.error('Unhandled login error:', error)
       setError(error.message || "Terjadi kesalahan saat login. Silakan coba lagi.")
     }
   }
