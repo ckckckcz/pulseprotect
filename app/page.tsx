@@ -409,7 +409,7 @@ export default function HomePage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+            className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl relative"
           >
             <button
               onClick={() => setShowAIModal(false)}
@@ -455,7 +455,7 @@ export default function HomePage() {
           height={windowDimensions.height}
           recycle={false}
           numberOfPieces={500}
-          colors={['#ea580c', '#fb923c', '#fed7aa', '#ffedd5', '#f97316', '#c2410c']}
+          colors={['#0D9488', '#14B8A6', '#2DD4BF', '#5EEAD4', '#99F6E4', '#CCFBF1']}
           gravity={0.3}
           wind={0.05}
         />
