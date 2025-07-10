@@ -49,11 +49,7 @@ type Country = {
 
 export default function UserProfile() {
   const [activeSetting, setActiveSetting] = useState("general")
-  const { user, loading, refreshUser } = useAuth() as { 
-    user: UserWithStatus | null, 
-    loading: boolean,
-    refreshUser: () => Promise<void>
-  }
+  const { user, loading, refreshUser } = useAuth()
   const router = useRouter()
   
   // Form fields
@@ -403,7 +399,7 @@ export default function UserProfile() {
                           <div className="relative group cursor-pointer">
                             <Avatar className="h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-orange-500">
                               <AvatarImage
-                                src={user.foto_profile || `https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap || "User"}`}
+                                src={(user as UserWithStatus).foto_profile || `https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap || "User"}`}
                                 alt={user.nama_lengkap || "User"}
                               />
                               <AvatarFallback className="bg-gray-800 text-black">

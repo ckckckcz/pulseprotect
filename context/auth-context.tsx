@@ -22,6 +22,7 @@ interface AuthContextType {
   logout: () => void
   updateUser: (data: { nama_lengkap?: string, nomor_telepon?: string }) => Promise<void>
   refreshSession: () => void
+  refreshUser: () => Promise<void> // Add refreshUser method
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -175,6 +176,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Add refreshUser implementation
+  const refreshUser = async () => {
+    try {
+      if (!user || !user.id) return;
+      
+      // Get latest user data from database
+      const currentUser = await authService.getCurrentUser();
+      
+      if (currentUser) {
+        setUser(currentUser);
+        console.log('User data refreshed');
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  }
+
   const value: AuthContextType = {
     user,
     loading,
@@ -182,7 +200,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginWithGoogle,
     logout,
     updateUser,
-    refreshSession
+    refreshSession,
+    refreshUser // Add refreshUser to the context value
   }
 
   return (
