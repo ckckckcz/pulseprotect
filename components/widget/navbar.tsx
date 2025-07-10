@@ -93,7 +93,7 @@ export default function Navbar() {
           borderRadius: isMenuOpen ? "24px 24px 0 0" : "9999px",
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className={`container mx-auto ${
+        className={`container px-5 ${
           scrolled 
             ? "bg-white/95 backdrop-blur-xs shadow-lg lg:py-6 py-4" 
             : "bg-white/80 backdrop-blur-xs lg:py-6 py-4"
@@ -232,20 +232,20 @@ export default function Navbar() {
               height: { duration: 0.3, ease: "easeInOut" },
               borderRadius: { duration: 0.3, ease: "easeInOut" }
             }}
-            className="md:hidden container mx-auto bg-white/95 backdrop-blur-xs shadow-lg mt-0 overflow-hidden"
+            className="md:hidden container px-5 bg-white/95 backdrop-blur-xs shadow-lg mt-0 overflow-hidden"
           >
-            <div className="py-6 px-4">
-              <nav className="flex flex-col space-y-4">
-                <Link href="/" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-2 rounded-lg hover:bg-gray-50">
+            <div className="py-6 px-0">
+              <nav className="flex flex-col space-y-2">
+                <Link href="/" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Beranda
                 </Link>
-                <Link href="/about" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-2 rounded-lg hover:bg-gray-50">
+                <Link href="/about" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Tentang Kami
                 </Link>
-                <Link href="/services" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-2 rounded-lg hover:bg-gray-50">
+                <Link href="/services" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Layanan
                 </Link>
-                <Link href="/contact" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-2 rounded-lg hover:bg-gray-50">
+                <Link href="/contact" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Kontak
                 </Link>
 
