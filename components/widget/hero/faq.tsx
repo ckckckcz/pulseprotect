@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, Play } from "lucide-react";
 
 export default function FAQ() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLIFrameElement>(null);
 
   const faqs = [
     {
@@ -44,6 +46,14 @@ export default function FAQ() {
     setOpenFAQ(openFAQ === id ? null : id);
   };
 
+  const handlePlayVideo = () => {
+    setIsVideoPlaying(true);
+    // Focus on the iframe for better accessibility
+    if (videoRef.current) {
+      videoRef.current.focus();
+    }
+  };
+
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
@@ -77,20 +87,39 @@ export default function FAQ() {
               Quick answer to questions you have. Can't find what you're looking for?
             </motion.p>
 
-            {/* Video Placeholder */}
+            {/* YouTube Video */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="relative bg-teal-700 rounded-3xl overflow-hidden aspect-video group cursor-pointer hover:shadow-xl transition-all duration-300"
+              className="relative bg-teal-700 rounded-3xl overflow-hidden aspect-video group transition-all duration-300 shadow-md hover:shadow-xl"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-600/80 to-teal-800/80"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <Play className="w-6 h-6 text-white ml-1" />
-                </div>
-              </div>
-              <p className="absolute bottom-4 left-4 text-white text-sm">See in action</p>
+              {!isVideoPlaying ? (
+                <>
+                  {/* Video thumbnail with overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-600/80 to-teal-800/80"></div>
+                  <button 
+                    onClick={handlePlayVideo}
+                    className="absolute inset-0 flex items-center justify-center w-full h-full cursor-pointer"
+                    aria-label="Play video"
+                  >
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Play className="w-6 h-6 text-white ml-1" />
+                    </div>
+                  </button>
+                  <p className="absolute bottom-4 left-4 text-white text-sm">See in action</p>
+                </>
+              ) : (
+                /* Actual YouTube embedded video */
+                <iframe
+                  ref={videoRef}
+                  src="https://www.youtube.com/embed/a38AIsbLlkw?autoplay=1&rel=0"
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full border-0"
+                />
+              )}
             </motion.div>
           </div>
 
