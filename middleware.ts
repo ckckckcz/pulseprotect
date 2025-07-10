@@ -4,8 +4,8 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Define protected routes
-  const protectedRoutes = ['/dashboard']
+  // Define protected routes - REMOVE dashboard protection for now
+  const protectedRoutes: string[] = [] // Empty for now
   const authRoutes = ['/login', '/register']
 
   // Check if the current path is protected
@@ -28,12 +28,12 @@ export function middleware(request: NextRequest) {
 
   if (isAuthRoute && userSession) {
     // Redirect to dashboard if accessing auth routes while logged in
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/', request.url)) // Changed to home page
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register']
+  matcher: ['/login', '/register'] // Removed dashboard from matcher
 }
