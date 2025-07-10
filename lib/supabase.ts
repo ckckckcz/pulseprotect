@@ -133,6 +133,23 @@ export type Database = {
           created_at?: string
         }
       }
+      early_access: {
+        Row: {
+          id: number
+          created_at: string
+          email: string | null
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          email?: string | null
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          email?: string | null
+        }
+      }
     }
   }
 }

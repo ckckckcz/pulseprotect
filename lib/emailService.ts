@@ -183,6 +183,79 @@ export const emailService = {
     }
   },
 
+  async sendEarlyAccessConfirmationEmail(email: string) {
+    // Only run on server side
+    if (typeof window !== "undefined") {
+      throw new Error("Email service can only be used on server side");
+    }
+
+    if (!transport) {
+      throw new Error("Email transport not available");
+    }
+
+    const releaseDate = "20 Agustus 2025";
+
+    const mailOptions = {
+      from: `"MechaMinds" <${process.env.SMTP_USER || "mechaminds.team@gmail.com"}>`,
+      to: email,
+      subject: "Terima Kasih untuk Early Access! 🚀 – MechaMinds",
+      html: `
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>Early Access Confirmation</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: sans-serif; color: #1f2937;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
+                        <div style="margin-bottom: 24px;">
+                            <img src="https://i.ibb.co/TDJ7RRnR/svgviewer-png-output.png" width="40" height="40" alt="MechaMinds Icon" style="display: block;" />
+                        </div>
+
+                        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">Terima Kasih Sudah Mendaftar! 🎉</h1>
+
+                        <p style="margin-bottom: 16px; font-weight: 600;">
+                            Kami sangat senang Anda tertarik dengan AI kami! Email Anda telah terdaftar untuk mendapatkan akses awal.
+                        </p>
+
+                        <p style="margin-bottom: 16px;">
+                            Kami akan memberitahu Anda segera setelah aplikasi kami diluncurkan pada <strong>${releaseDate}</strong>. 
+                            Anda akan menjadi salah satu pengguna pertama yang bisa mencoba semua fitur inovatif yang kami kembangkan.
+                        </p>
+
+                        <div style="margin: 32px 0; padding: 16px; background-color: #f0fdfa; border-radius: 8px; border-left: 4px solid #0d9488;">
+                            <h3 style="color: #0d9488; margin-top: 0; margin-bottom: 8px;">Tanggal Peluncuran</h3>
+                            <p style="margin: 0; font-weight: bold; font-size: 18px;">${releaseDate}</p>
+                        </div>
+
+                        <p style="margin-bottom: 8px;">
+                            Salam,<br />
+                            Tim MechaMinds
+                        </p>
+                    </div>
+
+                    <div style="padding: 20px 0; text-align: center; color: #6b7280;">
+                        <p>© MechaMinds. Semua hak dilindungi undang-undang.</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+      `,
+    };
+
+    try {
+      console.log("Attempting to send early access confirmation email to:", email);
+      const result = await transport.sendMail(mailOptions);
+      console.log("Early access confirmation email sent:", result.messageId);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error("Failed to send early access confirmation email:", error);
+      throw new Error("Gagal mengirim email konfirmasi early access");
+    }
+  },
+
   generateVerificationToken() {
     return crypto.randomBytes(32).toString("hex");
   },

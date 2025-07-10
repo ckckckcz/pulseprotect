@@ -23,6 +23,7 @@ import HowItWorks from "@/components/widget/hero/how-it-works"
 import Banner from "@/components/widget/animate-banner"
 import Faq from "@/components/widget/hero/faq"
 import Confetti from 'react-confetti'
+import { supabase } from "@/lib/supabase"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -272,6 +273,75 @@ const FloatingAvatars = () => {
   )
 }
 
+// Countdown Timer Component
+const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = targetDate.getTime() - new Date().getTime();
+      
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60)
+        });
+      } else {
+        // If the countdown is finished
+        setTimeLeft({
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0
+        });
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return (
+    <div className="flex flex-col items-center mt-4">
+      <p className="text-sm text-gray-600 mb-2">AI akan diluncurkan pada:</p>
+      <div className="flex space-x-3">
+        <div className="flex flex-col items-center">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+            {timeLeft.days}
+          </div>
+          <span className="text-xs mt-1 text-gray-500">Hari</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+            {timeLeft.hours}
+          </div>
+          <span className="text-xs mt-1 text-gray-500">Jam</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+            {timeLeft.minutes}
+          </div>
+          <span className="text-xs mt-1 text-gray-500">Menit</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <div className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-lg shadow-md font-bold text-xl">
+            {timeLeft.seconds}
+          </div>
+          <span className="text-xs mt-1 text-gray-500">Detik</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function HomePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
@@ -281,6 +351,10 @@ export default function HomePage() {
     width: 0,
     height: 0,
   })
+  const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  
+  // Target date for release: August 24, 2025
+  const releaseDate = new Date(2025, 7, 24); // Month is 0-indexed, so 7 = August
 
   // Get window dimensions for confetti
   useEffect(() => {
@@ -302,12 +376,45 @@ export default function HomePage() {
     setTimeout(() => setShowConfetti(false), 5000) // Show for 5 seconds
   }
 
-  const handleEarlyAccess = (e: React.FormEvent) => {
+  const handleEarlyAccess = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (email) {
-      triggerConfetti()
-      setEmail("")
-      setTimeout(() => setShowAIModal(false), 3000) // Close modal after 3 seconds
+    if (!email) return;
+    
+    setRegistrationStatus('loading');
+    
+    try {
+      // Call the API to handle database storage and email sending
+      const response = await fetch('/api/early-access', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to register');
+      }
+      
+      // Show success feedback
+      setRegistrationStatus('success');
+      triggerConfetti();
+      setEmail("");
+      
+      // Close modal after success
+      setTimeout(() => {
+        setShowAIModal(false);
+        setRegistrationStatus('idle');
+      }, 3000);
+      
+    } catch (error) {
+      console.error("Error registering for early access:", error);
+      setRegistrationStatus('error');
+      
+      // Reset after error
+      setTimeout(() => {
+        setRegistrationStatus('idle');
+      }, 3000);
     }
   }
 
@@ -375,15 +482,20 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.8 }}
-            className="flex flex-row gap-4 lg:justify-center lg:items-center items-start"
+            className="flex flex-col lg:items-center"
           >
-            <Button
-              size="lg"
-              onClick={() => setShowAIModal(true)}
-              className="bg-teal-600 hover:bg-teal-500 text-white px-8 py-6 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl border-0 group"
-            >
-              Coba AI 🤖
-            </Button>
+            <div className="flex flex-row gap-4 lg:justify-center lg:items-center items-start">
+              <Button
+                size="lg"
+                onClick={() => setShowAIModal(true)}
+                className="bg-teal-600 hover:bg-teal-500 text-white px-8 py-6 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl border-0 group"
+              >
+                Coba AI 🤖
+              </Button>
+            </div>
+            
+            {/* Add countdown timer below button */}
+            <CountdownTimer targetDate={releaseDate} />
           </motion.div>
         </div>
       </section>
@@ -426,24 +538,44 @@ export default function HomePage() {
               <p className="text-gray-600">Pengembangan AI masih dalam development, daftarkan email anda disini untuk mendapatkan akses awal!</p>
             </div>
 
-            <form onSubmit={handleEarlyAccess} className="space-y-4">
-              <div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Masukkan email anda..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  required
-                />
+            {registrationStatus === 'success' ? (
+              <div className="text-center p-4">
+                <div className="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">✓</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Terima Kasih!</h3>
+                <p className="text-gray-600">Email Anda telah terdaftar. Kami akan menghubungi Anda segera setelah AI kami diluncurkan pada 20 Agustus 2025.</p>
               </div>
-              <Button
-                type="submit"
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold transition-all duration-300"
-              >
-                Daftar Early Access 🚀
-              </Button>
-            </form>
+            ) : registrationStatus === 'error' ? (
+              <div className="text-center p-4">
+                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">✕</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Gagal Mendaftar</h3>
+                <p className="text-gray-600">Terjadi kesalahan. Silakan coba lagi nanti.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleEarlyAccess} className="space-y-4">
+                <div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Masukkan email anda..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    required
+                    disabled={registrationStatus === 'loading'}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                  disabled={registrationStatus === 'loading'}
+                >
+                  {registrationStatus === 'loading' ? 'Mendaftarkan...' : 'Daftar Early Access 🚀'}
+                </Button>
+              </form>
+            )}
           </motion.div>
         </div>
       )}
