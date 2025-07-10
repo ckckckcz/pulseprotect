@@ -23,6 +23,7 @@ import Services from "@/components/widget/hero/services"
 import HowItWorks from "@/components/widget/hero/how-it-works"
 import Banner from "@/components/widget/animate-banner"
 import Faq from "@/components/widget/hero/faq"
+import Pricing from "@/components/widget/hero/pricing"
 import Confetti from 'react-confetti'
 import { supabase } from "@/lib/supabase"
 
@@ -518,6 +519,9 @@ export default function HomePage() {
 
       {/* Faq Section */
       <Faq />}
+
+      {/* Pricing Section */}
+      <Pricing />
 
       {/* AI Development Modal */}
       {showAIModal && (
