@@ -22,10 +22,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingEmail) {
-      // Email already registered, but we'll return success anyway (to prevent email enumeration)
+      // Email already registered, return error message
       return NextResponse.json(
-        { success: true, message: 'Already registered for early access' },
-        { status: 200 }
+        { error: 'Email ini sudah terdaftar early access' },
+        { status: 409 } // 409 Conflict status code is appropriate for duplicate resources
       );
     }
 

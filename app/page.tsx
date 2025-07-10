@@ -352,6 +352,7 @@ export default function HomePage() {
     height: 0,
   })
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string>('');
   
   // Target date for release: August 24, 2025
   const releaseDate = new Date(2025, 7, 24); // Month is 0-indexed, so 7 = August
@@ -381,6 +382,7 @@ export default function HomePage() {
     if (!email) return;
     
     setRegistrationStatus('loading');
+    setErrorMessage('');
     
     try {
       // Call the API to handle database storage and email sending
@@ -392,8 +394,11 @@ export default function HomePage() {
         body: JSON.stringify({ email }),
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to register');
+        setErrorMessage(data.error || 'Gagal mendaftar');
+        throw new Error(data.error || 'Failed to register');
       }
       
       // Show success feedback
@@ -414,7 +419,7 @@ export default function HomePage() {
       // Reset after error
       setTimeout(() => {
         setRegistrationStatus('idle');
-      }, 3000);
+      }, 5000);
     }
   }
 
@@ -500,7 +505,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* DISINI ELEMENTNYA */}
       <Banner/>
       {/* Healthcare Section */}
       <About />
@@ -552,7 +556,7 @@ export default function HomePage() {
                   <span className="text-2xl">✕</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Gagal Mendaftar</h3>
-                <p className="text-gray-600">Terjadi kesalahan. Silakan coba lagi nanti.</p>
+                <p className="text-gray-600">{errorMessage || 'Terjadi kesalahan. Silakan coba lagi nanti.'}</p>
               </div>
             ) : (
               <form onSubmit={handleEarlyAccess} className="space-y-4">
