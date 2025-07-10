@@ -19,6 +19,7 @@ import Navbar from "@/components/widget/navbar"
 import Footer from "@/components/widget/footer"
 import About from "@/components/widget/hero/about-us"
 import Services from "@/components/widget/hero/services"
+import HowItWorks from "@/components/widget/hero/how-it-works"
 import Banner from "@/components/widget/animate-banner"
 import Faq from "@/components/widget/hero/faq"
 import Confetti from 'react-confetti'
@@ -394,6 +395,9 @@ export default function HomePage() {
       
       {/* Services Section */}
       <Services />
+
+      {/* How It Works Section */}
+      <HowItWorks />
 
       {/* Faq Section */
       <Faq />}
