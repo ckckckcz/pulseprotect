@@ -19,10 +19,13 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
+  LogOut,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
+import { useAuth } from "@/context/auth-context"
 
 const sidebarItems = [
   { icon: Home, label: "Dashboard", href: "/dashboard", active: true },
@@ -126,6 +129,36 @@ const getStatusColor = (status: string) => {
 
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const { user, logout, loading } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+  }
+
+  // Show loading spinner while checking session
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6A00]"></div>
+          <p className="text-white">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect to login if no user session
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white mb-4">Session expired. Redirecting to login...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6A00] mx-auto"></div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white">
@@ -165,12 +198,83 @@ export default function DashboardPage() {
               <Bell className="h-6 w-6" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-[#FF6A00] rounded-full"></span>
             </Button>
-            <div className="w-8 h-8 bg-[#FF6A00] rounded-full flex items-center justify-center">
-              <span className="text-sm font-bold">JD</span>
+            
+            {/* User Profile Dropdown */}
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                className="text-white hover:text-[#FF6A00] flex items-center space-x-2"
+              >
+                <div className="w-8 h-8 bg-[#FF6A00] rounded-full flex items-center justify-center">
+                  <span className="text-sm font-bold">
+                    {user?.nama_lengkap ? user.nama_lengkap.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                </div>
+                <span className="hidden sm:block text-sm font-medium">
+                  {user?.nama_lengkap || 'User'}
+                </span>
+              </Button>
+
+              {/* Profile Dropdown Menu */}
+              {profileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="absolute right-0 mt-2 w-48 bg-[#1A1A1A] border border-gray-800 rounded-xl shadow-lg z-50"
+                >
+                  <div className="p-3 border-b border-gray-800">
+                    <p className="font-medium text-white">{user?.nama_lengkap || 'User'}</p>
+                    <p className="text-sm text-[#A1A1AA]">{user?.email}</p>
+                  </div>
+                  
+                  <div className="p-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-white hover:bg-[#0D0D0D] hover:text-[#FF6A00]"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-white hover:bg-[#0D0D0D] hover:text-[#FF6A00]"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Button>
+                    
+                    <div className="border-t border-gray-800 my-2"></div>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="w-full justify-start text-red-400 hover:bg-red-400/10 hover:text-red-400"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
       </motion.nav>
+
+      {/* Close dropdown when clicking outside */}
+      {profileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setProfileMenuOpen(false)}
+        />
+      )}
 
       <div className="flex">
         {/* Sidebar */}
@@ -215,6 +319,18 @@ export default function DashboardPage() {
                 </motion.a>
               ))}
             </nav>
+
+            {/* Sidebar Logout Button */}
+            <div className="absolute bottom-6 left-6 right-6">
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full border-red-400/20 text-red-400 hover:bg-red-400/10 hover:text-red-400 bg-transparent"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </motion.aside>
 

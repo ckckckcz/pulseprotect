@@ -51,6 +51,156 @@ export const authService = {
     }
   },
 
+
+
+  async login({ email, password }: LoginData) {
+    try {
+      // Validate input
+      if (!email || !password) {
+        throw new Error("Email dan password wajib diisi");
+      }
+
+      // Get user data from custom user table
+      const { data: user, error: userError } = await supabase
+        .from("user")
+        .select("*")
+        .eq("email", email.toLowerCase().trim())
+        .single();
+
+      if (userError || !user) {
+        throw new Error("Email atau password salah");
+      }
+
+      // Check if email is verified
+      if (!user.verifikasi_email) {
+        throw new Error("Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.");
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.kata_sandi);
+      if (!isValidPassword) {
+        throw new Error("Email atau password salah");
+      }
+
+      // Return user data without password and save session
+      const { kata_sandi, konfigurasi_kata_sandi, verification_token, verification_token_expires, ...userWithoutPassword } = user;
+      
+      // Save user session to localStorage
+      this.saveUserSession(userWithoutPassword);
+      
+      return userWithoutPassword;
+    } catch (error: any) {
+      console.error("Login error:", error);
+      throw new Error(error.message || "Terjadi kesalahan saat login");
+    }
+  },
+
+  async loginWithGoogle(user: any) {
+    try {
+      // Save Google user session
+      this.saveUserSession(user);
+      return user;
+    } catch (error: any) {
+      console.error("Google login session error:", error);
+      throw new Error("Gagal menyimpan sesi login");
+    }
+  },
+
+  saveUserSession(user: any) {
+    if (typeof window !== 'undefined') {
+      try {
+        // Save user data to localStorage
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Save session timestamp
+        localStorage.setItem('sessionTimestamp', new Date().toISOString());
+        
+        // Save session expiry (7 days from now)
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 7);
+        localStorage.setItem('sessionExpiry', expiryDate.toISOString());
+        
+        // Also save to cookies for server-side access
+        document.cookie = `user-session=${JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          expires: expiryDate.toISOString()
+        })}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
+        
+        console.log('User session saved successfully');
+      } catch (error) {
+        console.error('Error saving user session:', error);
+      }
+    }
+  },
+
+  async getCurrentUser() {
+    try {
+      // Check for logged in user in localStorage
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        const sessionExpiry = localStorage.getItem('sessionExpiry');
+        
+        if (storedUser && sessionExpiry) {
+          const now = new Date();
+          const expiry = new Date(sessionExpiry);
+          
+          // Check if session has expired
+          if (now > expiry) {
+            this.logout(); // Clear expired session
+            return null;
+          }
+          
+          return JSON.parse(storedUser);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting current user:", error);
+      return null;
+    }
+  },
+
+  logout() {
+    if (typeof window !== 'undefined') {
+      try {
+        // Clear localStorage
+        localStorage.removeItem('user');
+        localStorage.removeItem('sessionTimestamp');
+        localStorage.removeItem('sessionExpiry');
+        
+        // Clear cookies
+        document.cookie = 'user-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        console.log('User session cleared');
+      } catch (error) {
+        console.error('Error clearing session:', error);
+      }
+    }
+  },
+
+  isSessionValid(): boolean {
+    if (typeof window !== 'undefined') {
+      const sessionExpiry = localStorage.getItem('sessionExpiry');
+      if (sessionExpiry) {
+        const now = new Date();
+        const expiry = new Date(sessionExpiry);
+        return now <= expiry;
+      }
+    }
+    return false;
+  },
+
+  extendSession() {
+    if (typeof window !== 'undefined' && this.isSessionValid()) {
+      // Extend session by 7 days
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 7);
+      localStorage.setItem('sessionExpiry', expiryDate.toISOString());
+      localStorage.setItem('sessionTimestamp', new Date().toISOString());
+    }
+  },
+
   async verifyEmail(token: string) {
     try {
       // Find user with the verification token
@@ -128,105 +278,6 @@ export const authService = {
     } catch (error: any) {
       console.error("Resend verification error:", error)
       throw new Error(error.message || "Gagal mengirim ulang email verifikasi")
-    }
-  },
-
-  async login({ email, password }: LoginData) {
-    try {
-      // Validate input
-      if (!email || !password) {
-        throw new Error("Email dan password wajib diisi");
-      }
-
-      // Get user data from custom user table
-      const { data: user, error: userError } = await supabase
-        .from("user")
-        .select("*")
-        .eq("email", email.toLowerCase().trim())
-        .single();
-
-      if (userError || !user) {
-        throw new Error("Email atau password salah");
-      }
-
-      // Check if email is verified
-      if (!user.verifikasi_email) {
-        throw new Error("Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.");
-      }
-
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.kata_sandi);
-      if (!isValidPassword) {
-        throw new Error("Email atau password salah");
-      }
-
-      // Return user data without password
-      const { kata_sandi, konfigurasi_kata_sandi, verification_token, verification_token_expires, ...userWithoutPassword } = user;
-      return userWithoutPassword;
-    } catch (error: any) {
-      console.error("Login error:", error);
-      throw new Error(error.message || "Terjadi kesalahan saat login");
-    }
-  },
-
-  async getCurrentUser() {
-    try {
-      // Check for logged in user in localStorage
-      if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          return JSON.parse(storedUser);
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error("Error getting current user:", error);
-      return null;
-    }
-  },
-
-  async updateUser(userId: number, data: { nama_lengkap?: string, nomor_telepon?: string }) {
-    try {
-      const { error } = await supabase
-        .from('user')
-        .update({
-          nama_lengkap: data.nama_lengkap,
-          nomor_telepon: data.nomor_telepon
-        })
-        .eq('id', userId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Get the updated user data
-      const { data: updatedUser, error: fetchError } = await supabase
-        .from('user')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (fetchError) {
-        throw new Error(fetchError.message);
-      }
-
-      // Update user in localStorage
-      if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          const { kata_sandi, konfigurasi_kata_sandi, verification_token, verification_token_expires, ...userWithoutPassword } = updatedUser;
-          localStorage.setItem('user', JSON.stringify({
-            ...parsed,
-            ...userWithoutPassword
-          }));
-        }
-      }
-
-      return updatedUser;
-    } catch (error: any) {
-      console.error("Update user error:", error);
-      throw new Error(error.message || "Terjadi kesalahan saat memperbarui profil");
     }
   },
 
@@ -388,5 +439,41 @@ export const authService = {
       console.error("Reset password error:", error);
       throw error;
     }
-  }
+  },
+
+  async updateUser(userId: number, data: { nama_lengkap?: string, nomor_telepon?: string }) {
+    try {
+      const { error } = await supabase
+        .from('user')
+        .update({
+          nama_lengkap: data.nama_lengkap,
+          nomor_telepon: data.nomor_telepon
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Get the updated user data
+      const { data: updatedUser, error: fetchError } = await supabase
+        .from('user')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+
+      // Update user in localStorage
+      const { kata_sandi, konfigurasi_kata_sandi, verification_token, verification_token_expires, ...userWithoutPassword } = updatedUser;
+      this.saveUserSession(userWithoutPassword);
+
+      return userWithoutPassword;
+    } catch (error: any) {
+      console.error("Update user error:", error);
+      throw new Error(error.message || "Terjadi kesalahan saat memperbarui profil");
+    }
+  },
 }

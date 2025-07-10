@@ -7,9 +7,8 @@ import { AuthProvider } from "@/context/auth-context"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SmartCity - Build a Smarter City Together",
-  description: "Empowering citizens through technology and real-time data",
-    generator: 'v0.dev'
+  title: "Smart City",
+  description: "Smart City Management System",
 }
 
 export default function RootLayout({
@@ -18,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="bg-white">
+    <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
           {children}
@@ -27,3 +26,4 @@ export default function RootLayout({
     </html>
   )
 }
+
