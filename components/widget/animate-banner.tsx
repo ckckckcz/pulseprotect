@@ -42,7 +42,7 @@ export default function AnimatedCrossBanner() {
         <div className="relative w-full lg:h-[90px] h-14">
           {/* Background stripe */}
           <div
-            className="absolute inset-0 bg-teal-600 transform rotate-[3deg] origin-center shadow-lg"
+            className="absolute inset-0 bg-teal-600 transform rotate-[2deg] origin-center shadow-lg"
             style={{
               width: "150%",
               left: "-25%",
@@ -50,7 +50,7 @@ export default function AnimatedCrossBanner() {
           />
 
           {/* Text container */}
-          <div className="absolute inset-0 flex items-center overflow-hidden transform rotate-[3deg]">
+          <div className="absolute inset-0 flex items-center overflow-hidden transform rotate-[2deg]">
             <div className="flex animate-scroll-left-continuous">
               <span className="text-white font-bold lg:text-3xl text-2xl whitespace-nowrap">
                 {fullText}
