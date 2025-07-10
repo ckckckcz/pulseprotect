@@ -9,6 +9,7 @@ import {
   Bell,
   MousePointer2,
   Zap,
+  Construction
 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -554,7 +555,7 @@ export default function HomePage() {
               <>
                 <div className="text-center mb-6">
                   <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">🚧</span>
+                    <Construction className="w-7 h-7 text-teal-600"/>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Dalam Pengembangan</h3>
                   <p className="text-gray-600">Pengembangan AI masih dalam development, daftarkan email anda disini untuk mendapatkan akses awal!</p>
