@@ -26,7 +26,9 @@ import {
   ChevronDown,
   Home,
   User,
-  LogOut
+  LogOut,
+  DoorOpen,
+  House
 } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -279,7 +281,7 @@ export default function ChatInterface() {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div 
-        className={`bg-white border-r hidden lg:block border-gray-200 text-gray-900 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${
           isSidebarExpanded ? "w-72" : "w-[69px]"
         }`}
       >
@@ -579,14 +581,14 @@ export default function ChatInterface() {
         </div>
 
         {/* Mobile Bottom Toggle Button - Fixed position above footer */}
-        <div className="fixed bottom-[100px] right-[390px] left-0 flex justify-center lg:hidden z-20">
+        <div className="fixed bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
           <Button
             onClick={toggleBottomCard}
             className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${
-              showBottomCard ? 'rotate-190' : ''
+              showBottomCard ? 'rotate-180' : ''
             }`}
           >
-            <ChevronDown className="w-6 h-6" />
+            <ArrowUp className="w-full h-full" />
           </Button>
         </div>
 
@@ -603,7 +605,7 @@ export default function ChatInterface() {
           initial={{ y: '100%' }}
           animate={{ y: showBottomCard ? 0 : '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-0 left-0 right-0 bg-white text-gray-900 rounded-t-3xl p-6 z-30 lg:hidden"
+          className="fixed bottom-0 left-0 right-0 bg-white text-gray-900 rounded-t-3xl p-6 z-40 lg:hidden"
           style={{ maxHeight: '80vh', overflowY: 'auto' }}
         >
           <div className="flex justify-center mb-2">
@@ -668,19 +670,29 @@ export default function ChatInterface() {
             </div>
 
             {/* Logout Button */}
-            <Button
+            <div className="flex flex-row gap-3">
+              <Button
               variant="outline"
-              className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl"
+              className="w-full flex items-center justify-center gap-2 h-12 bg-gray-100 border-gray-300 text-black hover:bg-gray-200 hover:text-black hover:border-gray-300 rounded-xl"
               onClick={handleLogout}
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Keluar</span>
-            </Button>
+              >
+                <House className="w-4 h-4" />
+                <span>Home</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl"
+                onClick={handleLogout}
+              >
+                <DoorOpen className="w-4 h-4" />
+                <span>Keluar</span>
+              </Button>
+            </div>
           </div>
         </motion.div>
 
         {/* Footer - Add padding to prevent overlap with toggle button on mobile */}
-        <div className="bg-white border-t border-gray-200 px-6 py-4 mb-12 lg:mb-0 shrink-0 z-5">
+        <div className="bg-white border-t border-gray-200 px-6 lg:py-6 py-4 lg:mb-0 shrink-0 z-30">
           <div className="flex justify-center space-x-6 text-sm text-gray-500">
             <a href="#" className="hover:text-gray-700">
               Terms & Conditions
