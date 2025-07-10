@@ -50,8 +50,12 @@ export default function AboutUs() {
                 },
               ].map((item, index) => (
                 <motion.div key={index} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }} className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center mt-1">
-                    <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
+                  <div className="flex-shrink-0 w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mt-1">
+                    <div className="relative flex items-center justify-center">
+                      <div className="absolute w-4 h-4 bg-teal-200 rounded-full animate-ping opacity-75"></div>
+                      <div className="absolute w-3 h-3 bg-teal-300 rounded-full animate-pulse"></div>
+                      <div className="relative w-2 h-2 bg-teal-400 rounded-full"></div>
+                    </div>
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
