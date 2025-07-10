@@ -19,6 +19,7 @@ import Navbar from "@/components/widget/navbar"
 import Footer from "@/components/widget/footer"
 import About from "@/components/widget/hero/about-us"
 import Services from "@/components/widget/hero/services"
+import Banner from "@/components/widget/animate-banner"
 import Faq from "@/components/widget/hero/faq"
 import Confetti from 'react-confetti'
 
@@ -310,7 +311,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
       <Navbar />
       <section className="relative lg:min-h-screen flex items-center justify-center pt-16 px-4 sm:px-6 md:px-8 overflow-hidden">
         {/* Background with overlay */}
@@ -387,7 +388,7 @@ export default function HomePage() {
       </section>
 
       {/* DISINI ELEMENTNYA */}
-      
+      <Banner/>
       {/* Healthcare Section */}
       <About />
       
