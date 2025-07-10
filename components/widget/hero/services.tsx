@@ -47,16 +47,18 @@ export default function Services() {
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="lg:text-center lg:mb-24 mb-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="mb-4"
           >
-            <span className="text-teal-600 font-semibold text-sm bg-teal-100 px-3 py-1 rounded-full">
-              Our Services
-            </span>
+            <div className="inline-block bg-teal-50 border-2 border-teal-100 px-4 py-2 rounded-full">
+              <span className="text-teal-600 text-sm font-medium flex items-center gap-2">
+                  Our Services
+              </span>
+            </div>
           </motion.div>
 
           <motion.h2
@@ -82,7 +84,7 @@ export default function Services() {
               transition={{ delay: index * 0.1 }}
               className={`${
                 service.color
-              } border-2 border-gray-200 hover:border-transparent hover:bg-teal-600 hover:animate-pulse ${service.highlight ? "lg:scale-110 lg:-mt-8" : ""} rounded-3xl p-8 group hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden`}
+              } border-2 border-gray-200 hover:border-transparent hover:bg-teal-600 hover:animate-pulse ${service.highlight ? "lg:scale-110 lg:-mt-8" : ""} rounded-3xl lg:p-8 p-6 group hover:shadow-xl transition-all duration-300 cursor-pointer relative overflow-hidden`}
               style={{
                 animation: 'none'
               }}

@@ -21,7 +21,11 @@ export default function AboutUs() {
           <div className="space-y-8">
             <div>
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-4">
-                <span className="text-teal-600 font-semibold text-sm bg-teal-100 px-3 py-1 rounded-full">Tentang Bakekok</span>
+                <div className="inline-block bg-teal-50 border-2 border-teal-100 px-4 py-2 rounded-full">
+                  <span className="text-teal-600 text-sm font-medium flex items-center gap-2">
+                      About Us
+                  </span>
+                </div>              
               </motion.div>
 
               <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
