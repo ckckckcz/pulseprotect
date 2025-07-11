@@ -1,7 +1,7 @@
 "use client"
 
   import { useState, useEffect, useMemo } from "react"
-import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, RefreshCw } from "lucide-react"
+import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, Info, RefreshCw, Sun, Moon, MessageCircle, Bolt, LogOut, Globe2, Languages } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
@@ -93,6 +93,12 @@ export default function UserProfile() {
   const [avatarId, setAvatarId] = useState<number | null>(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [isAvatarChanged, setIsAvatarChanged] = useState(false);
+
+  // Language and theme state
+  const [language, setLanguage] = useState<"id" | "en">("id");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [feedback, setFeedback] = useState("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
 
   // Fetch countries data
   useEffect(() => {
@@ -467,9 +473,9 @@ export default function UserProfile() {
 
   const sidebarItems = [
     { id: "general", label: "Umum", icon: User },
-    { id: "authentication", label: "Autentikasi", icon: Key },
     { id: "security", label: "Keamanan", icon: Shield },
     { id: "billing", label: "Transaksi", icon: CreditCard },
+    { id: "settings", label: "Pengaturan", icon: Bolt },
   ]
 
   // Ambil membership_type dari transaksi terakhir yang sukses
@@ -740,7 +746,7 @@ export default function UserProfile() {
                 </div>
               )}
 
-              {activeSetting === "authentication" && (
+              {activeSetting === "security" && (
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                   <h2 className="text-2xl font-semibold">Autentikasi</h2>
                   <p className="text-gray-400 text-sm">Pengaturan keamanan dan autentikasi akun Anda.</p>
@@ -848,6 +854,111 @@ export default function UserProfile() {
                       </div>
                     )}
                   </div>                  
+                </div>
+              )}
+
+              {activeSetting === "settings" && (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                    {/* Kiri: Bahasa & Mode Tampilan */}
+                    <div className="p-6 space-y-8 border-b md:border-b-0 md:border-r border-gray-200">
+                      {/* Bahasa */}
+                      <div>
+                        <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
+                          <Globe2 className="w-6 h-6" /> Pilih Bahasa
+                        </h3>
+                        <div className="flex gap-3">
+                          <Button
+                            variant={language === "id" ? "default" : "outline"}
+                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "id" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                            onClick={() => setLanguage("id")}
+                          >
+                            <Languages className="w-4 h-4" /> Indonesia
+                          </Button>
+                          <Button
+                            variant={language === "en" ? "default" : "outline"}
+                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "en" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                            onClick={() => setLanguage("en")}
+                          >
+                            <Languages className="w-4 h-4" /> English
+                          </Button>
+                        </div>
+                      </div>
+                      {/* Mode Tampilan */}
+                      <div>
+                        <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
+                          <Sun className="w-6 h-6" /> Mode Tampilan
+                        </h3>
+                        <div className="flex gap-3">
+                          <Button
+                            variant={theme === "light" ? "default" : "outline"}
+                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "light" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                            onClick={() => setTheme("light")}
+                          >
+                            <Sun className="w-4 h-4" /> Light
+                          </Button>
+                          <Button
+                            variant={theme === "dark" ? "default" : "outline"}
+                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "dark" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                            onClick={() => setTheme("dark")}
+                          >
+                            <Moon className="w-4 h-4" /> Dark
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Kanan: Feedback & Tentang */}
+                    <div className="p-6 space-y-8">
+                      {/* Feedback & Dukungan */}
+                      <div>
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          <MessageCircle className="w-5 h-5" /> Feedback & Dukungan
+                        </h3>
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            setSendingFeedback(true);
+                            setTimeout(() => {
+                              toast.success("Feedback terkirim, terima kasih!");
+                              setFeedback("");
+                              setSendingFeedback(false);
+                            }, 1200);
+                          }}
+                          className="flex flex-col gap-2"
+                        >
+                          <textarea
+                            value={feedback}
+                            onChange={e => setFeedback(e.target.value)}
+                            className="border border-gray-300 rounded-xl p-3 text-sm resize-none"
+                            rows={3}
+                            placeholder="Ketik saran atau laporan masalah Anda di sini..."
+                            required
+                          />
+                          <Button
+                            type="submit"
+                            className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl"
+                            disabled={sendingFeedback || !feedback.trim()}
+                          >
+                            {sendingFeedback ? "Mengirim..." : "Kirim Feedback"}
+                          </Button>
+                        </form>
+                      </div>
+                      {/* Tentang Aplikasi */}
+                      <div>
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          <Info className="w-5 h-5" /> Tentang Aplikasi
+                        </h3>
+                        <div className="text-sm text-gray-700 space-y-1">
+                          <div>Versi: <span className="font-semibold">1.0.0</span></div>
+                          <div>Tim Pengembang: <span className="font-semibold">MechaMinds</span></div>
+                          <div>
+                            Lisensi: <span className="font-semibold">Open Source (MIT)</span>
+                          </div>
+                          {/* T */}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
               

@@ -100,8 +100,8 @@ export default function Footer() {
                 <span className="text-gray-400">+62 21 7863 8888</span>
               </div>
               <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-4 mt-6">
-                <p className="text-sm text-gray-400 mb-2">Versi Platform:</p>
-                <p className="text-teal-600 font-semibold">v1.0</p>
+                <p className="text-sm text-gray-400 mb-2">Versi :</p>
+                <p className="text-teal-600 font-semibold">v1.0.0</p>
               </div>
             </div>
           </div>

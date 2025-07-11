@@ -7,7 +7,7 @@ export default function Services() {
   const services = [
     {
       id: 1,
-      title: "Kardiologi",
+        title: "Kardiologi",
       description:
         "Layanan jantung terbaik untuk keluarga Anda. Tim kami siap membantu kesehatan jantung Anda secara menyeluruh.",
       icon: Heart,
