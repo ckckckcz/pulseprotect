@@ -45,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-white">
       <head>
         {/* Script for Midtrans can be preloaded here */}
         <link 

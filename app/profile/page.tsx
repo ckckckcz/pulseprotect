@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { authService } from "@/lib/auth"
 import { toast } from "sonner"
@@ -25,6 +26,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 // Define a type for the user with status
 type UserWithStatus = {
@@ -47,6 +50,19 @@ type Country = {
   code: string
 }
 
+// Add new type definitions for payment
+type Payment = {
+  id_payment: number;
+  email: string;
+  membership_type: string;
+  order_id: string;
+  transaction_type: string;
+  metode_pembayaran: string;
+  harga: number;
+  status: string;
+  created_at: string;
+}
+
 export default function UserProfile() {
   const [activeSetting, setActiveSetting] = useState("general")
   const { user, loading, refreshUser } = useAuth()
@@ -67,6 +83,10 @@ export default function UserProfile() {
     nomor_telepon: ""
   })
   const [formChanged, setFormChanged] = useState(false)
+  
+  // Add state for payments
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
   
   // Fetch countries data
   useEffect(() => {
@@ -328,6 +348,59 @@ export default function UserProfile() {
     }
   };
 
+  // Add function to fetch user payments
+  const fetchUserPayments = async () => {
+    if (!user?.email) return;
+    
+    setLoadingPayments(true);
+    try {
+      const response = await fetch(`/api/payments/user-transactions?email=${encodeURIComponent(user.email)}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch payment data');
+      }
+      
+      const result = await response.json();
+      setPayments(result.data || []);
+    } catch (error) {
+      console.error('Error fetching payment data:', error);
+      toast.error('Gagal memuat data transaksi');
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+  
+  // Fetch payments when billing tab is selected
+  useEffect(() => {
+    if (activeSetting === 'billing' && user?.email) {
+      fetchUserPayments();
+    }
+  }, [activeSetting, user?.email]);
+
+  // Add formatCurrency helper function
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+  
+  // Add function to get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'success':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'failed':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -344,7 +417,7 @@ export default function UserProfile() {
     { id: "general", label: "Umum", icon: User },
     { id: "authentication", label: "Autentikasi", icon: Key },
     { id: "security", label: "Keamanan", icon: Shield },
-    { id: "billing", label: "Tagihan", icon: CreditCard },
+    { id: "billing", label: "Transaksi", icon: CreditCard },
     { id: "invoices", label: "Faktur", icon: FileText },
   ]
 
@@ -573,6 +646,92 @@ export default function UserProfile() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+              
+              {/* Add the billing section */}
+              {activeSetting === "billing" && (
+                <div className="space-y-6">
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                    <h2 className="text-2xl font-semibold mb-2">Transaksi</h2>
+                    <p className="text-gray-400 text-sm mb-6">Riwayat transaksi pembayaran paket AI Anda.</p>
+                    
+                    {loadingPayments ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+                      </div>
+                    ) : payments.length > 0 ? (
+                      <div className="overflow-x-auto rounded-xl border border-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 overflow-hidden">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                ID Transaksi
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Tanggal
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Paket
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Metode Pembayaran
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Jumlah
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {payments.map((payment) => (
+                              <tr key={payment.id_payment} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {payment.order_id}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: id })}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                                  {payment.membership_type}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                                  {payment.metode_pembayaran.replace(/_/g, ' ')}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                  {formatCurrency(payment.harga)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(payment.status)}`}>
+                                    {payment.status === 'success' ? 'Berhasil' : 
+                                     payment.status === 'pending' ? 'Menunggu' :
+                                     payment.status === 'failed' ? 'Gagal' : payment.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
+                        <CreditCard className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak Ada Transaksi</h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Anda belum memiliki transaksi pembayaran apa pun.
+                        </p>
+                        <div className="mt-6">
+                          <Link href="/pricing">
+                            <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl">
+                              Lihat Paket
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>                  
                 </div>
               )}
               
