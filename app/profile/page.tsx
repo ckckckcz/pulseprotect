@@ -418,7 +418,6 @@ export default function UserProfile() {
     { id: "authentication", label: "Autentikasi", icon: Key },
     { id: "security", label: "Keamanan", icon: Shield },
     { id: "billing", label: "Transaksi", icon: CreditCard },
-    { id: "invoices", label: "Faktur", icon: FileText },
   ]
 
   // Ambil membership_type dari transaksi terakhir yang sukses

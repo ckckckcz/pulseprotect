@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import { createAIPackagePayment, handleMidtransPayment, PackageDetails, recordPayment } from "@/services/payment"
 import Cookies from 'js-cookie'
+import { supabase } from "@/lib/supabase"
 
 type PlanType = 'free' | 'plus' | 'pro'
 
@@ -43,6 +44,7 @@ export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false)
   const [isLoading, setIsLoading] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [activeMembershipType, setActiveMembershipType] = useState<PlanType>("free");
   const { toast } = useToast()
   const router = useRouter()
 
@@ -61,6 +63,31 @@ export default function PricingPage() {
       console.error('Error parsing user session cookie:', error);
     }
   }, []);
+
+  // Fetch active membership from payment table
+  useEffect(() => {
+    const fetchMembership = async () => {
+      if (!currentUser?.email) {
+        setActiveMembershipType("free");
+        return;
+      }
+      const { data, error } = await supabase
+        .from("payment")
+        .select("membership_type, created_at, status")
+        .eq("email", currentUser.email)
+        .eq("status", "success")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data && data.membership_type) {
+        setActiveMembershipType(data.membership_type as PlanType);
+      } else {
+        setActiveMembershipType("free");
+      }
+    };
+    fetchMembership();
+  }, [currentUser?.email]);
 
   const freeFeatures = [
     "Akses model AI dasar",
@@ -503,6 +530,17 @@ export default function PricingPage() {
     }
   };
 
+  // Helper: cek apakah membership aktif user adalah bulanan
+  const isActiveMonthly = (plan: PlanType) => {
+    return activeMembershipType === plan && !isYearly;
+  };
+
+  // Helper: cek apakah membership aktif user adalah tahunan
+  const isActiveYearly = (plan: PlanType) => {
+    // Lakukan pengecekan period jika ada
+    return activeMembershipType === plan && isYearly;
+  };
+
   return (
     <div className="min-h-screen bg-white py-16 px-4">
       <div className="max-w-7xl mx-auto">
@@ -581,9 +619,11 @@ export default function PricingPage() {
             <Button 
               className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50"
               onClick={(e) => handlePayment(e, 'free')}
-              disabled={isLoading !== null}
+              disabled={isLoading !== null || activeMembershipType === "free"}
             >
-              Mulai Gratis
+              {activeMembershipType === "free"
+                ? "Membership Aktif"
+                : "Mulai Gratis"}
             </Button>
           </div>
 
@@ -624,9 +664,17 @@ export default function PricingPage() {
             <Button 
               className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl" 
               onClick={(e) => handlePayment(e, 'plus')} 
-              disabled={isLoading !== null}
+              disabled={isLoading !== null || (activeMembershipType === "plus" && !isYearly)}
             >
-              {isLoading === 'plus' ? 'Memproses...' : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
+              {activeMembershipType === "plus" && !isYearly
+                ? "Membership Aktif"
+                : isYearly && activeMembershipType === "plus"
+                ? "Upgrade Plus Tahunan"
+                : isYearly && activeMembershipType === "pro"
+                ? "Upgrade Pro"
+                : isLoading === 'plus'
+                ? 'Memproses...'
+                : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
             </Button>
           </div>
 
@@ -665,9 +713,17 @@ export default function PricingPage() {
             <Button 
               className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50" 
               onClick={(e) => handlePayment(e, 'pro')} 
-              disabled={isLoading !== null}
+              disabled={isLoading !== null || (activeMembershipType === "pro" && !isYearly)}
             >
-              {isLoading === 'pro' ? 'Memproses...' : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
+              {activeMembershipType === "pro" && !isYearly
+                ? "Membership Aktif"
+                : isYearly && activeMembershipType === "pro"
+                ? "Upgrade Pro Tahunan"
+                : isYearly && activeMembershipType === "plus"
+                ? "Upgrade Pro"
+                : isLoading === 'pro'
+                ? 'Memproses...'
+                : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
             </Button>
           </div>
         </div>
