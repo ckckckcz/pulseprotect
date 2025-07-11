@@ -25,6 +25,7 @@ import Banner from "@/components/widget/animate-banner"
 import Faq from "@/components/widget/hero/faq"
 import Pricing from "@/components/widget/hero/pricing"
 import FooterBanner from "@/components/widget/footer-banner"
+import Partner from "@/components/widget/hero/partner"
 import Confetti from 'react-confetti'
 import { supabase } from "@/lib/supabase"
 
@@ -428,9 +429,17 @@ export default function HomePage() {
   const [latestMembershipType, setLatestMembershipType] = useState<string>("free");
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden scroll-smooth">
       <Navbar />
-      <section className="relative lg:min-h-screen flex items-center justify-center pt-16 px-4 sm:px-6 md:px-8 overflow-hidden">
+      <motion.section
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] } }
+        }}
+        className="relative lg:min-h-screen flex items-center justify-center pt-16 px-4 sm:px-6 md:px-8 overflow-hidden"
+      >
         {/* Background with overlay */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -444,7 +453,13 @@ export default function HomePage() {
         </div>
 
         <div className="hidden lg:block">
-          <FloatingAvatars />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.5 }}
+          >
+            <FloatingAvatars />
+          </motion.div>
         </div>
 
         <div className="relative z-10 text-left lg:text-center max-w-6xl mx-auto mt-14">
@@ -507,31 +522,100 @@ export default function HomePage() {
             <CountdownTimer targetDate={releaseDate} />
           </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      <Banner/>
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] } }
+        }}
+      >
+        <Banner />
+      </motion.div>
+
       {/* Healthcare Section */}
-      <About />
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] } }
+        }}
+      >
+        <About />
+      </motion.div>
       
       {/* Services Section */}
-      <Services />
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] } }
+        }}
+      >
+        <Services />
+      </motion.div>
 
       {/* How It Works Section */}
-      <HowItWorks />
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] } }
+        }}
+      >
+        <HowItWorks />
+      </motion.div>
 
-      {/* Faq Section */
-      <Faq />}
+      {/* Faq Section */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] } }
+        }}
+      >
+        <Faq />
+      </motion.div>
 
       {/* Pricing Section */}
-      <Pricing />
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        variants={{
+          hidden: { opacity: 0, y: 40 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] } }
+        }}
+      >
+        <Pricing />
+      </motion.div>
+
+      {/* Partners List Animated */}
+      <Partner />
 
       {/* AI Development Modal */}
       {showAIModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl relative"
           >
             <button
@@ -540,25 +624,39 @@ export default function HomePage() {
             >
               ✕
             </button>
-            
+            {/* ...existing modal content... */}
             {registrationStatus === 'success' ? (
-              <div className="text-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="text-center p-4"
+              >
                 <div className="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">✓</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Terima Kasih!</h3>
                 <p className="text-gray-600">Email Anda telah terdaftar. Kami akan menghubungi Anda segera setelah AI kami diluncurkan pada 20 Agustus 2025.</p>
-              </div>
+              </motion.div>
             ) : registrationStatus === 'error' ? (
-              <div className="text-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="text-center p-4"
+              >
                 <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">✕</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Gagal Mendaftar</h3>
                 <p className="text-gray-600">{errorMessage || 'Terjadi kesalahan. Silakan coba lagi nanti.'}</p>
-              </div>
+              </motion.div>
             ) : (
-              <>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
                 <div className="text-center mb-6">
                   <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Construction className="w-7 h-7 text-teal-600"/>
@@ -566,9 +664,12 @@ export default function HomePage() {
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Dalam Pengembangan</h3>
                   <p className="text-gray-600">Pengembangan AI masih dalam development, daftarkan email anda disini untuk mendapatkan akses awal!</p>
                 </div>
-                
                 <form onSubmit={handleEarlyAccess} className="space-y-4">
-                  <div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
                     <input
                       type="email"
                       value={email}
@@ -578,19 +679,25 @@ export default function HomePage() {
                       required
                       disabled={registrationStatus === 'loading'}
                     />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold transition-all duration-300"
-                    disabled={registrationStatus === 'loading'}
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
                   >
-                    {registrationStatus === 'loading' ? 'Tunggu Sebentar...' : 'Daftar Early Access 🚀'}
-                  </Button>
+                    <Button
+                      type="submit"
+                      className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold transition-all duration-300"
+                      disabled={registrationStatus === 'loading'}
+                    >
+                      {registrationStatus === 'loading' ? 'Tunggu Sebentar...' : 'Daftar Early Access 🚀'}
+                    </Button>
+                  </motion.div>
                 </form>
-              </>
+              </motion.div>
             )}
           </motion.div>
-        </div>
+        </motion.div>
       )}
 
       {/* Confetti Animation */}
@@ -606,9 +713,23 @@ export default function HomePage() {
         />
       )}
 
-      <FooterBanner/>
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
+      >
+        <FooterBanner />
+      </motion.div>
 
-      <Footer />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.8 }}
+      >
+        <Footer />
+      </motion.div>
     </div>
   )
 }

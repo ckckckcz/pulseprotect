@@ -543,7 +543,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-white py-16 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full mx-auto">
         {/* Debug button - only show in development */}
         {/* {process.env.NODE_ENV === 'development' && (
           <div className="text-center mb-4">
