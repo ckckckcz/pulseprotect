@@ -71,7 +71,8 @@ export async function POST(request: Request) {
         verifikasi_email: false,
         email_confirmed_at: null,
         verification_token: verificationToken,
-        verification_token_expires: tokenExpiry.toISOString()
+          verification_token_expires: tokenExpiry.toISOString(),
+        account_membership: 'free' // Set default membership explicitly
       })
       .select('id, nama_lengkap, email, nomor_telepon, role, verifikasi_email, status')
       .single()

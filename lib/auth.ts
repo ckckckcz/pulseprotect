@@ -28,6 +28,7 @@ export const authService = {
           password,
           fullName,
           phone,
+          account_membership: 'free', // Set default membership for new users
         }),
       });
 
@@ -169,6 +170,12 @@ export const authService = {
           throw new Error("Invalid user data for session");
         }
         
+        // Ensure account_membership is set to 'free' if it doesn't exist
+        if (!user.account_membership) {
+          user.account_membership = 'free';
+          console.log('Setting default account_membership to free');
+        }
+        
         // Save directly without stringifying first
         try {
           localStorage.setItem('user', JSON.stringify(user));
@@ -188,7 +195,7 @@ export const authService = {
             email: user.email || '',
             nama_lengkap: user.nama_lengkap || '',
             role: user.role || 'user',
-            account_membership: user.account_membership || null,
+            account_membership: user.account_membership || 'free', // Default to 'free' if null
             expires: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString()
           }), { 
             expires: 7,
@@ -199,15 +206,44 @@ export const authService = {
           console.error("Cookie error:", cookieError);
         }
         
-        console.log('User session saved successfully');
+        console.log('User session saved successfully with membership:', user.account_membership || 'free');
       } catch (error) {
         console.error('Error saving user session:', error);
       }
     }
   },
 
-  async getCurrentUser() {
+  async getCurrentUser(forceRemote = false) {
     try {
+      // Jika forceRemote true, ambil dari Supabase langsung
+      if (forceRemote && typeof window !== 'undefined') {
+        const sessionCookie = Cookies.get('user-session');
+        let userId = null;
+        if (sessionCookie) {
+          try {
+            const sessionData = JSON.parse(sessionCookie);
+            userId = sessionData.userId;
+          } catch {}
+        }
+        if (!userId) {
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            userId = JSON.parse(storedUser).id;
+          }
+        }
+        if (userId) {
+          // Fetch user terbaru dari Supabase
+          const { data, error } = await supabase
+            .from("user")
+            .select("*")
+            .eq("id", userId)
+            .maybeSingle();
+          if (error || !data) return null;
+          // Update session
+          this.saveUserSession(data);
+          return data;
+        }
+      }
       // First try to get user from cookies
       if (typeof window !== 'undefined') {
         const sessionCookie = Cookies.get('user-session');

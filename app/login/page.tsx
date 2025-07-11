@@ -62,13 +62,12 @@ function LoginForm() {
       if (loginResult && loginResult.error) {
         console.error('Login returned error:', loginResult.message)
         setError(loginResult.message)
-      } else {
-        // If login successful and we have a return URL, redirect there
-        if (returnUrl) {
-          router.push(returnUrl)
-        }
-        // Otherwise, the auth context will handle default redirection
+      } else if (returnUrl) {
+        // Only manually redirect if we have a specific returnUrl
+        // Otherwise, the auth context will handle default redirect to home
+        router.push(returnUrl)
       }
+      // No else needed - auth context will handle default redirect to home
       
     } catch (error: any) {
       console.error('Unhandled login error:', error)

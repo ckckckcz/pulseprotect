@@ -57,8 +57,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       const currentUser = await authService.getCurrentUser()
       if (currentUser && authService.isSessionValid()) {
+        // Ensure account_membership is set to 'free' if it doesn't exist
+        if (currentUser && !currentUser.account_membership) {
+          currentUser.account_membership = 'free';
+        }
         setUser(currentUser)
-        console.log('Session restored:', currentUser.email)
+        console.log('Session restored:', currentUser.email, 'Membership:', currentUser.account_membership)
       } else if (currentUser) {
         // Session expired, clear it
         authService.logout()
@@ -112,9 +116,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(userData);
       console.log('Login successful, session saved:', userData.email);
-      
-      // Don't redirect here - let the component handle it based on returnUrl
-      // This prevents automatic redirect to home page
+
+      // Refresh user data from database (Supabase) setelah login
+      await refreshUser();
+
+      setTimeout(() => {
+        router.push('/');
+      }, 300);
       
       // Return success (no error returned means success)
     } catch (error: any) {
@@ -170,10 +178,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Move refreshSession inside AuthProvider to access user state
   const refreshSession = () => {
     if (user && authService.isSessionValid()) {
-      authService.extendSession()
-      console.log('Session refreshed')
+      authService.extendSession();
+      console.log('Session refreshed');
     }
   }
 
@@ -181,10 +190,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     try {
       if (!user || !user.id) return;
-      
       // Get latest user data from database
-      const currentUser = await authService.getCurrentUser();
-      
+      const currentUser = await authService.getCurrentUser(true); // forceRemote = true
       if (currentUser) {
         setUser(currentUser);
         console.log('User data refreshed');
@@ -211,7 +218,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   )
 }
-
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {

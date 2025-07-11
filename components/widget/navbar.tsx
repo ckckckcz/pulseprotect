@@ -13,7 +13,10 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [visible, setVisible] = useState(true);
-  const { user, loading, logout } = useAuth();
+  const auth = useAuth();
+  const user = auth?.user;
+  const loading = auth?.loading;
+  const logout = auth?.logout;
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -64,7 +67,9 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      if (logout) {
+        await logout();
+      }
     } catch (error) {
       console.error("Error logging out:", error);
     }
@@ -80,42 +85,42 @@ export default function Navbar() {
       .substring(0, 2);
   };
 
-  // Function to get avatar class based on membership - with stricter checks
+  // Function to get avatar class based on user.account_membership
   const getAvatarClass = () => {
-    // Only apply special styling for explicit plus/pro memberships
-    if (!user || !user.account_membership) {
-      return ""; // No membership data - no special styling
-    }
-    
-    // Explicit check only for exact premium membership values
-    switch (user.account_membership) {
+    if (!user) return "";
+    const membershipType = (user.account_membership || "free").toLowerCase();
+
+    switch (membershipType) {
       case "plus":
-        return "ring-2 ring-teal-500 ring-offset-2 ring-offset-white";
+        // Teal ring + glow
+        return "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]";
       case "pro":
-        return "ring-2 ring-[#FFD700] ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(255,215,0,0.5)]";
+        // Amber ring + strong gold glow
+        return "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300";
+      case "free":
       default:
-        return ""; // Free tier or any other value - no special styling
+        return "";
     }
   };
 
-  // Function to get membership badge - with stricter checks
+  // Function to get membership badge based on user.account_membership
   const getMembershipBadge = () => {
-    // Check that user has account_membership AND it's exactly plus/pro (case sensitive)
-    if (!user || 
-        !user.account_membership || 
-        (user.account_membership !== "plus" && user.account_membership !== "pro")) {
-      return null; // Return null to not render any badge
-    }
-    
-    const isPro = user.account_membership === "pro";
-    
+    if (!user) return null;
+    const membershipType = (user.account_membership || "free").toLowerCase();
+    if (membershipType === "free") return null;
+
+    const isPro = membershipType === "pro";
     return (
       <span 
-        className={`absolute -top-1 -right-1 rounded-full flex items-center justify-center w-5 h-5 text-xs font-bold text-white ${
-          isPro ? "bg-gradient-to-r from-yellow-500 to-amber-500" : "bg-teal-500"
+        className={`absolute -top-1 -right-1 rounded-full flex items-center justify-center ${
+          isPro 
+            ? "w-6 h-6 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 p-0.5" 
+            : "w-5 h-5 bg-teal-500"
         }`}
       >
-        <Crown className="h-3 w-3" />
+        <span className={`${isPro ? "bg-amber-100 rounded-full w-full h-full flex items-center justify-center" : ""}`}>
+          <Crown className={`${isPro ? "h-3 w-3 text-amber-600" : "h-3 w-3 text-white"}`} />
+        </span>
       </span>
     );
   };
@@ -188,14 +193,33 @@ export default function Navbar() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{user.nama_lengkap}</p>
                       <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                      {user.account_membership && user.account_membership !== "free" && (
-                        <p className="text-xs font-medium mt-1 inline-flex items-center">
-                          <span className={`w-2 h-2 rounded-full mr-1 ${user.account_membership === "pro" ? "bg-amber-500" : "bg-teal-500"}`}></span>
-                          <span className={`${user.account_membership === "pro" ? "text-amber-600" : "text-teal-600"}`}>
-                            {user.account_membership === "pro" ? "Pro Plan" : "Plus Plan"}
-                          </span>
-                        </p>
-                      )}
+                      {/* Paket aktif */}
+                      <p className="text-xs mt-1 flex items-center space-x-1">
+                        <span
+                          className={
+                            user.account_membership === "pro"
+                              ? "inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"
+                              : user.account_membership === "plus"
+                              ? "inline-block w-2 h-2 rounded-full bg-teal-500 mr-1"
+                              : "inline-block w-2 h-2 rounded-full bg-gray-400 mr-1"
+                          }
+                        ></span>
+                        <span
+                          className={
+                            user.account_membership === "pro"
+                              ? "text-amber-600 font-semibold"
+                              : user.account_membership === "plus"
+                              ? "text-teal-600 font-semibold"
+                              : "text-gray-500"
+                          }
+                        >
+                          {user.account_membership === "pro"
+                            ? "Pro Plan"
+                            : user.account_membership === "plus"
+                            ? "Plus Plan"
+                            : "Free Plan"}
+                        </span>
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="border border-gray-200" />
@@ -370,3 +394,4 @@ export default function Navbar() {
     </motion.header>
   );
 }
+
