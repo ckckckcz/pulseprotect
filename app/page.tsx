@@ -424,6 +424,7 @@ export default function HomePage() {
       }, 5000);
     }
   }
+  const [latestMembershipType, setLatestMembershipType] = useState<string>("free");
 
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">

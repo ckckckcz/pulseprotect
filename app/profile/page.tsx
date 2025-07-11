@@ -421,9 +421,14 @@ export default function UserProfile() {
     { id: "invoices", label: "Faktur", icon: FileText },
   ]
 
+  // Ambil membership_type dari transaksi terakhir yang sukses
+  const latestMembershipType = payments
+    .filter((p) => p.status === "success")
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.membership_type;
+
   return (
     <>
-      <Navbar/>
+      <Navbar />
       <div className="w-full min-h-screen bg-white text-black pt-32 mb-20">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-8">Pengaturan Akun</h1>

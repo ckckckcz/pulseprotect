@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/auth-context";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/lib/supabase"; // pastikan import supabase
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -85,30 +86,50 @@ export default function Navbar() {
       .substring(0, 2);
   };
 
-  // Function to get avatar class based on user.account_membership
-  const getAvatarClass = () => {
-    if (!user) return "";
-    const membershipType = (user.account_membership || "free").toLowerCase();
+  // State untuk membership_type dari payment
+  const [latestMembershipType, setLatestMembershipType] = useState<string | undefined>(undefined);
 
+  // Fetch membership_type dari payment jika user login
+  useEffect(() => {
+    const fetchLatestMembership = async () => {
+      if (!user?.email) {
+        setLatestMembershipType(undefined);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("payment")
+        .select("membership_type, created_at, status")
+        .eq("email", user.email)
+        .eq("status", "success")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data && data.membership_type) {
+        setLatestMembershipType(data.membership_type);
+      } else {
+        setLatestMembershipType(undefined);
+      }
+    };
+    fetchLatestMembership();
+  }, [user?.email]);
+
+  // Gunakan membership_type dari payment jika ada, fallback ke user.account_membership
+  const membershipType = (latestMembershipType || user?.account_membership || "free").toLowerCase();
+
+  const getAvatarClass = () => {
     switch (membershipType) {
       case "plus":
-        // Teal ring + glow
         return "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]";
       case "pro":
-        // Amber ring + strong gold glow
         return "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300";
-      case "free":
       default:
         return "";
     }
   };
 
-  // Function to get membership badge based on user.account_membership
   const getMembershipBadge = () => {
-    if (!user) return null;
-    const membershipType = (user.account_membership || "free").toLowerCase();
     if (membershipType === "free") return null;
-
     const isPro = membershipType === "pro";
     return (
       <span 
@@ -192,30 +213,30 @@ export default function Navbar() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{user.nama_lengkap}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      <p className="text-xs leading-none mb-2 text-muted-foreground">{user.email}</p>
                       {/* Paket aktif */}
-                      <p className="text-xs mt-1 flex items-center space-x-1">
+                      <p className="text-xs mt-2 flex items-center space-x-1">
                         <span
                           className={
-                            user.account_membership === "pro"
+                            membershipType === "pro"
                               ? "inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"
-                              : user.account_membership === "plus"
+                              : membershipType === "plus"
                               ? "inline-block w-2 h-2 rounded-full bg-teal-500 mr-1"
                               : "inline-block w-2 h-2 rounded-full bg-gray-400 mr-1"
                           }
                         ></span>
                         <span
                           className={
-                            user.account_membership === "pro"
+                            membershipType === "pro"
                               ? "text-amber-600 font-semibold"
-                              : user.account_membership === "plus"
+                              : membershipType === "plus"
                               ? "text-teal-600 font-semibold"
                               : "text-gray-500"
                           }
                         >
-                          {user.account_membership === "pro"
+                          {membershipType === "pro"
                             ? "Pro Plan"
-                            : user.account_membership === "plus"
+                            : membershipType === "plus"
                             ? "Plus Plan"
                             : "Free Plan"}
                         </span>
