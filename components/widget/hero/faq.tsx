@@ -55,12 +55,29 @@ export default function FAQ() {
   };
 
   return (
-    <section className="py-20 bg-white">
+    <motion.section
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }}
+      className="py-20 bg-white"
+    >
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.7 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start"
+        >
           {/* Left Side - Header and Video */}
           <div>
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="mb-4"
+            >
                 <div className="inline-block bg-teal-50 border-2 border-teal-100 px-4 py-2 rounded-full">
                   <span className="text-teal-600 text-sm font-medium flex items-center gap-2">
                       FAQ
@@ -71,7 +88,8 @@ export default function FAQ() {
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
               className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6"
             >
               Questions? We're Glad you{" "}
@@ -81,7 +99,8 @@ export default function FAQ() {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
               className="text-gray-600 mb-8"
             >
               Quick answer to questions you have. Can't find what you're looking for?
@@ -91,7 +110,8 @@ export default function FAQ() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.4 }}
               className="relative bg-teal-700 rounded-3xl overflow-hidden aspect-video group transition-all duration-300 shadow-md hover:shadow-xl"
             >
               {!isVideoPlaying ? (
@@ -124,14 +144,25 @@ export default function FAQ() {
           </div>
 
           {/* Right Side - FAQ List */}
-          <div className="space-y-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={{
+              hidden: {},
+              visible: {
+                transition: { staggerChildren: 0.12 }
+              }
+            }}
+            className="space-y-4"
+          >
             {faqs.map((faq, index) => (
               <motion.div
                 key={faq.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.6, delay: 0.1 * index }}
                 className="border border-gray-200 rounded-2xl overflow-hidden"
               >
                 <button
@@ -169,9 +200,9 @@ export default function FAQ() {
                 </AnimatePresence>
               </motion.div>
             ))}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }

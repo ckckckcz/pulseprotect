@@ -82,7 +82,7 @@ export default function ClientTrustSection() {
                   transition: { staggerChildren: 0.08 }
                 }
               }}
-              className="w-full md:w-auto flex flex-wrap justify-start md:justify-start gap-1 md:gap-6 lg:gap-1"
+              className="w-full md:w-auto flex flex-wrap justify-start md:justify-start gap-4 md:gap-6 lg:gap-1"
             >
               { [
                 {

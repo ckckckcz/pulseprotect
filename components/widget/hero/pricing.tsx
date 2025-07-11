@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { createAIPackagePayment, handleMidtransPayment, PackageDetails, recordPayment } from "@/services/payment"
 import Cookies from 'js-cookie'
 import { supabase } from "@/lib/supabase"
+import { motion } from "framer-motion"
 
 type PlanType = 'free' | 'plus' | 'pro'
 
@@ -542,22 +543,21 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white py-16 px-4">
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }}
+      className="min-h-screen bg-white py-16 px-4"
+    >
       <div className="w-full mx-auto">
-        {/* Debug button - only show in development */}
-        {/* {process.env.NODE_ENV === 'development' && (
-          <div className="text-center mb-4">
-            <button 
-              onClick={testMidtrans}
-              className="bg-red-500 text-white px-4 py-2 rounded"
-            >
-              Test Midtrans (Debug)
-            </button>
-          </div>
-        )} */}
-        
         {/* Header Section */}
-        <div className="text-center lg:mb-16 mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.7 }}
+          className="text-center lg:mb-16 mb-12"
+        >
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Paket Model <span className="text-teal-600">AI Pintar</span>
             <br />
@@ -585,12 +585,29 @@ export default function PricingPage() {
             </button>
             <span className={`text-sm font-medium ${isYearly ? "text-teal-600" : "text-gray-500"}`}>Tahunan</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={{
+            hidden: {},
+            visible: {
+              transition: { staggerChildren: 0.15 }
+            }
+          }}
+          className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+        >
           {/* Free Plan */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
+          >
             <div className="mb-2 bg-gray-100 px-4 py-2 rounded-xl">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Free</h3>
               <div className="flex items-baseline gap-1">
@@ -625,10 +642,16 @@ export default function PricingPage() {
                 ? "Membership Aktif"
                 : "Mulai Gratis"}
             </Button>
-          </div>
+          </motion.div>
 
           {/* Plus Plan */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
+          >
             {/* <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-teal-600 hover:bg-teal-600 text-white px-4 py-1">
               Populer
             </Badge> */}
@@ -676,10 +699,16 @@ export default function PricingPage() {
                 ? 'Memproses...'
                 : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
             </Button>
-          </div>
+          </motion.div>
 
           {/* Pro Plan */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
+          >
             <div className="mb-2 bg-gray-100 px-4 py-2 rounded-xl">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro</h3>
               <div className="flex items-baseline gap-1">
@@ -725,18 +754,10 @@ export default function PricingPage() {
                 ? 'Memproses...'
                 : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
             </Button>
-          </div>
-        </div>
-        
-        {/* Additional pricing information */}
-        {/* <div className="mt-12 text-center">
-          <h3 className="text-lg font-medium mb-2">Punya pertanyaan tentang paket kami?</h3>
-          <p className="text-gray-600 mb-4">Hubungi tim kami untuk informasi lebih lanjut.</p>
-          <Button variant="outline" className="mx-auto">
-            Hubungi Kami
-          </Button>
-        </div> */}
+          </motion.div>
+        </motion.div>
+        {/* ...existing code... */}
       </div>
-    </div>
+    </motion.div>
   )
 }
