@@ -1,5 +1,7 @@
 "use client";
 
+import { supabase } from '@/lib/supabase';
+
 export interface PackageDetails {
   packageId: string;
   packageName: string;
@@ -140,6 +142,50 @@ function loadMidtransScript(): Promise<void> {
       reject(new Error('Window not defined - script loading must be done client-side'));
     }
   });
+}
+
+// Update this function to better handle payment recording
+export async function recordPayment(userId: number, membershipType: string, orderId: string, paymentData: any) {
+  try {
+    // Extract payment details from paymentData
+    const amount = paymentData.gross_amount || 0;
+    const paymentMethod = paymentData.payment_type || 'unknown';
+    const status = paymentData.transaction_status || 'success';
+
+    // Clean up membership type (remove 'pkg_' prefix if present)
+    const cleanMembershipType = membershipType.replace('pkg_', '');
+    
+    console.log(`Recording payment for user ${userId}, membership: ${cleanMembershipType}`);
+    
+    // Create the subscription record (which will create the payment record)
+    const response = await fetch('/api/subscriptions/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        packageId: membershipType, // Original packageId format
+        packageName: `AI Model ${cleanMembershipType.charAt(0).toUpperCase() + cleanMembershipType.slice(1)}`,
+        period: paymentData.custom_field1 || 'monthly',
+        amount: Number(amount),
+        orderId,
+        paymentType: paymentMethod,
+        paymentData
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to record payment:', errorText);
+      throw new Error(`API error: ${response.status} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('Payment record result:', result);
+    return result;
+  } catch (error) {
+    console.error('Payment recording error:', error);
+    throw error;
+  }
 }
 
 declare global {

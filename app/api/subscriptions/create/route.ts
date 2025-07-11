@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     
     const { 
       userId,
+      email,  // Add email field
       packageId,
       packageName,
       period,
@@ -20,13 +21,41 @@ export async function POST(request: Request) {
     } = body;
     
     // Validate required fields
-    if (!userId || !packageId || !period || !amount || !orderId) {
+    if (!email || !packageId || !period || !amount || !orderId) {
       return corsResponse(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
+    // Extract the membership type from packageId (e.g., "pkg_plus" -> "plus")
+    const membershipType = packageId.split('_')[1] || packageId;
+
+    // Create payment record using email instead of userId
+    console.log('Creating payment record with email:', email);
+    const { data: payment, error: paymentError } = await supabase
+      .from('payment')
+      .insert({
+        email: email,
+        membership_type: membershipType,
+        order_id: orderId,
+        transaction_type: 'purchase',
+        metode_pembayaran: paymentType || 'credit_card',
+        harga: amount,
+        status: 'success'
+      })
+      .select();
+      
+    if (paymentError) {
+      console.error('Error creating payment record:', paymentError);
+      return corsResponse(
+        { error: 'Failed to create payment record', details: paymentError.message },
+        { status: 500 }
+      );
+    }
+    
+    console.log('Payment record created:', payment);
+    
     // Calculate expiry date
     const startDate = new Date();
     const expiryDate = new Date(startDate);
@@ -37,85 +66,43 @@ export async function POST(request: Request) {
       expiryDate.setFullYear(expiryDate.getFullYear() + 1);
     }
     
-    // First insert the subscription payment record
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .insert({
-        user_id: userId,
-        package_id: packageId,
-        package_name: packageName,
-        period: period,
-        amount: amount,
-        order_id: orderId,
-        payment_type: paymentType,
-        status: 'success',
-        payment_data: paymentData,
-        created_at: startDate.toISOString(),
-        updated_at: startDate.toISOString()
-      })
-      .select()
-      .single();
-      
-    if (subscriptionError) {
-      console.error('Error creating subscription record:', subscriptionError);
-      return corsResponse(
-        { error: 'Failed to create subscription record' },
-        { status: 500 }
-      );
-    }
-    
-    // Update user's active subscription
-    const { error: userSubscriptionError } = await supabase
-      .from('user_subscriptions')
-      .upsert({
-        user_id: userId,
-        package_id: packageId,
-        is_active: true,
-        start_date: startDate.toISOString(),
-        expiry_date: expiryDate.toISOString(),
-        updated_at: startDate.toISOString()
-      });
-      
-    if (userSubscriptionError) {
-      console.error('Error updating user subscription:', userSubscriptionError);
-      return corsResponse(
-        { error: 'Failed to update user subscription' },
-        { status: 500 }
-      );
-    }
-    
-    // Update user's account_membership field
-    const { error: userUpdateError } = await supabase
-      .from('"user"')
-      .update({
-        account_membership: packageId,
-      })
-      .eq('id', userId);
-    
-    if (userUpdateError) {
-      console.error('Error updating user membership:', userUpdateError);
-      return corsResponse(
-        { error: 'Failed to update user membership' },
-        { status: 500 }
-      );
+    // Optional: Update user's account_membership field if userId is provided
+    if (userId) {
+      try {
+        const { error: userUpdateError } = await supabase
+          .from('user')
+          .update({
+            account_membership: membershipType
+          })
+          .eq('id', userId);
+        
+        if (userUpdateError) {
+          console.error('Error updating user membership:', userUpdateError);
+          // Continue execution as payment is already recorded
+        } else {
+          console.log('Updated user membership successfully');
+        }
+      } catch (err) {
+        console.error('Error updating user data:', err);
+      }
     }
 
     return corsResponse({
       success: true,
-      message: 'Subscription created successfully',
+      message: 'Payment record created successfully',
       data: {
-        subscriptionId: subscription.id,
-        packageId,
+        paymentId: payment[0]?.id_payment,
+        packageType: membershipType,
         startDate: startDate.toISOString(),
         expiryDate: expiryDate.toISOString()
       }
     });
     
   } catch (error: any) {
-    console.error('Error creating subscription:', error);
+    console.error('Error creating payment record:', error);
     return corsResponse(
       { 
-        error: 'Failed to create subscription',
+        error: 'Failed to create payment record',
         details: error.message
       },
       { status: 500 }

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
-import { createAIPackagePayment, handleMidtransPayment, PackageDetails } from "@/services/payment"
+import { createAIPackagePayment, handleMidtransPayment, PackageDetails, recordPayment } from "@/services/payment"
 import Cookies from 'js-cookie'
 
 type PlanType = 'free' | 'plus' | 'pro'
@@ -346,29 +346,59 @@ export default function PricingPage() {
     }
   };
   
-  // Function to save subscription to database
+  // Updated saveSubscription function to include email
   const saveSubscription = async (userId: number, packageDetails: any, paymentResult: any) => {
     try {
-      const response = await fetch('/api/subscriptions/create', {
+      console.log('Saving subscription for user:', userId);
+      console.log('Payment result:', paymentResult);
+      
+      // Get user's email from cookie
+      const userSessionCookie = Cookies.get('user-session');
+      let userEmail = 'user@example.com';
+      
+      if (userSessionCookie) {
+        try {
+          const userData = JSON.parse(userSessionCookie);
+          userEmail = userData.email || userEmail;
+        } catch (error) {
+          console.error('Error parsing user session cookie:', error);
+        }
+      }
+      
+      // Use the recordPayment function from payment service
+      const result = await fetch('/api/subscriptions/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
-          packageId: packageDetails.packageId,
+          userId: userId,
+          email: userEmail,
+          packageId: packageDetails.packageId.replace('pkg_', ''), // Just use 'free', 'plus', 'pro'
           packageName: packageDetails.packageName,
           period: packageDetails.period,
           amount: packageDetails.price,
           orderId: paymentResult.order_id,
-          paymentType: paymentResult.payment_type,
+          paymentType: paymentResult.payment_type || 'credit_card',
           paymentData: paymentResult
         })
       });
       
-      if (!response.ok) {
-        console.error('Failed to save subscription:', await response.text());
+      if (!result.ok) {
+        throw new Error(`Failed to record payment: ${result.status}`);
       }
+      
+      console.log('Payment record created successfully');
+      
+      // Refresh page or update UI as needed
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       console.error('Error saving subscription:', error);
+      toast({
+        title: "Terjadi Kesalahan",
+        description: "Pembayaran berhasil tapi gagal menyimpan data langganan. Tim kami akan menghubungi Anda.",
+        variant: "destructive"
+      });
     }
   };
 
