@@ -192,12 +192,27 @@ export default function PricingPage() {
     }
   };
 
-  // Updated handlePayment to use the cookie user data
+  // Updated handlePayment to check login status first
   const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
     // Prevent default button behavior that causes page to scroll to top
     e.preventDefault();
     
     try {
+      // Check if user is logged in first
+      const userSessionCookie = Cookies.get('user-session');
+      if (!userSessionCookie) {
+        console.log('User not logged in, redirecting to login page');
+        toast({
+          title: "Login Diperlukan",
+          description: "Silakan login terlebih dahulu untuk melanjutkan",
+          variant: "default"
+        });
+        
+        // Redirect to login page with return URL
+        router.push(`/login?returnUrl=${encodeURIComponent('/pricing')}`);
+        return;
+      }
+
       const selectedPlan = pricingPlans.find(plan => plan.type === packageType);
       if (!selectedPlan) {
         console.error('Invalid package type:', packageType);
@@ -216,21 +231,14 @@ export default function PricingPage() {
       setIsLoading(packageType);
       console.log('Starting payment process for:', packageType);
       
-      // Get current user directly from cookie if not already loaded
-      if (!currentUser) {
-        try {
-          const userSessionCookie = Cookies.get('user-session');
-          if (userSessionCookie) {
-            const userData = JSON.parse(userSessionCookie);
-            console.log('User session data from cookie:', userData);
-            setCurrentUser(userData);
-          } else {
-            throw new Error('User session not found');
-          }
-        } catch (error) {
-          console.error('Error getting user session:', error);
-          throw new Error('User session not found');
-        }
+      // Set current user from cookie
+      try {
+        const userData = JSON.parse(userSessionCookie);
+        console.log('User session data from cookie:', userData);
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error('Error parsing user session cookie:', error);
+        throw new Error('Invalid user session');
       }
       
       console.log('Current user from cookie:', currentUser);
@@ -469,7 +477,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white py-16 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Debug button - only show in development */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && (
           <div className="text-center mb-4">
             <button 
               onClick={testMidtrans}
@@ -478,7 +486,7 @@ export default function PricingPage() {
               Test Midtrans (Debug)
             </button>
           </div>
-        )}
+        )} */}
         
         {/* Header Section */}
         <div className="text-center lg:mb-16 mb-12">
@@ -550,12 +558,12 @@ export default function PricingPage() {
           </div>
 
           {/* Plus Plan */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative transform scale-105">
-            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-teal-600 hover:bg-teal-600 text-white px-4 py-1">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative">
+            {/* <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-teal-600 hover:bg-teal-600 text-white px-4 py-1">
               Populer
-            </Badge>
+            </Badge> */}
 
-            <div className="mb-1 mt-4 bg-teal-600/15 px-4 py-2 rounded-xl">
+            <div className="mb-1 bg-teal-600/15 px-4 py-2 rounded-xl">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Plus</h3>
               <div className="flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-gray-900">{isYearly ? "58.000" : "70.000"}</span>
@@ -635,13 +643,13 @@ export default function PricingPage() {
         </div>
         
         {/* Additional pricing information */}
-        <div className="mt-12 text-center">
+        {/* <div className="mt-12 text-center">
           <h3 className="text-lg font-medium mb-2">Punya pertanyaan tentang paket kami?</h3>
           <p className="text-gray-600 mb-4">Hubungi tim kami untuk informasi lebih lanjut.</p>
           <Button variant="outline" className="mx-auto">
             Hubungi Kami
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   )

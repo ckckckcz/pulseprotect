@@ -113,10 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       console.log('Login successful, session saved:', userData.email);
       
-      // Add a small delay before redirecting
-      setTimeout(() => {
-        router.push('/');
-      }, 300);
+      // Don't redirect here - let the component handle it based on returnUrl
+      // This prevents automatic redirect to home page
       
       // Return success (no error returned means success)
     } catch (error: any) {

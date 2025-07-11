@@ -19,19 +19,26 @@ function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
+  const [returnUrl, setReturnUrl] = useState("")
   const router = useRouter()
   const { login, loginWithGoogle, loading: isLoading } = useAuth()
 
   // Handle email from URL params and check for reset=success
   useEffect(() => {
     // Handle email from URL params
-    const emailParam = searchParams?.get('email') // Add null check for searchParams
+    const emailParam = searchParams?.get('email')
     if (emailParam) {
       setEmail(emailParam)
     }
 
+    // Store return URL if provided
+    const returnUrlParam = searchParams?.get('returnUrl')
+    if (returnUrlParam) {
+      setReturnUrl(returnUrlParam)
+    }
+
     // Show success message if coming from password reset
-    const resetParam = searchParams?.get('reset') // Add null check for searchParams
+    const resetParam = searchParams?.get('reset')
     if (resetParam === 'success') {
       setSuccessMessage("Kata sandi berhasil diubah. Silakan masuk dengan kata sandi baru Anda.")
     }
@@ -55,8 +62,13 @@ function LoginForm() {
       if (loginResult && loginResult.error) {
         console.error('Login returned error:', loginResult.message)
         setError(loginResult.message)
+      } else {
+        // If login successful and we have a return URL, redirect there
+        if (returnUrl) {
+          router.push(returnUrl)
+        }
+        // Otherwise, the auth context will handle default redirection
       }
-      // Success is handled by the auth context (redirect)
       
     } catch (error: any) {
       console.error('Unhandled login error:', error)
