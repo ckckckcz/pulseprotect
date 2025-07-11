@@ -70,6 +70,9 @@ export default function ChatInterface() {
   const [showBottomCard, setShowBottomCard] = useState(false);
   const [activeMembershipType, setActiveMembershipType] = useState<"free" | "plus" | "pro">("free");
 
+  // Avatar URL state
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+
   // Check authentication on component mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -288,6 +291,17 @@ export default function ChatInterface() {
     return modelId === "google-gemini";
   };
 
+  // Update avatar URL when user data changes
+  useEffect(() => {
+    if (user?.foto_profile) {
+      setAvatarUrl(user.foto_profile);
+    } else if (user?.nama_lengkap) {
+      setAvatarUrl(`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`);
+    } else {
+      setAvatarUrl("");
+    }
+  }, [user?.foto_profile, user?.nama_lengkap]);
+
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -415,11 +429,20 @@ export default function ChatInterface() {
                     : ""
                 }
               `}
-              style={{ backgroundColor: "#14b8a6" }}
+              style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
             >
-              <span className="text-sm font-medium text-white">
-                {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
-              </span>
+              {/* Avatar image */}
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={user?.nama_lengkap || "User"}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <span className="text-sm font-medium text-white">
+                  {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
+                </span>
+              )}
             </div>
             {isSidebarExpanded && (
               <>
@@ -558,10 +581,31 @@ export default function ChatInterface() {
                 </form>
 
                 <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center space-x-1 px-4 py-2 border border-gray-300 transition-all duration-200 ease-in-out cursor-pointer hover:bg-teal-600 hover:text-white hover:border-teal-600 font-semibold rounded-xl">
-                    <Crown className="w-4 h-4" />
-                    <span>Join Silva Pro</span>
-                  </div>
+                  <Button
+                  asChild
+                  className="flex items-center space-x-1 px-4 py-2 border border-gray-300 transition-all duration-200 ease-in-out cursor-pointer hover:bg-teal-600 hover:text-white hover:border-teal-600 font-semibold rounded-xl"
+                  disabled={isLoading}
+                  onClick={() => {
+                    setIsLoading(true);
+                    setTimeout(() => setIsLoading(false), 4000);
+                  }}
+                  >
+                  <Link href="/pricing">
+                    {/* Hide Crown and text when loading */}
+                    {!isLoading && (
+                    <>
+                      <Crown className="w-4 h-4" />
+                      <span>Join Silva Pro</span>
+                    </>
+                    )}
+                    {isLoading && (
+                    <span className="ml-2 flex items-center space-x-2">
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Tunggu Sebentar...</span>
+                    </span>
+                    )}
+                  </Link>
+                  </Button>
                 </div>
               </div>
 
@@ -690,10 +734,19 @@ export default function ChatInterface() {
           <div className="space-y-6">
             {/* User Info */}
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-white">
-                  {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
-                </span>
+              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center overflow-hidden">
+                {/* Avatar image mobile */}
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={user?.nama_lengkap || "User"}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  <span className="text-sm font-medium text-white">
+                    {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
+                  </span>
+                )}
               </div>
               <div>
                 <div className="text-sm font-medium">{user?.email || 'User'}</div>
@@ -718,37 +771,6 @@ export default function ChatInterface() {
               <Button
                 variant="outline"
                 className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
-              >
-                <Search className="w-5 h-5 text-teal-600" />
-                <span>Search</span>
-              </Button>
-            </div>
-
-            {/* Chat History */}
-            <div>
-              <h3 className="text-md font-medium mb-3">Recent Chats</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {chatHistory.map((chat, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-xl cursor-pointer"
-                    onClick={() => setShowBottomCard(false)}
-                  >
-                    <span className="text-sm truncate flex-1">{chat}</span>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Logout Button */}
-            <div className="flex flex-row gap-3">
-              <Button
-              variant="outline"
-              className="w-full flex items-center justify-center gap-2 h-12 bg-gray-100 border-gray-300 text-black hover:bg-gray-200 hover:text-black hover:border-gray-300 rounded-xl"
-              onClick={handleLogout}
               >
                 <House className="w-4 h-4" />
                 <span>Home</span>

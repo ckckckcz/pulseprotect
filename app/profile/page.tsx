@@ -1,7 +1,7 @@
 "use client"
 
   import { useState, useEffect, useMemo } from "react"
-import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, RefreshCw } from "lucide-react"
+import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
@@ -566,7 +566,7 @@ export default function UserProfile() {
                               </>
                             ) : isAvatarChanged ? (
                               <>
-                                <CheckCircle className="w-4 h-4" />
+                                <Save className="w-4 h-4" />
                                 Simpan Avatar
                               </>
                             ) : (

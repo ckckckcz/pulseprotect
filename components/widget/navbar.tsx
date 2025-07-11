@@ -146,6 +146,19 @@ export default function Navbar() {
     );
   };
 
+  // Tambahkan avatarUrl state
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.foto_profile) {
+      setAvatarUrl(user.foto_profile);
+    } else if (user?.nama_lengkap) {
+      setAvatarUrl(`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`);
+    } else {
+      setAvatarUrl("");
+    }
+  }, [user?.foto_profile, user?.nama_lengkap]);
+
   return (
     <motion.header 
       key={authStateKey} 
@@ -202,7 +215,7 @@ export default function Navbar() {
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
                     <div className="relative">
                       <Avatar className={`h-10 w-10 cursor-pointer hover:ring-2 hover:ring-teal-500 transition-all ${getAvatarClass()}`}>
-                        <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`} alt={user.nama_lengkap} />
+                        <AvatarImage src={avatarUrl} alt={user.nama_lengkap || "User"} />
                         <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
                       </Avatar>
                       {getMembershipBadge()}
@@ -215,7 +228,7 @@ export default function Navbar() {
                       <p className="text-sm font-medium leading-none">{user.nama_lengkap}</p>
                       <p className="text-xs leading-none mb-2 text-muted-foreground">{user.email}</p>
                       {/* Paket aktif */}
-                      <p className="text-xs mt-2 flex items-center space-x-1">
+                      <p className="text-xs mt-2 flex items-center space-x-">
                         <span
                           className={
                             membershipType === "pro"
@@ -356,7 +369,7 @@ export default function Navbar() {
                       <div className="flex items-center space-x-3 p-2">
                         <div className="relative">
                           <Avatar className={`h-10 w-10 ${getAvatarClass()}`}>
-                            <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`} alt={user.nama_lengkap} />
+                            <AvatarImage src={avatarUrl} alt={user.nama_lengkap} />
                             <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
                           </Avatar>
                           {getMembershipBadge()}
