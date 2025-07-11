@@ -31,11 +31,12 @@ import {
   House
 } from "lucide-react"
 import { motion } from "framer-motion"
+import { supabase } from "@/lib/supabase"
 
 const models = [
-  { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio" },
-  { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM" },
-  { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b" },
+  { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
+  { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM", requiredMembership: "plus" },
+  { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
 ]
 
 const chatHistory = [
@@ -67,6 +68,7 @@ export default function ChatInterface() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [showBottomCard, setShowBottomCard] = useState(false);
+  const [activeMembershipType, setActiveMembershipType] = useState<"free" | "plus" | "pro">("free");
 
   // Check authentication on component mount
   useEffect(() => {
@@ -255,6 +257,37 @@ export default function ChatInterface() {
     setShowBottomCard(!showBottomCard);
   };
 
+  // Fetch membership_type dari payment Supabase
+  useEffect(() => {
+    const fetchMembership = async () => {
+      if (!user?.email) {
+        setActiveMembershipType("free");
+        return;
+      }
+      const { data } = await supabase
+        .from("payment")
+        .select("membership_type, created_at, status")
+        .eq("email", user.email)
+        .eq("status", "success")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data && data.membership_type) {
+        setActiveMembershipType(data.membership_type as "free" | "plus" | "pro");
+      } else {
+        setActiveMembershipType("free");
+      }
+    };
+    fetchMembership();
+  }, [user?.email]);
+
+  // Helper: cek apakah model unlocked untuk membership user
+  const isModelUnlocked = (modelId: string) => {
+    if (activeMembershipType === "pro") return true;
+    if (activeMembershipType === "plus") return modelId === "google-gemini" || modelId === "deepseek-v3";
+    return modelId === "google-gemini";
+  };
+
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -372,7 +405,18 @@ export default function ChatInterface() {
             className="flex items-center space-x-3 cursor-pointer"
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
           >
-            <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center
+                ${
+                  activeMembershipType === "pro"
+                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
+                    : activeMembershipType === "plus"
+                    ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
+                    : ""
+                }
+              `}
+              style={{ backgroundColor: "#14b8a6" }}
+            >
               <span className="text-sm font-medium text-white">
                 {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : 'U'}
               </span>
@@ -381,7 +425,13 @@ export default function ChatInterface() {
               <>
                 <div className="flex-1 overflow-hidden">
                   <div className="text-sm font-medium truncate">{user?.email || 'User'}</div>
-                  <div className="text-xs text-gray-400">Free Plan</div>
+                  <div className="text-xs text-gray-400">
+                    {activeMembershipType === "pro"
+                      ? "Pro Plan"
+                      : activeMembershipType === "plus"
+                      ? "Plus Plan"
+                      : "Free Plan"}
+                  </div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </>
@@ -417,19 +467,43 @@ export default function ChatInterface() {
         <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
           {/* Left side with model selector */}
           <div className="flex items-center space-x-4">
-            <Select value={selectedModel} onValueChange={(value) => setSelectedModel(value as AIModel)}>
-              <SelectTrigger className="w-48 h-12 bg-white text-black border-2 border-gray-200 rounded-xl"> {/* Increased width */}
+            <Select
+              value={selectedModel}
+              onValueChange={(value) => {
+                if (isModelUnlocked(value)) setSelectedModel(value as AIModel);
+              }}
+            >
+              <SelectTrigger className="w-48 h-12 bg-white text-black border-2 border-gray-200 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="max-h-60 overflow-y-auto bg-white border-2 border-gray-200 text-black rounded-xl">
-                {models.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    <div className="flex flex-col">
-                      <div className="font-medium text-gray-900">{model.name}</div>
-                      <div className="text-xs text-gray-500">{model.description}</div>
-                    </div>
-                  </SelectItem>
-                ))}
+                {models.map((model) => {
+                  const unlocked = isModelUnlocked(model.id);
+                  return (
+                    <SelectItem
+                      key={model.id}
+                      value={model.id}
+                      disabled={!unlocked}
+                      className={!unlocked ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                      <div className="flex flex-col">
+                        <div className="font-medium text-gray-900 flex items-center">
+                          {model.name}
+                          {!unlocked && (
+                            <span className="ml-2 text-xs text-amber-600 font-semibold">
+                              {model.requiredMembership === "plus"
+                                ? "Unlock Plus"
+                                : model.requiredMembership === "pro"
+                                ? "Unlock Pro"
+                                : ""}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500">{model.description}</div>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

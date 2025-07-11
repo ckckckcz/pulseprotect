@@ -23,7 +23,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error: boolean; message: string } | undefined>
   loginWithGoogle: () => Promise<void>
   logout: () => void
-  updateUser: (data: { nama_lengkap?: string, nomor_telepon?: string }) => Promise<void>
+  updateUser: (data: { nama_lengkap?: string, nomor_telepon?: string, foto_profile?: string }) => Promise<void> // tambahkan foto_profile di sini
   refreshSession: () => void
   refreshUser: () => Promise<void> // Add refreshUser method
 }
@@ -167,9 +167,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login')
   }
 
-  const updateUser = async (data: { nama_lengkap?: string, nomor_telepon?: string }) => {
+  const updateUser = async (data: { nama_lengkap?: string, nomor_telepon?: string, foto_profile?: string }) => {
     if (!user) throw new Error('No user logged in')
-    
     try {
       const updatedUser = await authService.updateUser(user.id, data)
       setUser(updatedUser)

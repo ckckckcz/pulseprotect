@@ -1,7 +1,7 @@
 "use client"
 
   import { useState, useEffect, useMemo } from "react"
-import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown } from "lucide-react"
+import { Search, Mail, Shield, CheckCircle, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
@@ -88,6 +88,12 @@ export default function UserProfile() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
   
+  // Avatar state
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [avatarId, setAvatarId] = useState<number | null>(null);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+  const [isAvatarChanged, setIsAvatarChanged] = useState(false);
+
   // Fetch countries data
   useEffect(() => {
     const fetchCountries = async () => {
@@ -332,7 +338,8 @@ export default function UserProfile() {
       // Update user profile
       await authService.updateUser(Number(user.id), {
         nama_lengkap: displayName.trim(),
-        nomor_telepon: formattedPhone.trim() || undefined
+        nomor_telepon: formattedPhone.trim() || undefined,
+        foto_profile: avatarUrl
       });
       
       // Refresh user data
@@ -401,6 +408,51 @@ export default function UserProfile() {
     }
   };
 
+  // Generate random avatar URL (ID 1-100)
+  const generateAvatarUrl = () => {
+    const id = Math.floor(Math.random() * 100) + 1; // 1-100
+    setAvatarId(id);
+    return `https://avatar.iran.liara.run/public/${id}`;
+  };
+
+  // Set initial avatar or from user data
+  useEffect(() => {
+    if (user?.foto_profile) {
+      setAvatarUrl(user.foto_profile);
+      const match = user.foto_profile.match(/\/public\/(\d+)/);
+      setAvatarId(match ? Number(match[1]) : null);
+      setIsAvatarChanged(false);
+    } else {
+      const url = generateAvatarUrl();
+      setAvatarUrl(url);
+      setIsAvatarChanged(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.foto_profile, user?.id]);
+
+  // Handler for dice button (refresh avatar preview only)
+  const handleRandomAvatar = () => {
+    const url = generateAvatarUrl();
+    setAvatarUrl(url);
+    setIsAvatarChanged(true);
+  };
+
+  // Handler to save avatar to DB (foto_profile column)
+  const handleSaveAvatar = async () => {
+    if (!user?.id || !avatarUrl) return;
+    setIsSavingAvatar(true);
+    try {
+      await authService.updateUser(user.id, { foto_profile: avatarUrl });
+      toast.success("Avatar berhasil disimpan!");
+      await refreshUser();
+      setIsAvatarChanged(false);
+    } catch (err: any) {
+      toast.error("Gagal menyimpan avatar");
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -431,7 +483,6 @@ export default function UserProfile() {
       <div className="w-full min-h-screen bg-white text-black pt-32 mb-20">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-8">Pengaturan Akun</h1>
-          
           <div className="flex flex-col md:flex-row gap-8">
             {/* Sidebar */}
             <div className="md:w-72">
@@ -469,24 +520,85 @@ export default function UserProfile() {
                   <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
                     <div className="p-6">
                       <h2 className="text-2xl font-semibold">Avatar</h2>
-                      <p className="text-gray-400 text-sm mb-6">Klik pada avatar untuk mengunggah yang baru dari file Anda.</p>
-                      
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div className="relative group cursor-pointer">
-                            <Avatar className="h-16 w-16 rounded-full bg-gradient-to-br from-pink-500 to-orange-500">
-                              <AvatarImage
-                                src={(user as UserWithStatus).foto_profile || `https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap || "User"}`}
-                                alt={user.nama_lengkap || "User"}
-                              />
-                              <AvatarFallback className="bg-gray-800 text-black">
-                                {getInitials(user.nama_lengkap)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute inset-0 bg-white bg-opacity-40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <span className="text-xs text-black">Upload</span>
-                            </div>
-                          </div>
+                      <p className="text-gray-400 text-sm mb-6">
+                        Klik tombol di bawah untuk mengganti avatar acak, lalu klik lagi untuk menyimpan ke profil Anda.
+                      </p>
+                      <div className="flex flex-col items-start gap-4">
+                        <Avatar className="h-28 w-28 rounded-full border-4 border-teal-600 shadow-lg">
+                          <AvatarImage src={avatarUrl} alt={user.nama_lengkap || "User"} />
+                          <AvatarFallback className="bg-teal-600 text-white">
+                            {getInitials(user.nama_lengkap)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={isAvatarChanged ? "default" : "outline"}
+                            className="rounded-xl flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-200 hover:text-black"
+                            onClick={async () => {
+                              if (isAvatarChanged) {
+                                // Save avatar
+                                setIsSavingAvatar(true);
+                                try {
+                                  await authService.updateUser(user.id, { foto_profile: avatarUrl });
+                                  toast.success("Avatar berhasil disimpan!");
+                                  await refreshUser();
+                                  setIsAvatarChanged(false);
+                                } catch (err: any) {
+                                  toast.error("Gagal menyimpan avatar");
+                                } finally {
+                                  setIsSavingAvatar(false);
+                                }
+                              } else {
+                                // Change avatar
+                                const url = generateAvatarUrl();
+                                setAvatarUrl(url);
+                                setIsAvatarChanged(true);
+                              }
+                            }}
+                            disabled={isSavingAvatar}
+                          >
+                            {isSavingAvatar ? (
+                              <>
+                                <Loader2 className="animate-spin w-4 h-4 mr-1" />
+                                Menyimpan...
+                              </>
+                            ) : isAvatarChanged ? (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                Simpan Avatar
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="w-4 h-4" />
+                                Ganti Avatar
+                              </>
+                            )}
+                          </Button>
+                          {/* Icon-only button to change avatar, only show if avatar has been changed */}
+                          {isAvatarChanged && (
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="rounded-full border border-gray-300 hover:bg-gray-200 hover:text-black"
+                              onClick={() => {
+                                const url = generateAvatarUrl();
+                                setAvatarUrl(url);
+                                setIsAvatarChanged(true);
+                              }}
+                              disabled={isSavingAvatar}
+                              aria-label="Ganti Avatar"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500">
+                          {avatarId && <>Avatar ID: <span className="font-bold">{avatarId}</span></>}
+                          {isAvatarChanged && <span className="ml-2 text-teal-600 font-semibold">Belum disimpan</span>}
+                          {!isAvatarChanged && <span className="ml-2 text-green-600 font-semibold">Sudah disimpan</span>}
                         </div>
                       </div>
                     </div>
@@ -746,4 +858,3 @@ export default function UserProfile() {
     </>
   )
 }
-

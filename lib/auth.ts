@@ -578,13 +578,14 @@ export const authService = {
     }
   },
 
-  async updateUser(userId: number, data: { nama_lengkap?: string, nomor_telepon?: string }) {
+  async updateUser(userId: number, data: { nama_lengkap?: string, nomor_telepon?: string, foto_profile?: string }) {
     try {
       const { error } = await supabase
         .from('user')
         .update({
           nama_lengkap: data.nama_lengkap,
-          nomor_telepon: data.nomor_telepon
+          nomor_telepon: data.nomor_telepon,
+          foto_profile: data.foto_profile // tambahkan foto_profile di sini
         })
         .eq('id', userId);
 
