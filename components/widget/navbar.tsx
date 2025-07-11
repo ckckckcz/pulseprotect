@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, User, DoorOpen, Zap } from "lucide-react";
+import { Menu, X, ChevronDown, User, DoorOpen, Zap, Crown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/auth-context";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -80,6 +80,46 @@ export default function Navbar() {
       .substring(0, 2);
   };
 
+  // Function to get avatar class based on membership - with stricter checks
+  const getAvatarClass = () => {
+    // Only apply special styling for explicit plus/pro memberships
+    if (!user || !user.account_membership) {
+      return ""; // No membership data - no special styling
+    }
+    
+    // Explicit check only for exact premium membership values
+    switch (user.account_membership) {
+      case "plus":
+        return "ring-2 ring-teal-500 ring-offset-2 ring-offset-white";
+      case "pro":
+        return "ring-2 ring-[#FFD700] ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(255,215,0,0.5)]";
+      default:
+        return ""; // Free tier or any other value - no special styling
+    }
+  };
+
+  // Function to get membership badge - with stricter checks
+  const getMembershipBadge = () => {
+    // Check that user has account_membership AND it's exactly plus/pro (case sensitive)
+    if (!user || 
+        !user.account_membership || 
+        (user.account_membership !== "plus" && user.account_membership !== "pro")) {
+      return null; // Return null to not render any badge
+    }
+    
+    const isPro = user.account_membership === "pro";
+    
+    return (
+      <span 
+        className={`absolute -top-1 -right-1 rounded-full flex items-center justify-center w-5 h-5 text-xs font-bold text-white ${
+          isPro ? "bg-gradient-to-r from-yellow-500 to-amber-500" : "bg-teal-500"
+        }`}
+      >
+        <Crown className="h-3 w-3" />
+      </span>
+    );
+  };
+
   return (
     <motion.header 
       key={authStateKey} 
@@ -133,11 +173,14 @@ export default function Navbar() {
               // User is logged in - show profile
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10 cursor-pointer hover:ring-2 hover:ring-teal-500 transition-all">
-                      <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`} alt={user.nama_lengkap} />
-                      <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
-                    </Avatar>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                    <div className="relative">
+                      <Avatar className={`h-10 w-10 cursor-pointer hover:ring-2 hover:ring-teal-500 transition-all ${getAvatarClass()}`}>
+                        <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`} alt={user.nama_lengkap} />
+                        <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
+                      </Avatar>
+                      {getMembershipBadge()}
+                    </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-64 bg-white text-black rounded-xl border-2 border-gray-200" align="end" forceMount>
@@ -145,6 +188,14 @@ export default function Navbar() {
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{user.nama_lengkap}</p>
                       <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                      {user.account_membership && user.account_membership !== "free" && (
+                        <p className="text-xs font-medium mt-1 inline-flex items-center">
+                          <span className={`w-2 h-2 rounded-full mr-1 ${user.account_membership === "pro" ? "bg-amber-500" : "bg-teal-500"}`}></span>
+                          <span className={`${user.account_membership === "pro" ? "text-amber-600" : "text-teal-600"}`}>
+                            {user.account_membership === "pro" ? "Pro Plan" : "Plus Plan"}
+                          </span>
+                        </p>
+                      )}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="border border-gray-200" />
@@ -258,13 +309,24 @@ export default function Navbar() {
                   ) : user ? (
                     <div className="flex flex-col space-y-4">
                       <div className="flex items-center space-x-3 p-2">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`} alt={user.nama_lengkap} />
-                          <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className={`h-10 w-10 ${getAvatarClass()}`}>
+                            <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`} alt={user.nama_lengkap} />
+                            <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
+                          </Avatar>
+                          {getMembershipBadge()}
+                        </div>
                         <div>
                           <p className="font-medium">{user.nama_lengkap}</p>
                           <p className="text-sm text-gray-500">{user.email}</p>
+                          {user.account_membership && user.account_membership !== "free" && (
+                            <p className="text-xs font-medium mt-1 flex items-center">
+                              <span className={`w-2 h-2 rounded-full mr-1 ${user.account_membership === "pro" ? "bg-amber-500" : "bg-teal-500"}`}></span>
+                              <span className={`${user.account_membership === "pro" ? "text-amber-600" : "text-teal-600"}`}>
+                                {user.account_membership === "pro" ? "Pro Plan" : "Plus Plan"}
+                              </span>
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
