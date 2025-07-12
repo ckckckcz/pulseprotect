@@ -949,7 +949,7 @@ export default function UserProfile() {
                           <Info className="w-5 h-5" /> Tentang Aplikasi
                         </h3>
                         <div className="text-sm text-gray-700 space-y-1">
-                          <div>Versi: <span className="font-semibold">1.0.0</span></div>
+                          <div>Versi  : <span className="font-semibold">1.0.0</span></div>
                           <div>Tim Pengembang: <span className="font-semibold">MechaMinds</span></div>
                           <div>
                             Lisensi: <span className="font-semibold">Open Source (MIT)</span>
