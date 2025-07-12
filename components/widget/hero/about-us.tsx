@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
+import Team from "@/public/images/team.png"
 import { Button } from "@/components/ui/button";
 
 export default function AboutUs() {
@@ -24,7 +25,7 @@ export default function AboutUs() {
             <div className="absolute -top-6 lg:-left-6 -left-3 w-28 h-28 lg:w-40 lg:h-40 bg-teal-600 rounded-3xl"></div>
             <div className="absolute -bottom-6 lgl:-right-6 -right-3 lg:w-32 lg:h-32 w-20 h-20 bg-teal-500/30 rounded-2xl"></div>
             <div className="relative z-10">
-              <Image src="https://img.freepik.com/free-photo/young-happy-people-having-lunch-together_23-2149060306.jpg?semt=ais_hybrid&w=740" alt="Our Team" width={600} height={400} className="rounded-2xl w-full h-auto" />
+              <Image src={Team} alt="Our Team" width={600} height={400} className="rounded-2xl w-full h-auto" />
             </div>
           </motion.div>
 
