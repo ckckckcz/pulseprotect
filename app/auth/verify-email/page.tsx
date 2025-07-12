@@ -9,6 +9,7 @@ import { Suspense, useEffect, useState } from "react"
 import { authService } from "@/lib/auth"
 import { useAuth } from "@/context/auth-context"
 import Confetti from "react-confetti"
+import Celebration from "@/components/widget/celebration-confetti"
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams()
@@ -71,16 +72,11 @@ function VerifyEmailContent() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow-xl p-8 text-center relative"
+      className="bg-white rounded-2xl border-2 border-gray-200 p-8 text-center relative"
     >
       {/* Confetti Animation */}
       {status === 'success' && (
-        <Confetti
-          width={windowSize.width}
-          height={windowSize.height}
-          numberOfPieces={300}
-          gravity={0.2}
-        />
+        <Celebration />
       )}
 
       <motion.div
@@ -88,12 +84,12 @@ function VerifyEmailContent() {
         animate={{ scale: 1 }}
         transition={{ delay: 0.2, type: "spring" }}
         className={`w-16 h-16 ${
-          status === 'loading' ? 'bg-blue-100' : 
+          status === 'loading' ? 'bg-teal-100' : 
           status === 'success' ? 'bg-green-100' : 'bg-red-100'
         } rounded-full flex items-center justify-center mx-auto mb-6`}
       >
         {status === 'loading' ? (
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
         ) : status === 'success' ? (
           <CheckCircle className="w-8 h-8 text-green-600" />
         ) : (
@@ -147,7 +143,7 @@ function VerifyEmailContent() {
               </Link>
               
               <Link href="/login">
-                <Button variant="outline" className="w-full py-3 rounded-xl font-medium">
+                <Button variant="outline" className="w-full bg-white border border-gray-200 text-black hover:bg-gray-200 hover:text-black py-3 mt-3 rounded-xl font-medium">
                   Kembali ke Login
                 </Button>
               </Link>
