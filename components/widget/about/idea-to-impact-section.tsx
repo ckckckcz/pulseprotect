@@ -36,7 +36,7 @@ export default function IdeaToImpactSection() {
   ]
 
   return (
-    <section className="bg-white py-16 px-8 lg:px-48 w-full">
+    <section className="bg-white lg:py-16 py-4 px-8 lg:px-48 w-full">
       <div className="w-full mx-auto">
         {/* Heading Area */}
         <motion.div
@@ -52,11 +52,21 @@ export default function IdeaToImpactSection() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="flex items-center justify-center gap-8 lg:mb-4 mb-0"
+            className="flex items-center justify-center gap-8 lg:mb-4 mb-0 lg:block hidden"
           >
             <h1 className="text-black font-bold text-4xl lg:text-5xl whitespace-nowrap">From idea</h1>
             <div className="border-t-2 border-gray-200 w-full"></div>
             <h1 className="text-black font-bold text-4xl lg:text-5xl whitespace-nowrap">to impact</h1>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="flex items-start justify-start gap-8 lg:mb-4 mb-0 lg:hidden block"
+          >
+            <h1 className="text-black font-bold text-4xl lg:text-5xl whitespace-nowrap">From idea to impact</h1>
           </motion.div>
 
           {/* Subtitle */}

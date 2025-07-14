@@ -18,6 +18,7 @@ export default function About() {
             <IdeaToImpactSection />
             {/* <ExperienceSection /> */}
             <TeamSection />
+            <Mechaminds />
         </div>
         <Footer />
     </>

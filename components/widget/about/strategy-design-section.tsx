@@ -22,7 +22,7 @@ export default function StrategyDesignSection() {
   ]
 
   return (
-    <section className="bg-white py-16 px-8 lg:px-48 w-full">
+    <section className="bg-white pb-8 py-24 px-8 lg:px-48 w-full">
       <div className="w-full mx-auto">
         <div className="lg:grid lg:grid-cols-2 lg:gap-16">
           {/* Left Column - Heading */}
@@ -31,13 +31,16 @@ export default function StrategyDesignSection() {
             whileInView={{ opacity: 1, x: 0, scale: 1 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }}
-            className="lg:col-span-1 mb-12 lg:mb-0"
+            className="lg:col-span-1 mb-3 lg:mb-0"
           >
-            <h1 className="text-teal-600 font-bold text-4xl lg:text-7xl leading-tight">
+            <h1 className="text-teal-600 font-bold text-4xl lg:text-7xl leading-tight lg:block hidden">
               <span className="block">Where</span>
               <span className="block italic text-teal-700">strategy</span>
               <span className="block">meets</span>
               <span className="block">design</span>
+            </h1>
+            <h1 className="text-teal-600 font-bold text-4xl lg:text-7xl leading-tight lg:hidden block">
+              Where <span className="italic text-teal-700">strategy</span> meets design
             </h1>
           </motion.div>
 
@@ -55,7 +58,7 @@ export default function StrategyDesignSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.5 }}
               transition={{ duration: 0.7, delay: 0.3 }}
-              className="text-black text-base lg:text-lg leading-relaxed mb-8"
+              className="text-black text-md lg:text-2xl lg:font-semibold leading-relaxed lg:mb-8 mb-4"
             >
               We specialize in brand transformation, helping businesses stand out with visually stunning and
               strategically crafted experiences. Our expertise spans

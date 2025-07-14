@@ -22,7 +22,7 @@ export default function TeamSection() {
   ];
 
   return (
-    <section className="bg-white py-16 px-8 lg:px-48 w-full">
+    <section className="bg-white lg:py-16 py-4 px-8 lg:px-48 w-full">
       <div className="w-full mx-auto">
         <div className="flex flex-col lg:flex-row lg:gap-20 gap-6">
           <motion.div
