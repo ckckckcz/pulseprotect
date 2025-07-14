@@ -19,14 +19,14 @@ export default function StrategyDesignSection() {
   ]
 
   return (
-    <section className="bg-black py-20 px-8 lg:px-24 w-full">
-      <div className="max-w-7xl mx-auto">
+    <section className="bg-white py-16 px-8 lg:px-48 w-full">
+      <div className="w-full mx-auto">
         <div className="lg:grid lg:grid-cols-2 lg:gap-16">
           {/* Left Column - Heading */}
           <div className="lg:col-span-1 mb-12 lg:mb-0">
-            <h1 className="text-white font-bold text-4xl lg:text-5xl leading-tight">
+            <h1 className="text-teal-600 font-bold text-4xl lg:text-7xl leading-tight">
               <span className="block">Where</span>
-              <span className="block">strategy</span>
+              <span className="block italic text-teal-700">strategy</span>
               <span className="block">meets</span>
               <span className="block">design</span>
             </h1>
@@ -35,7 +35,7 @@ export default function StrategyDesignSection() {
           {/* Right Column - Content */}
           <div className="lg:col-span-1">
             {/* Intro Paragraph */}
-            <p className="text-white text-base lg:text-lg leading-relaxed mb-8">
+            <p className="text-black text-base lg:text-lg leading-relaxed mb-8">
               We specialize in brand transformation, helping businesses stand out with visually stunning and
               strategically crafted experiences. Our expertise spans
             </p>
@@ -44,10 +44,10 @@ export default function StrategyDesignSection() {
             <div className="space-y-6">
               {services.map((service, index) => (
                 <div key={index} className="group">
-                  <h3 className="text-white font-semibold text-xl mb-1 group-hover:text-teal-600 transition-colors duration-200">
+                  <h3 className="text-black font-semibold text-2xl mb-1 group-hover:text-teal-600 transition-colors duration-200">
                     {service.title}
                   </h3>
-                  <p className="text-gray-400 text-base mb-6">{service.subtitle}</p>
+                  <p className="text-gray-400 mb-6 text-md">{service.subtitle}</p>
                 </div>
               ))}
             </div>

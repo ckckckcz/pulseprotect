@@ -35,19 +35,19 @@ export default function IdeaToImpactSection() {
   ]
 
   return (
-    <section className="bg-black py-20 px-8 lg:px-24 w-full">
-      <div className="max-w-7xl mx-auto">
+    <section className="bg-white py-16 px-8 lg:px-48 w-full">
+      <div className="w-full mx-auto">
         {/* Heading Area */}
-        <div className="text-center mb-16">
+        <div className="text-center lg:mb-16 mb-6">
           {/* Split Heading with Line */}
-          <div className="flex items-center justify-center gap-8 mb-4">
-            <h1 className="text-white font-bold text-4xl lg:text-5xl whitespace-nowrap">From idea</h1>
-            <div className="border-t border-white w-24 lg:w-32"></div>
-            <h1 className="text-white font-bold text-4xl lg:text-5xl whitespace-nowrap">to impact</h1>
+          <div className="flex items-center justify-center gap-8 lg:mb-4 mb-0">
+            <h1 className="text-black font-bold text-4xl lg:text-5xl whitespace-nowrap">From idea</h1>
+            <div className="border-t-2 border-gray-200 w-full"></div>
+            <h1 className="text-black font-bold text-4xl lg:text-5xl whitespace-nowrap">to impact</h1>
           </div>
 
           {/* Subtitle */}
-          <p className="text-gray-400 text-base lg:text-lg mt-4 text-center max-w-2xl mx-auto">
+          <p className="text-gray-400 text-base lg:text-lg lg:mt-4 mt-2 text-start mx-auto">
             Every project is built on a foundation of collaboration, strategy, and innovation.
           </p>
         </div>
@@ -60,18 +60,18 @@ export default function IdeaToImpactSection() {
               return (
                 <div
                   key={card.id}
-                  className={`min-w-[240px] lg:min-w-[300px] snap-start rounded-lg px-6 py-8 flex-shrink-0 ${
-                    card.isHighlighted ? "bg-lime-400 text-black" : "bg-zinc-900 text-white"
+                  className={`min-w-[240px] lg:min-w-[300px] snap-start rounded-xl px-6 py-8 flex-shrink-0 ${
+                    card.isHighlighted ? "bg-teal-600 text-white" : "bg-gray-100 border border-gray-200 text-black"
                   }`}
                 >
                   {/* Icon */}
-                  <IconComponent className={`w-6 h-6 mb-4 ${card.isHighlighted ? "text-black" : "text-white"}`} />
+                  <IconComponent className={`w-6 h-6 mb-4 ${card.isHighlighted ? "text-white" : "text-black"}`} />
 
                   {/* Title */}
-                  <h3 className="font-semibold text-xl mb-2">{card.title}</h3>
+                  <h3 className="font-semibold text-xl">{card.title}</h3>
 
                   {/* Description */}
-                  <p className={`text-sm ${card.isHighlighted ? "text-black/80" : "text-gray-300"}`}>
+                  <p className={`text-sm ${card.isHighlighted ? "text-white" : "text-gray-500"}`}>
                     {card.description}
                   </p>
                 </div>

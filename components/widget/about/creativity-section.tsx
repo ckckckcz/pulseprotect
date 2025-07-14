@@ -7,7 +7,7 @@ export default function CreativitySection() {
         <div className="lg:grid lg:grid-cols-2 lg:gap-12">
           {/* Left Column - Heading */}
           <div className="lg:col-span-1">
-            <h1 className=" font-bold text-5xl lg:text-7xl leading-tight">Creativity <br /> with purpose</h1>
+            <h1 className=" font-bold text-5xl lg:text-7xl leading-tight"><span className="italic text-teal-700">Creativity</span>  <br /> with purpose</h1>
           </div>
 
           {/* Right Column - Text Content */}
@@ -31,7 +31,7 @@ export default function CreativitySection() {
             <img
               src="/placeholder.svg?height=400&width=600"
               alt="Creative team working collaboratively in a modern office environment with multiple monitors and design tools"
-              className="w-full h-64 lg:h-80 object-cover rounded-lg grayscale border-b-4 border-teal-600"
+              className="w-full h-64 lg:h-96 object-cover rounded-xl grayscale"
             />
           </div>
         </div>
