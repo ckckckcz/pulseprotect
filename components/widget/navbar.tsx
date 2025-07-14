@@ -193,8 +193,8 @@ export default function Navbar() {
             <Link href="/about" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Tentang Kami
             </Link>
-            <Link href="/services" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
-              Layanan
+            <Link href="/silva" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
+              Silva
             </Link>
             <Link href="/contact" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Kontak

@@ -52,7 +52,7 @@ export default function IdeaToImpactSection() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="flex items-center justify-center gap-8 lg:mb-4 mb-0 lg:block hidden"
+            className="flex-row items-center justify-center gap-8 lg:mb-4 mb-0 lg:flex hidden"
           >
             <h1 className="text-black font-bold text-4xl lg:text-5xl whitespace-nowrap">From idea</h1>
             <div className="border-t-2 border-gray-200 w-full"></div>
@@ -75,7 +75,7 @@ export default function IdeaToImpactSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-gray-400 text-base lg:text-lg lg:mt-4 mt-2 text-start mx-auto"
+            className="text-gray-400 text-base lg:text-lg lg:mt-3 mt-2 text-start mx-auto"
           >
             Every project is built on a foundation of collaboration, strategy, and innovation.
           </motion.p>
