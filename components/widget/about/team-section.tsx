@@ -1,22 +1,23 @@
 "use client";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function TeamSection() {
   const teamMembers = [
     {
       name: "Gabriel Batavia",
       title: "AI Engineer",
-      image: "/placeholder.svg?height=320&width=280",
+      image: "/images/developer/gabriel-batavia.png",
     },
     {
       name: "Michelle Dorani Shiba",
       title: "Data and Analytics Specialist",
-      image: "/placeholder.svg?height=320&width=280",
+      image: "/images/developer/michelle-dorani-shiba.png",
     },
     {
       name: "Riovaldo Alfiyan Fahmi Rahman",
       title: "Fullstack Web Developer",
-      image: "/placeholder.svg?height=320&width=280",
+      image: "/images/developer/riovaldo-alfiyan-fahmi-rahman.png",
     },
   ];
 
@@ -60,7 +61,7 @@ export default function TeamSection() {
                   whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true, amount: 0.5 }}
                   transition={{ duration: 0.7, delay: 0.3 + index * 0.15 }}
-                  className="relative overflow-hidden rounded-xl shadow-md h-[260px] group bg-gray-100"
+                  className="relative overflow-hidden rounded-2xl shadow-md h-[260px] group bg-gray-100"
                 >
                   {/* Team Member Image */}
                   <img
@@ -69,9 +70,9 @@ export default function TeamSection() {
                     className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
                   />
                   {/* Gradient Overlay with Text */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent px-4 py-3">
-                    <h3 className="text-black font-semibold text-base">{member.name}</h3>
-                    <p className="text-black text-sm opacity-80">{member.title}</p>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 via-black/30 to-transparent px-4 py-3">
+                    <h3 className="text-white font-semibold text-base">{member.name}</h3>
+                    <p className="text-white text-sm opacity-80">{member.title}</p>
                   </div>
                 </motion.div>
               ))}

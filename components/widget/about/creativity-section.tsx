@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 export default function CreativitySection() {
   return (
-    <section className="bg-white text-black  py-16 px-8 lg:px-48 w-full">
+    <section className="bg-white text-black lg:py-16 pt-8 pb-28 px-8 lg:px-48 w-full">
       <div className="relative w-full mx-auto">
 
         {/* Main Content Grid */}
@@ -27,15 +27,16 @@ export default function CreativitySection() {
             transition={{ duration: 0.8, delay: 0.2, ease: [0.6, -0.05, 0.01, 0.99] }}
             className="lg:col-span-1 mt-4 lg:mt-0"
           >
-            <p className="lg:text-lg text-md leading-relaxed">
-              At Nova, we're more than just a digital agency—we're a team of creative thinkers, problem solvers, and
-              brand builders. Our mission is to craft bold, impactful, and user-driven experiences that help brands
-              thrive in the digital world.
+            <p className="lg:text-lg text-md font-medium leading-relaxed">
+              Mechaminds is a forward-thinking IT collective proudly based in Malang, East Java — a rising tech hub in Indonesia. 
+              Formed by a group of passionate and highly-driven individuals, our team consists of 2 to 10 core members 
+              who share a common goal: to innovate, compete, and lead in the dynamic world of information technology.
             </p>
 
-            <p className="lg:text-lg text-md leading-relaxed mt-4">
-              With a deep passion for design and technology, we bridge the gap between aesthetics and functionality,
-              ensuring every project we touch delivers real results.
+            <p className="lg:text-lg text-md font-medium leading-relaxed mt-4">
+            Our strength lies not only in technical skills, but also in our collaborative mindset. 
+            We actively participate in national and international IT competitions, where we test our ideas, challenge ourselves, and build solutions that matter. 
+            Each challenge fuels our growth and sharpens our expertise.
             </p>
           </motion.div>
         </div>
