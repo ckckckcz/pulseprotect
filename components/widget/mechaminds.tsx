@@ -3,10 +3,10 @@
 export default function AnimatedCrossBanner() {
   const text1 = "We Are MechaMinds!"
   const text2 = "We Are MechaMinds!"
-  const text3 = "We Are MechaMinds!"
+  // const text3 = "We Are MechaMinds!"
   const separator = " • "
   const fullText = Array(8)
-    .fill(text1 + separator + text2 + separator + text3)
+    .fill(text1 + separator + text2 + separator)
     .join(" ")
 
   return (

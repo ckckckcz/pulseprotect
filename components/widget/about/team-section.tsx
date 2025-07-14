@@ -20,7 +20,7 @@ export default function TeamSection() {
   return (
     <section className="bg-white py-16 px-8 lg:px-48 w-full">
       <div className="w-full mx-auto">
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row lg:gap-20 gap-6">
           <div className="flex lg:h-[440px]">
             <h1 className="text-black font-bold text-5xl leading-tight text-left">
               <span>
