@@ -7,11 +7,11 @@ import TeamSection from "@/components/widget/about/team-section"
 import Navbar from "@/components/widget/navbar"
 import Footer from "@/components/widget/footer"
 
-export default function Home() {
+export default function About() {
   return (
     <>
         <Navbar/>
-        <div className="min-h-screen mt-28 overflow-x-hidden">
+        <div className="min-h-screen mt-28 overflow-x-hidden bg-white">
             <CreativitySection />
             <Mechaminds />
             <StrategyDesignSection />

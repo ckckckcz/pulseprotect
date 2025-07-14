@@ -1,4 +1,5 @@
-"use client"
+"use client";
+import { motion } from "framer-motion";
 
 export default function AnimatedCrossBanner() {
   const text1 = "We Are MechaMinds!"
@@ -10,12 +11,22 @@ export default function AnimatedCrossBanner() {
     .join(" ")
 
   return (
-    <div className="w-full lg:h-24 lg:mt-0 mt-10 bg-white flex items-center justify-center relative z-20">
+    <motion.div
+      initial={{ opacity: 0, y: 40, scale: 0.98 }} // animasi dari bawah ke atas
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.5 }}
+      transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }}
+      className="w-full lg:h-24 lg:mt-0 mt-10 bg-white flex items-center justify-center relative z-20"
+    >
       {/* Second diagonal stripe - top-right to bottom-left */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-full h-[70px] lg:h-full">
           {/* Background stripe */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, scaleX: 0.8 }}
+            whileInView={{ opacity: 1, scaleX: 1 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
             className="absolute inset-0 bg-teal-600 transform origin-center shadow-lg"
             style={{
               width: "150%",
@@ -24,7 +35,13 @@ export default function AnimatedCrossBanner() {
           />
 
           {/* Text container */}
-          <div className="absolute inset-0 flex items-center overflow-hidden transform">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }} // animasi dari bawah ke atas
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="absolute inset-0 flex items-center overflow-hidden transform"
+          >
             <div className="flex animate-scroll-left-continuous">
               <span className="text-white font-bold lg:text-3xl text-2xl whitespace-nowrap">
                 {fullText}
@@ -33,7 +50,7 @@ export default function AnimatedCrossBanner() {
                 {fullText}
               </span>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
@@ -64,6 +81,6 @@ export default function AnimatedCrossBanner() {
           animation: scroll-left-continuous 50s linear infinite;
         }
       `}</style>
-    </div>
+    </motion.div>
   )
 }
