@@ -4,6 +4,7 @@ import Image from "next/image"
 import { motion, useAnimation } from "framer-motion"
 import Navbar from "@/components/widget/navbar"
 import Footer from "@/components/widget/footer"
+import DaftarObat from "@/components/widget/cek-obat/daftar-obat"
 import { MapPin, Stethoscope } from "lucide-react"
 import { useEffect } from "react"
 
@@ -245,6 +246,7 @@ export default function CekObat() {
                     </motion.div>
                 </motion.div>
             </section>
+            <DaftarObat />
             <Footer />
         </>
     )
