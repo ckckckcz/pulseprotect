@@ -14,7 +14,7 @@ export interface AIResponse {
 
 // Map frontend model IDs to OpenRouter model IDs
 const modelMapping: Record<AIModel, string> = {
-  'google-gemini': 'google/gemini-pro',
+  'google-gemini': 'google/gemma-3-27b-it:free',
   'deepseek-v3': 'deepseek/deepseek-chat-v3-0324:free',
   'mistral-small-24b': 'mistralai/mistral-small-3.2-24b-instruct:free',
 };

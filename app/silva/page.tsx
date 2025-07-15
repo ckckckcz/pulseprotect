@@ -28,7 +28,8 @@ import {
   User,
   LogOut,
   DoorOpen,
-  House
+  House,
+  X
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
@@ -106,6 +107,8 @@ export default function ChatInterface() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const fullTextRef = useRef(translations[0].text);
+  const [aiTypingText, setAiTypingText] = useState("");
+  const [isAiTyping, setIsAiTyping] = useState(false);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -167,19 +170,19 @@ export default function ChatInterface() {
 
   // Custom submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
     if (input.trim()) {
       // Add user message
       const userMessage = {
         id: Date.now().toString(),
         role: "user" as const,
         content: input
-      }
-      
-      setMessages(prev => [...prev, userMessage])
-      setInput("")
-      setIsLoading(true)
-      
+      };
+      setMessages(prev => [...prev, userMessage]);
+      setInput("");
+      setIsLoading(true);
+      setIsAiTyping(false);
+      setAiTypingText("");
       try {
         // Convert messages to AI service format
         const messageHistory: Message[] = messages
@@ -188,17 +191,29 @@ export default function ChatInterface() {
             role: msg.role,
             content: msg.content
           }));
-        
         // Call AI service
         const response = await aiService.generateCompletion(selectedModel, messageHistory);
-        
-        const aiMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: response.text
-        }
-        
-        setMessages(prev => [...prev, aiMessage])
+        // Typing effect
+        setIsAiTyping(true);
+        let i = 0;
+        const text = response.text;
+        setAiTypingText("");
+        const typeChar = () => {
+          if (i <= text.length) {
+            setAiTypingText(text.slice(0, i));
+            i++;
+            setTimeout(typeChar, 18); // typing speed
+          } else {
+            setIsAiTyping(false);
+            setMessages(prev => [...prev, {
+              id: (Date.now() + 1).toString(),
+              role: "assistant" as const,
+              content: text
+            }]);
+            setAiTypingText("");
+          }
+        };
+        typeChar();
       } catch (error) {
         console.error("AI error:", error);
         // Add error message
@@ -206,10 +221,10 @@ export default function ChatInterface() {
           id: (Date.now() + 1).toString(),
           role: "assistant" as const,
           content: "Sorry, I encountered an error while processing your request. Please try again."
-        }
-        setMessages(prev => [...prev, errorMessage])
+        };
+        setMessages(prev => [...prev, errorMessage]);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
   }
@@ -570,12 +585,13 @@ export default function ChatInterface() {
                     </Button>
 
                     <Button
-                      type="submit"
+                      type={isLoading ? "button" : "submit"}
                       size="sm"
                       className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
-                      disabled={!input.trim() || isLoading}
+                      disabled={!input.trim() && !isLoading}
+                      onClick={isLoading ? () => setIsLoading(false) : undefined}
                     >
-                      <ArrowUp className="w-4 h-4" />
+                      {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
                     </Button>
                   </div>
                 </form>
@@ -629,19 +645,28 @@ export default function ChatInterface() {
               {/* Scrollable message container with hidden scrollbar */}
               <div className="flex-1 overflow-y-auto px-6 pt-6 pb-28 scrollbar-none" style={{ maxHeight: "calc(100vh - 120px)" }}>
                 <div className="space-y-6 w-full">
-                  {messages.map((message) => (
-                    <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`max-w-[75%] sm:max-w-[70%] px-4 py-3 rounded-2xl ${
-                          message.role === "user"
-                            ? "bg-teal-600 text-white"
-                            : "bg-white border border-gray-200 text-gray-900 shadow-sm"
-                        }`}
-                      >
-                        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+                  {messages.map((message, idx) => {
+                    const isLastAi =
+                      message.role === "assistant" &&
+                      idx === messages.length - 1 &&
+                      (isAiTyping || aiTypingText);
+                    return (
+                      <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div
+                          className={`max-w-[75%] sm:max-w-[70%] px-4 py-3 
+                            ${message.role === "user"
+                              ? "bg-teal-600 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
+                              : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
+                            }`
+                          }
+                        >
+                          <div className="whitespace-pre-wrap break-words">
+                            {isLastAi && aiTypingText ? aiTypingText : message.content}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {isLoading && (
                     <div className="flex justify-start">
@@ -683,12 +708,13 @@ export default function ChatInterface() {
                       </Button>
 
                       <Button
-                        type="submit"
+                        type={isLoading ? "button" : "submit"}
                         size="sm"
                         className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
-                        disabled={!input.trim() || isLoading}
+                        disabled={!input.trim() && !isLoading}
+                        onClick={isLoading ? () => setIsLoading(false) : undefined}
                       >
-                        <ArrowUp className="w-4 h-4" />
+                        {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
                       </Button>
                     </div>
                   </form>
