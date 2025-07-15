@@ -100,6 +100,14 @@ export default function UserProfile() {
   const [feedback, setFeedback] = useState("");
   const [sendingFeedback, setSendingFeedback] = useState(false);
 
+  // Ganti daftar seed sesuai permintaan user
+  const avatarSeeds = [
+    "Adrian", "Sadie", "Nolan", "Ryan", "Aiden", "Andrea", "Aidan", "Wyatt", "Ryker", "Alexander", "Brian", "Amaya", "Avery", "Easton", "Destiny", "Christopher", "Sara", "Vivian", "Mackenzie"
+  ];
+
+  // Tambahkan state untuk seed avatar
+  const [avatarSeed, setAvatarSeed] = useState<string>("");
+
   // Fetch countries data
   useEffect(() => {
     const fetchCountries = async () => {
@@ -414,19 +422,21 @@ export default function UserProfile() {
     }
   };
 
-  // Generate random avatar URL (ID 1-100)
+  // Update generateAvatarUrl agar pakai DiceBear dan seed
   const generateAvatarUrl = () => {
-    const id = Math.floor(Math.random() * 100) + 1; // 1-100
-    setAvatarId(id);
-    return `https://avatar.iran.liara.run/public/${id}`;
+    // Pilih seed random dari daftar
+    const seed = avatarSeeds[Math.floor(Math.random() * avatarSeeds.length)];
+    setAvatarSeed(seed);
+    return `https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${encodeURIComponent(seed)}`;
   };
 
   // Set initial avatar or from user data
   useEffect(() => {
     if (user?.foto_profile) {
       setAvatarUrl(user.foto_profile);
-      const match = user.foto_profile.match(/\/public\/(\d+)/);
-      setAvatarId(match ? Number(match[1]) : null);
+      // Cek jika url mengandung seed, ambil seed-nya
+      const match = user.foto_profile.match(/seed=([^&]+)/);
+      setAvatarSeed(match ? decodeURIComponent(match[1]) : "");
       setIsAvatarChanged(false);
     } else {
       const url = generateAvatarUrl();
@@ -602,7 +612,7 @@ export default function UserProfile() {
                           )}
                         </div>
                         <div className="mt-2 text-xs text-gray-500">
-                          {avatarId && <>Avatar ID: <span className="font-bold">{avatarId}</span></>}
+                          {avatarSeed && <>Seed: <span className="font-bold">{avatarSeed}</span></>}
                           {isAvatarChanged && <span className="ml-2 text-teal-600 font-semibold">Belum disimpan</span>}
                           {!isAvatarChanged && <span className="ml-2 text-green-600 font-semibold">Sudah disimpan</span>}
                         </div>

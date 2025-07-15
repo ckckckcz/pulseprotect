@@ -3,13 +3,13 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
+import ClientLayout from "./clientLayout";
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Smart City",
   description: "Smart City Management System",
-  // Add CSP meta tags to allow external scripts
   other: {
     "Content-Security-Policy": 
       "default-src 'self'; " +
@@ -39,15 +39,16 @@ export const metadata: Metadata = {
   }
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="bg-white">
       <head>
         {/* Script for Midtrans can be preloaded here */}
+        <link 
+          rel="icon" 
+          type="image/png" 
+          href="/favicon.png"
+        />
         <link 
           rel="preconnect" 
           href="https://app.sandbox.midtrans.com" 
@@ -66,10 +67,12 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          {children}
+          <ClientLayout>
+            {children}
+          </ClientLayout>
         </AuthProvider>
       </body>
     </html>
-  )
+  );
 }
 

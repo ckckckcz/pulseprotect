@@ -8,6 +8,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import { createAIPackagePayment, handleMidtransPayment, PackageDetails, recordPayment } from "@/services/payment"
 import Cookies from 'js-cookie'
+import Navbar from "@/components/widget/navbar"
+import Footer from "@/components/widget/footer"
 import { supabase } from "@/lib/supabase"
 import { motion } from "framer-motion"
 
@@ -58,7 +60,7 @@ export default function PricingPage() {
         console.log('User session cookie found:', userData);
         setCurrentUser(userData);
       } else {
-        console.log('No user session cookie found');
+        // console.log('No user session cookie found');
       }
     } catch (error) {
       console.error('Error parsing user session cookie:', error);
@@ -134,24 +136,24 @@ export default function PricingPage() {
 
       const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-XFRfqvTOMmYZa4mu';
       const snapUrl = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js';
-      
+
       console.log('Loading Midtrans script with URL:', snapUrl);
       console.log('Client key:', clientKey.substring(0, 10) + '...');
 
       const script = document.createElement('script');
       script.src = snapUrl;
       script.setAttribute('data-client-key', clientKey);
-      
+
       script.onload = () => {
         console.log('Midtrans script loaded successfully');
         resolve();
       };
-      
+
       script.onerror = (error) => {
         console.error('Failed to load Midtrans script:', error);
         reject(error);
       };
-      
+
       document.head.appendChild(script);
     });
   };
@@ -159,7 +161,7 @@ export default function PricingPage() {
   // Function to create payment
   const createPayment = async (packageDetails: any, customerInfo: any) => {
     const orderId = `ORDER-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    
+
     const params = {
       transaction_details: {
         order_id: orderId,
@@ -203,7 +205,7 @@ export default function PricingPage() {
       });
 
       console.log('API Response status:', response.status);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error:', errorText);
@@ -212,7 +214,7 @@ export default function PricingPage() {
 
       const result = await response.json();
       console.log('Payment token result:', result);
-      
+
       return result;
     } catch (error) {
       console.error('Payment creation error:', error);
@@ -224,7 +226,7 @@ export default function PricingPage() {
   const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
     // Prevent default button behavior that causes page to scroll to top
     e.preventDefault();
-    
+
     try {
       // Check if user is logged in first
       const userSessionCookie = Cookies.get('user-session');
@@ -235,7 +237,7 @@ export default function PricingPage() {
           description: "Silakan login terlebih dahulu untuk melanjutkan",
           variant: "default"
         });
-        
+
         // Redirect to login page with return URL
         router.push(`/login?returnUrl=${encodeURIComponent('/pricing')}`);
         return;
@@ -246,7 +248,7 @@ export default function PricingPage() {
         console.error('Invalid package type:', packageType);
         return;
       }
-      
+
       // For free plan, just show a success message
       if (packageType === 'free') {
         toast({
@@ -255,10 +257,10 @@ export default function PricingPage() {
         });
         return;
       }
-      
+
       setIsLoading(packageType);
       console.log('Starting payment process for:', packageType);
-      
+
       // Set current user from cookie
       try {
         const userData = JSON.parse(userSessionCookie);
@@ -268,9 +270,9 @@ export default function PricingPage() {
         console.error('Error parsing user session cookie:', error);
         throw new Error('Invalid user session');
       }
-      
+
       console.log('Current user from cookie:', currentUser);
-      
+
       if (!currentUser) {
         toast({
           title: "Login Diperlukan",
@@ -280,17 +282,17 @@ export default function PricingPage() {
         router.push('/login');
         return;
       }
-      
+
       // Get package details from the selected plan
       const packageDetails: PackageDetails = {
         packageId: `pkg_${packageType}`,
-        packageName: isYearly 
-          ? `AI Model ${selectedPlan.name} (Tahunan)` 
+        packageName: isYearly
+          ? `AI Model ${selectedPlan.name} (Tahunan)`
           : `AI Model ${selectedPlan.name} (Bulanan)`,
         price: isYearly ? selectedPlan.yearlyPrice : selectedPlan.monthlyPrice,
         period: isYearly ? "yearly" : "monthly",
       };
-      
+
       // Extract customer info from cookie data
       const customerInfo = {
         firstName: currentUser.nama_lengkap ? currentUser.nama_lengkap.split(' ')[0] : 'User',
@@ -301,51 +303,51 @@ export default function PricingPage() {
 
       console.log('Package details:', packageDetails);
       console.log('Customer info:', customerInfo);
-      
+
       toast({
         title: "Memproses Pembayaran",
         description: "Mohon tunggu, sedang mempersiapkan pembayaran...",
       });
-      
+
       // Load Midtrans script and process payment
       console.log('Loading Midtrans script...');
       await loadMidtransScript();
-      
+
       // Create payment
       const paymentData = await createAIPackagePayment(
         currentUser.userId?.toString() || currentUser.id?.toString() || '0',
         packageDetails,
         customerInfo
       );
-      
+
       if (!paymentData.token) {
         throw new Error('No payment token received');
       }
-      
+
       // Handle the payment with Midtrans Snap
       await handleMidtransPayment(paymentData.token, {
-        onSuccess: function(result: any) {
+        onSuccess: function (result: any) {
           console.log('Payment success:', result);
           toast({
             title: "Pembayaran Berhasil! 🎉",
             description: `Terima kasih! Paket ${packageDetails.packageName} Anda sudah aktif.`,
           });
-          
+
           // Save subscription in local database
           saveSubscription(
-            parseInt(currentUser.userId || currentUser.id) || 0, 
-            packageDetails, 
+            parseInt(currentUser.userId || currentUser.id) || 0,
+            packageDetails,
             result
           );
         },
-        onPending: function(result: any) {
+        onPending: function (result: any) {
           console.log('Payment pending:', result);
           toast({
             title: "Pembayaran Sedang Diproses",
             description: "Pembayaran Anda sedang diverifikasi.",
           });
         },
-        onError: function(result: any) {
+        onError: function (result: any) {
           console.log('Payment error:', result);
           toast({
             title: "Pembayaran Gagal",
@@ -353,7 +355,7 @@ export default function PricingPage() {
             variant: "destructive"
           });
         },
-        onClose: function() {
+        onClose: function () {
           console.log('Payment popup closed');
           toast({
             title: "Pembayaran Dibatalkan",
@@ -361,7 +363,7 @@ export default function PricingPage() {
           });
         }
       });
-      
+
     } catch (error) {
       console.error('Payment error:', error);
       toast({
@@ -373,17 +375,17 @@ export default function PricingPage() {
       setIsLoading(null);
     }
   };
-  
+
   // Updated saveSubscription function to include email
   const saveSubscription = async (userId: number, packageDetails: any, paymentResult: any) => {
     try {
       console.log('Saving subscription for user:', userId);
       console.log('Payment result:', paymentResult);
-      
+
       // Get user's email from cookie
       const userSessionCookie = Cookies.get('user-session');
       let userEmail = 'user@example.com';
-      
+
       if (userSessionCookie) {
         try {
           const userData = JSON.parse(userSessionCookie);
@@ -392,7 +394,7 @@ export default function PricingPage() {
           console.error('Error parsing user session cookie:', error);
         }
       }
-      
+
       // Use the recordPayment function from payment service
       const result = await fetch('/api/subscriptions/create', {
         method: 'POST',
@@ -409,13 +411,13 @@ export default function PricingPage() {
           paymentData: paymentResult
         })
       });
-      
+
       if (!result.ok) {
         throw new Error(`Failed to record payment: ${result.status}`);
       }
-      
+
       console.log('Payment record created successfully');
-      
+
       // Refresh page or update UI as needed
       setTimeout(() => {
         window.location.reload();
@@ -434,23 +436,23 @@ export default function PricingPage() {
   const testMidtrans = async () => {
     try {
       console.log('=== TESTING MIDTRANS INTEGRATION ===');
-      
+
       // Test 1: Check environment variables
       console.log('Environment check:', {
         hasClientKey: !!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY,
         clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY?.substring(0, 10) + '...',
         snapUrl: process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL,
       });
-      
+
       // Test 2: Load script
       console.log('Loading Midtrans script...');
       await loadMidtransScript();
       console.log('Script loaded, window.snap available:', !!(window as any).snap);
-      
+
       if (!(window as any).snap) {
         throw new Error('Midtrans Snap not loaded correctly');
       }
-      
+
       // Test 3: Test API call with detailed error handling
       const testParams = {
         transaction_details: {
@@ -486,35 +488,35 @@ export default function PricingPage() {
           country_code: 'IDN'
         }
       };
-      
+
       console.log('Testing API call...');
       console.log('Request params:', testParams);
-      
+
       const response = await fetch('/api/payment/create-token', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify(testParams),
         cache: 'no-store',
       });
-      
+
       console.log('API Response status:', response.status);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API Error:', errorText);
         throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
-      
+
       const result = await response.json();
       console.log('Payment token result:', result);
-      
+
       if (!result.token) {
         throw new Error('No token received from API');
       }
-      
+
       // Test 4: Open Snap popup
       console.log('Opening Snap with token:', result.token);
       (window as any).snap.pay(result.token, {
@@ -523,7 +525,7 @@ export default function PricingPage() {
         onError: (r: any) => console.error('Test payment error:', r),
         onClose: () => console.log('Test payment closed')
       });
-      
+
     } catch (error) {
       console.error('=== TEST FAILED ===');
       console.error('Test error:', error);
@@ -543,221 +545,223 @@ export default function PricingPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }}
-      className="min-h-screen bg-white py-16 px-4"
-    >
-      <div className="w-full mx-auto">
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7 }}
-          className="text-center lg:mb-16 mb-12"
-        >
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Paket Model <span className="text-teal-600">AI Pintar</span>
-            <br />
-            <span className="text-gray-900">untuk Setiap Kebutuhan</span>
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Pilih model AI yang sesuai dengan kebutuhan Anda. Dari pengguna pribadi hingga perusahaan besar,
-            kami memiliki solusi yang tepat untuk Anda.
-          </p>
-
-          {/* Toggle Switch */}
-          <div className="flex items-center justify-center gap-4 lg:mb-12 mb-2">
-            <span className={`text-sm font-medium ${!isYearly ? "text-teal-600" : "text-gray-500"}`}>Bulanan</span>
-            <button
-              onClick={() => setIsYearly(!isYearly)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isYearly ? "bg-teal-600" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isYearly ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-            <span className={`text-sm font-medium ${isYearly ? "text-teal-600" : "text-gray-500"}`}>Tahunan</span>
-          </div>
-        </motion.div>
-
-        {/* Pricing Cards */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{
-            hidden: {},
-            visible: {
-              transition: { staggerChildren: 0.15 }
-            }
-          }}
-          className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
-        >
-          {/* Free Plan */}
+    <>
+      <Navbar />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }}
+        className="min-h-screen bg-white py-16 px-4 mt-16"
+      >
+        <div className="w-full mx-auto">
+          {/* Header Section */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
+            transition={{ duration: 0.7 }}
+            className="lg:text-center text-start lg:mb-16 mb-6"
           >
-            <div className="mb-2 bg-gray-100 px-4 py-2 rounded-xl">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Free</h3>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-gray-900">0</span>
-                <span className="text-gray-600">Rp/Bulan</span>
-              </div>
-              <p className="text-sm text-gray-500 mt-1">Tanpa biaya berlangganan</p>
-              <p className="text-sm text-gray-600 mt-4">
-                Untuk pengguna individu yang ingin mencoba kemampuan AI.
-              </p>
-            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Paket Model <span className="text-teal-600">AI Pintar</span>
+              <br />
+              <span className="text-gray-900">untuk Setiap Kebutuhan</span>
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+              Pilih model AI yang sesuai dengan kebutuhan Anda. Dari pengguna pribadi hingga perusahaan besar,
+              kami memiliki solusi yang tepat untuk Anda.
+            </p>
 
-            <div className="mb-8 p-4">
-              <h4 className="font-semibold text-gray-900 mb-4">Fitur</h4>
-              <p className="text-sm text-gray-600 mb-4">Termasuk:</p>
-              <ul className="space-y-3">
-                {freeFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+            {/* Toggle Switch */}
+            <div className="flex lg:items-center lg:justify-center justify-start gap-4 lg:mb-12 mb-2">
+              <span className={`text-sm font-medium ${!isYearly ? "text-teal-600" : "text-gray-500"}`}>Bulanan</span>
+              <button
+                onClick={() => setIsYearly(!isYearly)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isYearly ? "bg-teal-600" : "bg-gray-300"
+                  }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isYearly ? "translate-x-6" : "translate-x-1"
+                    }`}
+                />
+              </button>
+              <span className={`text-sm font-medium ${isYearly ? "text-teal-600" : "text-gray-500"}`}>Tahunan</span>
             </div>
-
-            <Button 
-              className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50"
-              onClick={(e) => handlePayment(e, 'free')}
-              disabled={isLoading !== null || activeMembershipType === "free"}
-            >
-              {activeMembershipType === "free"
-                ? "Membership Aktif"
-                : "Mulai Gratis"}
-            </Button>
           </motion.div>
 
-          {/* Plus Plan */}
+          {/* Pricing Cards */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
+            variants={{
+              hidden: {},
+              visible: {
+                transition: { staggerChildren: 0.15 }
+              }
+            }}
+            className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
           >
-            {/* <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-teal-600 hover:bg-teal-600 text-white px-4 py-1">
+            {/* Free Plan */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
+            >
+              <div className="mb-2 bg-gray-100 px-4 py-2 rounded-xl">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Free</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-gray-900">0</span>
+                  <span className="text-gray-600">Rp/Bulan</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">Tanpa biaya berlangganan</p>
+                <p className="text-sm text-gray-600 mt-4">
+                  Untuk pengguna individu yang ingin mencoba kemampuan AI.
+                </p>
+              </div>
+
+              <div className="mb-8 p-4">
+                <h4 className="font-semibold text-gray-900 mb-4">Fitur</h4>
+                <p className="text-sm text-gray-600 mb-4">Termasuk:</p>
+                <ul className="space-y-3">
+                  {freeFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Button
+                className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50"
+                onClick={(e) => handlePayment(e, 'free')}
+                disabled={isLoading !== null || activeMembershipType === "free"}
+              >
+                {activeMembershipType === "free"
+                  ? "Membership Aktif"
+                  : "Mulai Gratis"}
+              </Button>
+            </motion.div>
+
+            {/* Plus Plan */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
+            >
+              {/* <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-teal-600 hover:bg-teal-600 text-white px-4 py-1">
               Populer
             </Badge> */}
 
-            <div className="mb-1 bg-teal-600/15 px-4 py-2 rounded-xl">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Plus</h3>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-gray-900">{isYearly ? "58.000" : "70.000"}</span>
-                <span className="text-gray-600">Rp/Bulan</span>
+              <div className="mb-1 bg-teal-600/15 px-4 py-2 rounded-xl">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Plus</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-gray-900">{isYearly ? "58.000" : "70.000"}</span>
+                  <span className="text-gray-600">Rp/Bulan</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  {isYearly
+                    ? "Rp 696.000 ditagih per tahun"
+                    : "Ditagih bulanan"}
+                  {isYearly && <span className="ml-1 text-teal-600 font-medium">(Hemat 17%)</span>}
+                </p>
+                <p className="text-sm text-gray-600 mt-4">Untuk profesional yang membutuhkan lebih banyak fitur AI.</p>
               </div>
-              <p className="text-sm text-gray-500 mt-1">
-                {isYearly 
-                  ? "Rp 696.000 ditagih per tahun" 
-                  : "Ditagih bulanan"}
-                {isYearly && <span className="ml-1 text-teal-600 font-medium">(Hemat 17%)</span>}
-              </p>
-              <p className="text-sm text-gray-600 mt-4">Untuk profesional yang membutuhkan lebih banyak fitur AI.</p>
-            </div>
 
-            <div className="mb-8 p-4">
-              <h4 className="font-semibold text-gray-900 mb-4">Fitur</h4>
-              <p className="text-sm text-gray-600 mb-4">Termasuk semua fitur Free, plus:</p>
-              <ul className="space-y-3">
-                {plusFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <Button 
-              className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl" 
-              onClick={(e) => handlePayment(e, 'plus')} 
-              disabled={isLoading !== null || (activeMembershipType === "plus" && !isYearly)}
-            >
-              {activeMembershipType === "plus" && !isYearly
-                ? "Membership Aktif"
-                : isYearly && activeMembershipType === "plus"
-                ? "Upgrade Plus Tahunan"
-                : isYearly && activeMembershipType === "pro"
-                ? "Upgrade Pro"
-                : isLoading === 'plus'
-                ? 'Memproses...'
-                : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
-            </Button>
-          </motion.div>
-
-          {/* Pro Plan */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
-          >
-            <div className="mb-2 bg-gray-100 px-4 py-2 rounded-xl">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro</h3>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-gray-900">{isYearly ? "116.000" : "140.000"}</span>
-                <span className="text-gray-600">Rp/Bulan</span>
+              <div className="mb-8 p-4">
+                <h4 className="font-semibold text-gray-900 mb-4">Fitur</h4>
+                <p className="text-sm text-gray-600 mb-4">Termasuk semua fitur Free, plus:</p>
+                <ul className="space-y-3">
+                  {plusFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <p className="text-sm text-gray-500 mt-1">
-                {isYearly 
-                  ? "Rp 1.392.000 ditagih per tahun" 
-                  : "Ditagih bulanan"}
-                {isYearly && <span className="ml-1 text-teal-600 font-medium">(Hemat 17%)</span>}
-              </p>
-              <p className="text-sm text-gray-600 mt-4">
-                Untuk tim dan perusahaan dengan kebutuhan AI tingkat lanjut.
-              </p>
-            </div>
 
-            <div className="mb-8 p-4">
-              <h4 className="font-semibold text-gray-900 mb-4">Fitur</h4>
-              <p className="text-sm text-gray-600 mb-4">Termasuk semua fitur Plus, plus:</p>
-              <ul className="space-y-3">
-                {proFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <Button
+                className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl"
+                onClick={(e) => handlePayment(e, 'plus')}
+                disabled={isLoading !== null || (activeMembershipType === "plus" && !isYearly)}
+              >
+                {activeMembershipType === "plus" && !isYearly
+                  ? "Membership Aktif"
+                  : isYearly && activeMembershipType === "plus"
+                    ? "Upgrade Plus Tahunan"
+                    : isYearly && activeMembershipType === "pro"
+                      ? "Upgrade Pro"
+                      : isLoading === 'plus'
+                        ? 'Memproses...'
+                        : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
+              </Button>
+            </motion.div>
 
-            <Button 
-              className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50" 
-              onClick={(e) => handlePayment(e, 'pro')} 
-              disabled={isLoading !== null || (activeMembershipType === "pro" && !isYearly)}
+            {/* Pro Plan */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.3 }}
+              className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 relative"
             >
-              {activeMembershipType === "pro" && !isYearly
-                ? "Membership Aktif"
-                : isYearly && activeMembershipType === "pro"
-                ? "Upgrade Pro Tahunan"
-                : isYearly && activeMembershipType === "plus"
-                ? "Upgrade Pro"
-                : isLoading === 'pro'
-                ? 'Memproses...'
-                : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
-            </Button>
+              <div className="mb-2 bg-gray-100 px-4 py-2 rounded-xl">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-gray-900">{isYearly ? "116.000" : "140.000"}</span>
+                  <span className="text-gray-600">Rp/Bulan</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  {isYearly
+                    ? "Rp 1.392.000 ditagih per tahun"
+                    : "Ditagih bulanan"}
+                  {isYearly && <span className="ml-1 text-teal-600 font-medium">(Hemat 17%)</span>}
+                </p>
+                <p className="text-sm text-gray-600 mt-4">
+                  Untuk tim dan perusahaan dengan kebutuhan AI tingkat lanjut.
+                </p>
+              </div>
+
+              <div className="mb-8 p-4">
+                <h4 className="font-semibold text-gray-900 mb-4">Fitur</h4>
+                <p className="text-sm text-gray-600 mb-4">Termasuk semua fitur Plus, plus:</p>
+                <ul className="space-y-3">
+                  {proFeatures.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-teal-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Button
+                className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50"
+                onClick={(e) => handlePayment(e, 'pro')}
+                disabled={isLoading !== null || (activeMembershipType === "pro" && !isYearly)}
+              >
+                {activeMembershipType === "pro" && !isYearly
+                  ? "Membership Aktif"
+                  : isYearly && activeMembershipType === "pro"
+                    ? "Upgrade Pro Tahunan"
+                    : isYearly && activeMembershipType === "plus"
+                      ? "Upgrade Pro"
+                      : isLoading === 'pro'
+                        ? 'Memproses...'
+                        : `Berlangganan ${isYearly ? 'Tahunan' : 'Bulanan'}`}
+              </Button>
+            </motion.div>
           </motion.div>
-        </motion.div>
-        {/* ...existing code... */}
-      </div>
-    </motion.div>
+          {/* ...existing code... */}
+        </div>
+      </motion.div>
+      <Footer />
+    </>
   )
 }
