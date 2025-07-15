@@ -1,6 +1,8 @@
 import Pricing from "@/components/widget/hero/pricing"
 export default function PricingPage() {
     return(
-        <Pricing />
+        <div className="bg-white min-h-screen">
+            <Pricing />
+        </div>
     )
 }

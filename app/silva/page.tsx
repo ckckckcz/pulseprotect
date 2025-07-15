@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
+import Image from "next/image"
 
 const models = [
   { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
@@ -74,6 +75,10 @@ export default function ChatInterface() {
   // Avatar URL state
   const [avatarUrl, setAvatarUrl] = useState<string>("");
 
+  // Image upload states
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
   // Check authentication on component mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -83,7 +88,7 @@ export default function ChatInterface() {
           router.push('/login') // Redirect to login page if not authenticated
           return
         }
-        
+
         setUser(currentUser)
       } catch (error) {
         console.error("Auth check error:", error)
@@ -92,11 +97,11 @@ export default function ChatInterface() {
         setIsAuthChecking(false)
       }
     }
-    
+
     checkAuth()
   }, [router])
-  
-  const [messages, setMessages] = useState<{id: string; role: "user" | "assistant"; content: string}[]>([])
+
+  const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(true)
@@ -109,7 +114,19 @@ export default function ChatInterface() {
   const fullTextRef = useRef(translations[0].text);
   const [aiTypingText, setAiTypingText] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
-  
+  // Add modal open state for image preview
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Close image preview modal on ESC key
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isModalOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -117,7 +134,7 @@ export default function ChatInterface() {
         setIsProfileMenuOpen(false);
       }
     }
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -129,7 +146,7 @@ export default function ChatInterface() {
 
     // Update the reference to the current language text
     fullTextRef.current = translations[currentLanguageIndex].text;
-    
+
     // If we're typing
     if (isTyping && !isErasing) {
       if (displayText.length < fullTextRef.current.length) {
@@ -144,7 +161,7 @@ export default function ChatInterface() {
         }, 100); // Pause time when fully typed
       }
     }
-    
+
     // If we're erasing
     if (isErasing) {
       if (displayText.length > 0) {
@@ -155,77 +172,137 @@ export default function ChatInterface() {
       } else {
         // Finished erasing, move to next language
         setIsErasing(false);
-        setCurrentLanguageIndex((prevIndex) => 
+        setCurrentLanguageIndex((prevIndex) =>
           prevIndex === translations.length - 1 ? 0 : prevIndex + 1
         );
       }
     }
-    
+
     return () => clearTimeout(timeout);
-  }, [displayText, isTyping, isErasing, currentLanguageIndex]);  
+  }, [displayText, isTyping, isErasing, currentLanguageIndex]);
   // Custom input handler
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value)
   }
 
+  // Handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newFiles = files.slice(0, 3 - imageFiles.length); // batasi max 3
+    setImageFiles(prev => [...prev, ...newFiles].slice(0, 3));
+    setImagePreviews(prev => [
+      ...prev,
+      ...newFiles.map(file => URL.createObjectURL(file))
+    ].slice(0, 3));
+  };
+
+  // Upload image to Supabase Storage and return public URL
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from("chat-images")
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+
+      if (error || !data) {
+        // Log error detail
+        console.error("Supabase upload error:", error, data);
+        alert(
+          "Gagal upload gambar.\n" +
+          (typeof error === "string"
+            ? error
+            : error?.message || "Unknown error") +
+          "\nCek quota storage, ukuran file, dan permission bucket chat-images."
+        );
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("chat-images")
+        .getPublicUrl(fileName);
+
+      if (!urlData?.publicUrl) {
+        console.error("Get public URL error: No publicUrl found", urlData);
+        alert(
+          "Gagal mendapatkan URL gambar.\n" +
+          "Tidak ditemukan publicUrl.\nPastikan bucket chat-images sudah public."
+        );
+        return null;
+      }
+
+      return urlData.publicUrl;
+    } catch (err: any) {
+      console.error("UploadImage Exception:", err);
+      alert("Terjadi error saat upload gambar: " + (err?.message || err));
+      return null;
+    }
+  };
+
   // Custom submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (input.trim()) {
-      // Add user message
-      const userMessage = {
-        id: Date.now().toString(),
-        role: "user" as const,
-        content: input
-      };
-      setMessages(prev => [...prev, userMessage]);
-      setInput("");
-      setIsLoading(true);
-      setIsAiTyping(false);
+    let imageUrls: string[] = [];
+    for (const file of imageFiles) {
+      const url = await uploadImage(file);
+      if (url) imageUrls.push(url);
+    }
+    let content = imageUrls.map(url => url).join('\n');
+    if (input) content += (content ? '\n' : '') + input;
+    // Add user message
+    const userMessage = {
+      id: Date.now().toString(),
+      role: "user" as const,
+      content
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setImageFiles([]);
+    setImagePreviews([]);
+    setIsLoading(true);
+    setIsAiTyping(false);
+    setAiTypingText("");
+    try {
+      // Convert messages to AI service format
+      const messageHistory: Message[] = messages
+        .concat(userMessage)
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+      // Call AI service
+      const response = await aiService.generateCompletion(selectedModel, messageHistory);
+      // Typing effect
+      setIsAiTyping(true);
+      let i = 0;
+      const text = response.text;
       setAiTypingText("");
-      try {
-        // Convert messages to AI service format
-        const messageHistory: Message[] = messages
-          .concat(userMessage)
-          .map(msg => ({
-            role: msg.role,
-            content: msg.content
-          }));
-        // Call AI service
-        const response = await aiService.generateCompletion(selectedModel, messageHistory);
-        // Typing effect
-        setIsAiTyping(true);
-        let i = 0;
-        const text = response.text;
-        setAiTypingText("");
-        const typeChar = () => {
-          if (i <= text.length) {
-            setAiTypingText(text.slice(0, i));
-            i++;
-            setTimeout(typeChar, 18); // typing speed
-          } else {
-            setIsAiTyping(false);
-            setMessages(prev => [...prev, {
-              id: (Date.now() + 1).toString(),
-              role: "assistant" as const,
-              content: text
-            }]);
-            setAiTypingText("");
-          }
-        };
-        typeChar();
-      } catch (error) {
-        console.error("AI error:", error);
-        // Add error message
-        const errorMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant" as const,
-          content: "Sorry, I encountered an error while processing your request. Please try again."
-        };
-        setMessages(prev => [...prev, errorMessage]);
-      } finally {
-        setIsLoading(false);
-      }
+      const typeChar = () => {
+        if (i <= text.length) {
+          setAiTypingText(text.slice(0, i));
+          i++;
+          setTimeout(typeChar, 18); // typing speed
+        } else {
+          setIsAiTyping(false);
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            role: "assistant" as const,
+            content: text
+          }]);
+          setAiTypingText("");
+        }
+      };
+      typeChar();
+    } catch (error) {
+      console.error("AI error:", error);
+      // Add error message
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant" as const,
+        content: "Sorry, I encountered an error while processing your request. Please try again."
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -265,11 +342,11 @@ export default function ChatInterface() {
       console.error("Logout error:", error);
     }
   };
-  
+
   const toggleSidebar = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
   };
-  
+
   // Function to toggle the bottom card visibility
   const toggleBottomCard = () => {
     setShowBottomCard(!showBottomCard);
@@ -324,11 +401,11 @@ export default function ChatInterface() {
         <div className="flex flex-col items-center space-y-4">
           <div className="flex space-x-1">
             <div className="w-3 h-3 bg-teal-600 rounded-full animate-bounce"></div>
-            <div 
+            <div
               className="w-3 h-3 bg-teal-600 rounded-full animate-bounce"
               style={{ animationDelay: "0.1s" }}
             ></div>
-            <div 
+            <div
               className="w-3 h-3 bg-teal-600 rounded-full animate-bounce"
               style={{ animationDelay: "0.2s" }}
             ></div>
@@ -342,15 +419,14 @@ export default function ChatInterface() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div 
-        className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${
-          isSidebarExpanded ? "w-72" : "w-[69px]"
-        }`}
+      <div
+        className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? "w-72" : "w-[69px]"
+          }`}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <div 
+            <div
               className="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center cursor-pointer transition-colors duration-200"
               onClick={toggleSidebar}
               onMouseEnter={() => setIsLogoHovered(true)}
@@ -370,19 +446,17 @@ export default function ChatInterface() {
             <Button
               onClick={startNewChat}
               variant="ghost"
-              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${
-                isSidebarExpanded ? "justify-start" : "justify-center"
-              }`}
+              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"
+                }`}
             >
               <Plus className="w-4 h-4 min-w-[16px]" />
               {isSidebarExpanded && <span className="ml-3">New chat</span>}
             </Button>
 
-            <Button 
-              variant="ghost" 
-              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${
-                isSidebarExpanded ? "justify-start" : "justify-center"
-              }`}
+            <Button
+              variant="ghost"
+              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"
+                }`}
             >
               <Search className="w-4 h-4 min-w-[16px]" />
               {isSidebarExpanded && <span className="ml-3">Search chats</span>}
@@ -430,16 +504,15 @@ export default function ChatInterface() {
 
         {/* User Profile */}
         <div className="p-4 border-t border-gray-200 relative" ref={profileMenuRef}>
-          <div 
+          <div
             className="flex items-center space-x-3 cursor-pointer"
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
           >
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${
-                  activeMembershipType === "pro"
-                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
-                    : activeMembershipType === "plus"
+                ${activeMembershipType === "pro"
+                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
+                  : activeMembershipType === "plus"
                     ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
                     : ""
                 }
@@ -467,15 +540,15 @@ export default function ChatInterface() {
                     {activeMembershipType === "pro"
                       ? "Pro Plan"
                       : activeMembershipType === "plus"
-                      ? "Plus Plan"
-                      : "Free Plan"}
+                        ? "Plus Plan"
+                        : "Free Plan"}
                   </div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
               </>
             )}
           </div>
-          
+
           {/* Profile Dropdown Menu */}
           {isProfileMenuOpen && (
             <div className={`absolute bottom-full ${isSidebarExpanded ? 'left-2' : 'left-16'} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}>
@@ -487,7 +560,7 @@ export default function ChatInterface() {
                 <User className="w-4 h-4 mr-2" />
                 Profile
               </Link>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left"
               >
@@ -532,8 +605,8 @@ export default function ChatInterface() {
                               {model.requiredMembership === "plus"
                                 ? "Unlock Plus"
                                 : model.requiredMembership === "pro"
-                                ? "Unlock Pro"
-                                : ""}
+                                  ? "Unlock Pro"
+                                  : ""}
                             </span>
                           )}
                         </div>
@@ -571,58 +644,92 @@ export default function ChatInterface() {
               </div>
 
               <div className="w-full max-w-2xl space-y-3">
-                <form onSubmit={onSubmit} className="relative">
-                  <Input
-                    value={input}
-                    onChange={handleInputChange}
-                    placeholder="Ask Silva anything..."
-                    className="w-full pl-4 pr-20 py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
-                  />
-
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                    <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-200 rounded-full hover:text-gray-700">
-                      <Paperclip className="w-4 h-4" />
-                    </Button>
-
-                    <Button
-                      type={isLoading ? "button" : "submit"}
-                      size="sm"
-                      className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
-                      disabled={!input.trim() && !isLoading}
-                      onClick={isLoading ? () => setIsLoading(false) : undefined}
-                    >
-                      {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
-                    </Button>
+                <form onSubmit={onSubmit}>
+                  {imagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative inline-block mr-2">
+                      <Image src={preview} alt={`preview-${idx}`} width={128} height={128} className="rounded-xl object-cover max-h-32 max-w-32" />
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="absolute -top-2 -right-2 text-white bg-red-500 hover:bg-red-600 border-2 border-white rounded-full w-6 h-6 p-0 shadow-lg"
+                        onClick={() => {
+                          setImageFiles(files => files.filter((_, i) => i !== idx));
+                          setImagePreviews(previews => previews.filter((_, i) => i !== idx));
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="relative">
+                    {" "}
+                    <Input
+                      value={input}
+                      onChange={handleInputChange}
+                      placeholder="Ask Silva anything..."
+                      className="w-full pl-4 pr-[80px] py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-4">
+                      {/* Tombol upload gambar */}
+                      <label className="cursor-pointer flex items-center">
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                        <Paperclip className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                      </label>
+                      <Button
+                        type={isLoading ? "button" : "submit"}
+                        size="sm"
+                        className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
+                        disabled={!input.trim() && !imageFiles.length && !isLoading}
+                        onClick={isLoading ? () => setIsLoading(false) : undefined}
+                      >
+                        {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
+                      </Button>
+                    </div>
                   </div>
                 </form>
-
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <Button
-                  asChild
-                  className="flex items-center space-x-1 px-4 py-2 border border-gray-300 transition-all duration-200 ease-in-out cursor-pointer hover:bg-teal-600 hover:text-white hover:border-teal-600 font-semibold rounded-xl"
-                  disabled={isLoading}
-                  onClick={() => {
-                    setIsLoading(true);
-                    setTimeout(() => setIsLoading(false), 4000);
-                  }}
+                    asChild
+                    className="flex items-center space-x-1 px-4 py-2 border border-gray-300 transition-all duration-200 ease-in-out cursor-pointer hover:bg-teal-600 hover:text-white hover:border-teal-600 font-semibold rounded-xl"
+                    disabled={isLoading}
+                    onClick={() => {
+                      setIsLoading(true)
+                      setTimeout(() => setIsLoading(false), 4000)
+                    }}
                   >
-                  <Link href="/pricing">
-                    {/* Hide Crown and text when loading */}
-                    {!isLoading && (
-                    <>
+                    <Link href="/pricing">
                       <Crown className="w-4 h-4" />
                       <span>Join Silva Pro</span>
-                    </>
-                    )}
-                    {isLoading && (
-                    <span className="ml-2 flex items-center space-x-2">
-                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      <span>Tunggu Sebentar...</span>
-                    </span>
-                    )}
-                  </Link>
+                    </Link>
                   </Button>
                 </div>
+                {/* Modal untuk preview gambar full */}
+                {isModalOpen && imagePreviews.length > 0 && (
+                  <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-10"
+                    onClick={() => setIsModalOpen(false)}
+                  >
+                    <div className="relative max-w-4xl max-h-full">
+                      <Image
+                        src={imagePreviews[0] || "/placeholder.svg"}
+                        alt="Full preview"
+                        width={600}
+                        height={600}
+                        className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <Button
+                        className="absolute top-4 right-4 bg-black bg-opacity-50 hover:bg-opacity-40 text-white border-none rounded-full w-10 h-10 p-0 transition-all duration-200"
+                        onClick={() => setIsModalOpen(false)}
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
+                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-2xl">
+                        Press ESC or click outside to close
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Suggestions */}
@@ -650,6 +757,13 @@ export default function ChatInterface() {
                       message.role === "assistant" &&
                       idx === messages.length - 1 &&
                       (isAiTyping || aiTypingText);
+
+                    // Cek apakah ada URL gambar di content
+                    const imageUrlMatch = message.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|svg)/i);
+                    const textContent = imageUrlMatch
+                      ? message.content.replace(imageUrlMatch[0], "").trim()
+                      : message.content;
+
                     return (
                       <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                         <div
@@ -660,8 +774,17 @@ export default function ChatInterface() {
                             }`
                           }
                         >
+                          {/* Tampilkan gambar jika ada */}
+                          {imageUrlMatch && (
+                            <img
+                              src={imageUrlMatch[0]}
+                              alt="uploaded"
+                              className="mb-2 rounded-xl max-w-full h-auto"
+                              style={{ maxHeight: 220 }}
+                            />
+                          )}
                           <div className="whitespace-pre-wrap break-words">
-                            {isLastAi && aiTypingText ? aiTypingText : message.content}
+                            {isLastAi && aiTypingText ? aiTypingText : textContent}
                           </div>
                         </div>
                       </div>
@@ -693,29 +816,48 @@ export default function ChatInterface() {
 
               {/* Input Form - Fixed at bottom with absolute positioning */}
               <div className="absolute bottom-0 left-0 right-0 bg-gray-50 z-10">
-                {/* Red Gradient with Blur */}
                 <div className="max-w-4xl mx-auto w-full px-6 py-1 pb-4">
-                  <form onSubmit={onSubmit} className="relative">
-                    <Input
-                      value={input}
-                      onChange={handleInputChange}
-                      placeholder="Ask Silva anything..."
-                      className="w-full pl-4 pr-20 py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
-                    />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
-                      <Button type="button" variant="ghost" size="sm" className="text-gray-500 hover:bg-gray-200 rounded-full hover:text-gray-700">
-                        <Paperclip className="w-4 h-4" />
-                      </Button>
-
-                      <Button
-                        type={isLoading ? "button" : "submit"}
-                        size="sm"
-                        className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
-                        disabled={!input.trim() && !isLoading}
-                        onClick={isLoading ? () => setIsLoading(false) : undefined}
-                      >
-                        {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
-                      </Button>
+                  <form onSubmit={onSubmit}>
+                    {imagePreviews.map((preview, idx) => (
+                      <div key={idx} className="relative inline-block mr-2">
+                        <Image src={preview} alt={`preview-${idx}`} width={128} height={128} className="rounded-xl object-cover max-h-32 max-w-32" />
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="absolute -top-2 -right-2 text-white bg-red-500 hover:bg-red-600 border-2 border-white rounded-full w-6 h-6 p-0 shadow-lg"
+                          onClick={() => {
+                            setImageFiles(files => files.filter((_, i) => i !== idx));
+                            setImagePreviews(previews => previews.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="relative">
+                      {" "}
+                      <Input
+                        value={input}
+                        onChange={handleInputChange}
+                        placeholder="Ask Silva anything..."
+                        className="w-full pl-4 pr-[80px] py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-4">
+                        {/* Tombol upload gambar */}
+                        <label className="cursor-pointer flex items-center">
+                          <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                          <Paperclip className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                        </label>
+                        <Button
+                          type={isLoading ? "button" : "submit"}
+                          size="sm"
+                          className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
+                          disabled={!input.trim() && !imageFiles.length && !isLoading}
+                          onClick={isLoading ? () => setIsLoading(false) : undefined}
+                        >
+                          {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 </div>
@@ -728,9 +870,8 @@ export default function ChatInterface() {
         <div className="fixed bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
           <Button
             onClick={toggleBottomCard}
-            className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${
-              showBottomCard ? 'rotate-180' : ''
-            }`}
+            className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${showBottomCard ? 'rotate-180' : ''
+              }`}
           >
             <ArrowUp className="w-full h-full" />
           </Button>
@@ -738,7 +879,7 @@ export default function ChatInterface() {
 
         {/* Overlay when bottom card is open */}
         {showBottomCard && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden"
             onClick={toggleBottomCard}
           ></div>
@@ -755,7 +896,7 @@ export default function ChatInterface() {
           <div className="flex justify-center mb-2">
             <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
           </div>
-          
+
           {/* Card Content */}
           <div className="space-y-6">
             {/* User Info */}
@@ -793,7 +934,7 @@ export default function ChatInterface() {
                 <Plus className="w-5 h-5 text-teal-600" />
                 <span>New Chat</span>
               </Button>
-              
+
               <Button
                 variant="outline"
                 className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
