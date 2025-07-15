@@ -97,7 +97,7 @@ export default function CekObat() {
     return (
         <>
             <Navbar />
-            <section className="min-h-screen bg-white mt-24 overflow-hidden">
+            <section className="min-h-screen bg-white lg:mt-24 mt-16 overflow-hidden">
                 <motion.div
                     className="max-w-6xl mx-auto pt-12 px-4 sm:px-6 lg:px-8"
                     variants={containerVariants}
@@ -110,39 +110,64 @@ export default function CekObat() {
                                 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-black leading-tight"
                             >
                                 <motion.span
-                                    className="block"
+                                    className="lg:block hidden"
                                     initial={{ opacity: 0, x: -50 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.8, delay: 0.2 }}
                                 >
-                                    Obat yang tepat.
+                                    Obat yang <span className="text-teal-600 italic">tepat</span>
                                 </motion.span>
+                                <motion.span
+                                    className="lg:hidden block text-start"
+                                    initial={{ opacity: 0, x: -50 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.8, delay: 0.2 }}
+                                >
+                                    Obat yang <span className="text-teal-600 italic">tepat</span> Hidup yang <span className="text-teal-600 italic">sehat</span>
+                                </motion.span>
+                                <motion.p
+                                    className="text-lg sm:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed lg:text-center text-start lg:hidden block"
+                                >
+                                    Temukan dokter terpercaya dan dapatkan konsultasi medis terbaik untuk kesehatan Anda dan keluarga
+                                </motion.p>
                                 <motion.div
-                                    className="flex items-center justify-center gap-4 my-6"
+                                    className="flex lg:items-center lg:justify-center text-start lg:gap-4 lg:my-6 mt-4 "
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 0.8, delay: 0.6 }}
                                 >
-                                    <span>Hidup yang</span>
+                                    <span className="lg:block hidden">Hidup yang</span>
                                     <motion.div
-                                        className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden shadow-xl ring-4 ring-white"
+                                        className="relative w-16 h-16 sm:w-20 sm:h-20 lg:block hidden lg:w-52 lg:h-20 rounded-full overflow-hidden shadow-xl ring-4 ring-white"
                                         whileHover={{ scale: 1.1, rotate: 5 }}
                                         transition={{ type: "spring", stiffness: 300 }}
                                     >
                                         <Image
-                                            src="/placeholder.svg?height=96&width=96"
+                                            src="https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2021/11/11041740/Selain-Tunda-Kehamilan-Ini-X-Manfaat-Pil-KB-bagi-Kesehatan.jpg.webp"
                                             alt="Medicine and wellness"
                                             fill
                                             className="object-cover"
                                         />
                                     </motion.div>
-                                    <span>sehat.</span>
+                                    <span className="lg:block hidden text-teal-600 italic">sehat.</span>
+                                    <motion.div
+                                        className="relative w-full h-16 sm:w-20 sm:h-20 lg:hidden block lg:w-52 lg:h-24 rounded-full overflow-hidden shadow-xl ring-4 ring-white"
+                                        whileHover={{ scale: 1.1, rotate: 5 }}
+                                        transition={{ type: "spring", stiffness: 300 }}
+                                    >
+                                        <Image
+                                            src="https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2021/11/11041740/Selain-Tunda-Kehamilan-Ini-X-Manfaat-Pil-KB-bagi-Kesehatan.jpg.webp"
+                                            alt="Medicine and wellness"
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </motion.div>
                                 </motion.div>
                             </motion.h1>
                         </motion.div>
 
                         <motion.p
-                            className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
+                            className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed lg:text-center text-start lg:block hidden"
                         >
                             Temukan dokter terpercaya dan dapatkan konsultasi medis terbaik untuk kesehatan Anda dan keluarga
                         </motion.p>
