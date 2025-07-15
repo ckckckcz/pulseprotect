@@ -1,25 +1,11 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import id from './lang/id.json';
+import en from './lang/en.json';
 
 const resources = {
-  id: {
-    translation: {
-      hello: 'Halo',
-      profile: 'Profil',
-      settings: 'Pengaturan',
-      logout: 'Keluar',
-      // ...tambahkan key lain sesuai kebutuhan
-    },
-  },
-  en: {
-    translation: {
-      hello: 'Hello',
-      profile: 'Profile',
-      settings: 'Settings',
-      logout: 'Logout',
-      // ...tambahkan key lain sesuai kebutuhan
-    },
-  },
+  id: { translation: id },
+  en: { translation: en },
 };
 
 i18n

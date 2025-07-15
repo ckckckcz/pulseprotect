@@ -5,7 +5,7 @@ import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Load
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from 'next/navigation';
 import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { authService } from "@/lib/auth"
@@ -67,6 +67,7 @@ export default function UserProfile() {
   const [activeSetting, setActiveSetting] = useState("general")
   const { user, loading, refreshUser } = useAuth()
   const router = useRouter()
+  const pathname = usePathname();
   
   // Form fields
   const [displayName, setDisplayName] = useState("")
@@ -492,6 +493,14 @@ export default function UserProfile() {
   const latestMembershipType = payments
     .filter((p) => p.status === "success")
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.membership_type;
+
+  const handleChangeLanguage = (lang: 'id' | 'en') => {
+    // Ganti prefix di URL
+    const segments = (pathname || '').split('/');
+    segments[1] = lang; // pastikan segmen pertama adalah locale
+    const newPath = segments.join('/') || '/';
+    router.push(newPath);
+  };
 
   return (
     <>

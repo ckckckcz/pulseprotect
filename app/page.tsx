@@ -28,6 +28,7 @@ import FooterBanner from "@/components/widget/footer-banner"
 import Partner from "@/components/widget/hero/partner"
 import Confetti from 'react-confetti'
 import { supabase } from "@/lib/supabase"
+import { useTranslation } from 'react-i18next';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -347,6 +348,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
 };
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showAIModal, setShowAIModal] = useState(false)
   const [email, setEmail] = useState("")
@@ -514,7 +516,7 @@ export default function HomePage() {
                 onClick={() => setShowAIModal(true)}
                 className="bg-teal-600 hover:bg-teal-500 text-white px-8 py-6 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl border-0 group"
               >
-                Early Access 🤖
+                {t('early_access_button')} 🤖
               </Button>
             </div>
             
