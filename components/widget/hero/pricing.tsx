@@ -546,7 +546,6 @@ export default function PricingPage() {
 
   return (
     <>
-      <Navbar />
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -761,7 +760,6 @@ export default function PricingPage() {
           {/* ...existing code... */}
         </div>
       </motion.div>
-      <Footer />
     </>
   )
 }
