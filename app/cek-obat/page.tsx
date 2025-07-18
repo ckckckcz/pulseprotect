@@ -7,6 +7,12 @@ import Footer from "@/components/widget/footer"
 import DaftarObat from "@/components/widget/cek-obat/daftar-obat"
 import { MapPin, Stethoscope } from "lucide-react"
 import { useEffect } from "react"
+import PilObat from "@/public/images/obat.png"
+import Sarah from "@/public/images/doctor/Dr. Sarah Johnson.png"
+import Michael from "@/public/images/doctor/Dr. Michael Chen.png"
+import Bambang from "@/public/images/doctor/Dr. Bambang.png"
+import Robert from "@/public/images/doctor/Dr. Robert Kim.png"
+import Rudi from "@/public/images/doctor/Dr. Rudi.png"
 
 export default function CekObat() {
     const doctors = [
@@ -16,7 +22,7 @@ export default function CekObat() {
             position: "Dokter Spesialis Jantung",
             hospital: "RS Jantung Harapan Kita",
             location: "Jakarta Barat",
-            image: "https://media.istockphoto.com/id/1373258655/photo/happy-nurse-at-hospital.jpg?s=612x612&w=0&k=20&c=mt8_LDMnWZHxAVm64SjmqBqbsTnrmDI3DlCq-jv3afA=",
+            image: Sarah,
             height: 400,
         },
         {
@@ -25,16 +31,16 @@ export default function CekObat() {
             position: "Dokter Spesialis Anak",
             hospital: "RS Anak Bunda",
             location: "Jakarta Selatan",
-            image: "https://img.freepik.com/premium-photo/portrait-middle-aged-female-doctor_255667-25025.jpg",
+            image: Michael,
             height: 500,
         },
         {
             id: 3,
-            name: "Dr. Amanda Wilson",
+            name: "Dr. Rudi",
             position: "Dokter Spesialis Mata",
             hospital: "RS Mata Cicendo",
             location: "Bandung",
-            image: "https://media.istockphoto.com/id/1434687410/photo/portrait-of-happy-and-successful-african-american-doctor-man-working-inside-office-clinic.jpg?s=612x612&w=0&k=20&c=kKvUmzkotN3FrWTGgS3ar2mm4SLwlV3cbiNC-Bp12YI=",
+            image: Rudi,
             height: 350,
         },
         {
@@ -43,16 +49,16 @@ export default function CekObat() {
             position: "Dokter Spesialis Bedah",
             hospital: "RS Premier Jatinegara",
             location: "Jakarta Timur",
-            image: "https://media.istockphoto.com/id/1425798958/photo/photo-of-confident-female-doctor-in-hospital-looking-at-camera-with-smile.jpg?s=612x612&w=0&k=20&c=i91idG544pXuYkw5ju6iIzm1m-lEqQaygeOOrjG5GEk=",
+            image: Robert,
             height: 450,
         },
         {
             id: 5,
-            name: "Dr. Lisa Martinez",
+            name: "Dr. Bambang",
             position: "Dokter Spesialis Kulit",
             hospital: "RS Kulit Klinik Utama",
             location: "Surabaya",
-            image: "https://media.istockphoto.com/id/1346124900/photo/confident-successful-mature-doctor-at-hospital.jpg?s=612x612&w=0&k=20&c=S93n5iTDVG3_kJ9euNNUKVl9pgXTOdVQcI_oDGG-QlE=",
+            image: Bambang,
             height: 300,
         },
     ]
@@ -144,7 +150,7 @@ export default function CekObat() {
                                         transition={{ type: "spring", stiffness: 300 }}
                                     >
                                         <Image
-                                            src="https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2021/11/11041740/Selain-Tunda-Kehamilan-Ini-X-Manfaat-Pil-KB-bagi-Kesehatan.jpg.webp"
+                                            src={PilObat}
                                             alt="Medicine and wellness"
                                             fill
                                             className="object-cover"
@@ -157,7 +163,7 @@ export default function CekObat() {
                                         transition={{ type: "spring", stiffness: 300 }}
                                     >
                                         <Image
-                                            src="https://d1vbn70lmn1nqe.cloudfront.net/prod/wp-content/uploads/2021/11/11041740/Selain-Tunda-Kehamilan-Ini-X-Manfaat-Pil-KB-bagi-Kesehatan.jpg.webp"
+                                            src={PilObat}
                                             alt="Medicine and wellness"
                                             fill
                                             className="object-cover"

@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import PilObat from  "@/public/images/obat.png"
 
 export default function DaftarObat() {
   const [selectedCategory, setSelectedCategory] = useState("Semua")
