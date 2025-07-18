@@ -12,154 +12,56 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import PilObat from  "@/public/images/obat.png"
+import { dataObatLengkap } from "@/lib/data/obat"
+import React from "react"
 
 export default function DaftarObat() {
   const [selectedCategory, setSelectedCategory] = useState("Semua")
   const [searchQuery, setSearchQuery] = useState("")
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null)
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null)
 
-  // Category data with icons
-  const topCategories = [
-    { name: "Obat", icon: <Pill className="w-6 h-6" />, active: true, gradient: "from-teal-600 to-teal-500" },
-    { name: "Suplemen", icon: <FlaskConical className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-    { name: "Nutrisi", icon: <Salad className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-    { name: "Herbal", icon: <Leaf className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-    { name: "Produk Bayi", icon: <Baby className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-    { name: "Alat Kesehatan", icon: <Hospital className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-    { name: "Kecantikan", icon: <Brush className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-    { name: "Mata", icon: <Eye className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-    { name: "Voucher", icon: <Ticket className="w-6 h-6" />, gradient: "from-teal-600 to-teal-500" },
-  ]
+  // Icon mapping for sidebar
+  const iconMap: Record<string, React.ReactNode> = {
+    Darah: <Droplet className="w-5 h-5" />,
+    Hormon: <TestTube className="w-5 h-5" />,
+    Kepala: <Brain className="w-5 h-5" />,
+    Kulit: <Sun className="w-5 h-5" />,
+    "Liver/Hati, Pankreas & Empedu": <HeartPulse className="w-5 h-5" />,
+    "Otot, Sendi & Tulang": <Dumbbell className="w-5 h-5" />,
+    Rambut: <Scissors className="w-5 h-5" />,
+    "Rongga Mulut & Gigi": <Smile className="w-5 h-5" />,
+    "Obat Saluran Pencernaan": <Stethoscope className="w-5 h-5" />,
+    "Saluran Kemih, Ginjal & Prostat": <TestTube className="w-5 h-5" />,
+    "Telinga, Hidung & Tenggorokan": <Ear className="w-5 h-5" />,
+    Tubuh: <Activity className="w-5 h-5" />,
+  }
 
-  // Sidebar categories with more organic styling
+  // Sidebar categories generated from dataObatLengkap
   const sidebarCategories = [
     { name: "Semua", icon: <Sparkles className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Darah", icon: <Droplet className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Hormon", icon: <TestTube className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Kepala", icon: <Brain className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Kulit", icon: <Sun className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Liver/Hati, Pankreas & Empedu", icon: <HeartPulse className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Otot, Sendi & Tulang", icon: <Dumbbell className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Rambut", icon: <Scissors className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Rongga Mulut & Gigi", icon: <Smile className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Obat Saluran Pencernaan", icon: <Stethoscope className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Saluran Kemih, Ginjal & Prostat", icon: <TestTube className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Telinga, Hidung & Tenggorokan", icon: <Ear className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
-    { name: "Tubuh", icon: <Activity className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
+    ...dataObatLengkap.map((kategori) => ({
+      name: kategori.namaKategori,
+      icon: iconMap[kategori.namaKategori] || <Droplet className="w-5 h-5" />,
+      color: "from-teal-600 to-teal-500"
+    }))
   ]
 
-  // Medicine products data
-  const medicines = [
-    {
-      id: 1,
-      name: "VERMOX 500 MG BOX 24 TABLET",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 45.000",
-      originalPrice: "Rp 50.000",
-      discount: "10%",
-      rating: 4.5,
-      reviews: 128,
-      availability: "available",
-      pharmacy: "Apotek Kimia Farma",
-      category: "Obat Saluran Pencernaan",
-      isPopular: false,
-    },
-    {
-      id: 2,
-      name: "VERMOX 500 MG STRIP 1 TABLET",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 8.500",
-      rating: 4.3,
-      reviews: 89,
-      availability: "available",
-      pharmacy: "Apotek Guardian",
-      category: "Obat Saluran Pencernaan",
-    },
-    {
-      id: 3,
-      name: "POLDAN MIG STRIP ISI 4 KAPLET",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 12.000",
-      rating: 4.7,
-      reviews: 256,
-      availability: "limited",
-      pharmacy: "Apotek K24",
-      category: "Kepala",
-      isNew: false,
-    },
-    {
-      id: 4,
-      name: "POLDAN MIG BOX ISI 100 KAPLET",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 285.000",
-      originalPrice: "Rp 300.000",
-      discount: "5%",
-      rating: 4.6,
-      reviews: 167,
-      availability: "available",
-      pharmacy: "Apotek Century",
-      category: "Kepala",
-    },
-    {
-      id: 5,
-      name: "POLYSILANE SYRUP 180 ML BOTOL",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 28.500",
-      rating: 4.4,
-      reviews: 203,
-      availability: "available",
-      pharmacy: "Apotek Kimia Farma",
-      category: "Obat Saluran Pencernaan",
-      isPopular: false,
-    },
-    {
-      id: 6,
-      name: "POLYSILANE SYRUP ISI 100 ML BOTOL",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 18.000",
-      rating: 4.2,
-      reviews: 145,
-      availability: "available",
-      pharmacy: "Apotek Guardian",
-      category: "Obat Saluran Pencernaan",
-    },
-    {
-      id: 7,
-      name: "POLYSILANE STRIP ISI 8 TABLET",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 15.500",
-      rating: 4.1,
-      reviews: 98,
-      availability: "limited",
-      pharmacy: "Apotek K24",
-      category: "Obat Saluran Pencernaan",
-    },
-    {
-      id: 8,
-      name: "POLYSILANE BOX ISI 40 TABLET",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 72.000",
-      originalPrice: "Rp 80.000",
-      discount: "10%",
-      rating: 4.5,
-      reviews: 189,
-      availability: "available",
-      pharmacy: "Apotek Century",
-      category: "Obat Saluran Pencernaan",
-      isNew: false,
-    },
-    {
-      id: 9,
-      name: "VOLTADEX GEL BERAT 20 GRAM",
-      image: "/placeholder.svg?height=300&width=300",
-      price: "Rp 35.000",
-      rating: 4.6,
-      reviews: 234,
-      availability: "available",
-      pharmacy: "Apotek Kimia Farma",
-      category: "Otot, Sendi & Tulang",
-    },
-  ]
+  // Flatten all medicines for 'Semua'
+  const allMedicines = dataObatLengkap.flatMap((kategori, idx) =>
+    kategori.data.map((obat, i) => ({
+      ...obat,
+      id: `${idx}-${i}`,
+      category: kategori.namaKategori
+    }))
+  )
+
+  // Filtered medicines based on selected category and search
+  const filteredMedicines = (selectedCategory === "Semua"
+    ? allMedicines
+    : allMedicines.filter((obat) => obat.category === selectedCategory)
+  ).filter((obat) =>
+    obat.NamaObat.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -226,31 +128,7 @@ export default function DaftarObat() {
               initial="hidden"
               animate="visible"
             >
-              {topCategories.map((category, index) => (
-                <motion.div
-                  key={category.name}
-                  className={`flex flex-col items-center min-w-fit cursor-pointer group relative`}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <motion.div
-                    className={`text-2xl mb-3 p-4 rounded-2xl transition-all duration-300 ${category.active
-                      ? `bg-gradient-to-r ${category.gradient} text-white`
-                      : "bg-white/60 backdrop-blur-sm group-hover:bg-white/80 text-teal-600 border border-gray-200"
-                      }`}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {category.icon}
-                  </motion.div>
-                  <span
-                    className={`text-sm font-semibold transition-colors ${category.active ? "text-teal-600" : "text-gray-600 group-hover:text-teal-500"
-                      }`}
-                  >
-                    {category.name}
-                  </span>
-                </motion.div>
-              ))}
+              {/* Removed topCategories as it's no longer needed */}
             </motion.div>
           </div>
         </motion.div>
@@ -344,9 +222,9 @@ export default function DaftarObat() {
                 initial="hidden"
                 animate="visible"
               >
-                {medicines.map((medicine, index) => (
+                {filteredMedicines.map((medicine, index) => (
                   <motion.div
-                    key={medicine.id}
+                    key={`${medicine.category}-${medicine.NamaObat}`}
                     className="bg-white/70 backdrop-blur-md rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden group border border-white/20 relative"
                     variants={cardVariants}
                     transition={{ delay: index * 0.1 }}
@@ -375,53 +253,17 @@ export default function DaftarObat() {
                         }}
                       />
                       <Image
-                        src={medicine.image || "/placeholder.svg"}
-                        alt={medicine.name}
+                        src={medicine.GambarObat || "/placeholder.svg"}
+                        alt={medicine.NamaObat}
                         fill
                         className="object-cover transition-transform duration-700 "
                       />
 
                       {/* Floating Badges */}
-                      <div className="absolute top-4 left-4 flex flex-col gap-2">
-                        {medicine.isPopular && (
-                          <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ delay: 0.5, type: "spring" }}
-                          >
-                            <Badge className="bg-teal-600 text-white shadow-lg">
-                              ⭐ Popular
-                            </Badge>
-                          </motion.div>
-                        )}
-                        {medicine.isNew && (
-                          <motion.div
-                            initial={{ scale: 0, rotate: 180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ delay: 0.7, type: "spring" }}
-                          >
-                            <Badge className="bg-white border border-gray-200 text-teal-600 shadow-lg">
-                              ✨ New
-                            </Badge>
-                          </motion.div>
-                        )}
-                      </div>
+                      {/* No isPopular or isNew in new data, so remove badges */}
 
                       {/* Availability Indicator */}
-                      <motion.div
-                        className="absolute top-4 right-4"
-                        whileHover={{ scale: 1.2, rotate: 360 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <div
-                          className={`w-6 h-6 rounded-full shadow-lg ${medicine.availability === "available"
-                            ? "bg-green-700 border border-black"
-                            : medicine.availability === "limited"
-                              ? "bg-blue-800 border border-black"
-                              : "bg-red-700 border border-black"
-                            }`}
-                        />
-                      </motion.div>
+                      {/* Remove availability indicator as it's not in new data */}
                       {/* Wishlist Button */}
                       <motion.div
                         className="absolute top-4 left-4"
@@ -458,7 +300,7 @@ export default function DaftarObat() {
                       <motion.h4
                         className="font-bold text-gray-800 text-base mb-3 line-clamp-2 leading-tight"
                       >
-                        {medicine.name}
+                        {medicine.NamaObat}
                       </motion.h4>
 
                       {/* Rating */}
@@ -480,10 +322,10 @@ export default function DaftarObat() {
                       {/* Price */}
                       <motion.div className="flex items-center gap-2 mb-4">
                         <span className="font-bold text-xl text-black bg-clip-text">
-                          {medicine.price}
+                          Rp {medicine.Diskon && medicine.HargaDiskon > 0 ? medicine.HargaDiskon.toLocaleString() : medicine.HargaAsli.toLocaleString()}
                         </span>
-                        {medicine.originalPrice && (
-                          <span className="text-sm text-gray-400 line-through">{medicine.originalPrice}</span>
+                        {medicine.Diskon && (
+                          <span className="text-sm text-gray-400 line-through">Rp {medicine.HargaAsli.toLocaleString()}</span>
                         )}
                       </motion.div>
 
