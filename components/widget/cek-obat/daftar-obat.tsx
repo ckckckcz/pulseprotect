@@ -14,11 +14,13 @@ import { Button } from "@/components/ui/button"
 import PilObat from  "@/public/images/obat.png"
 import { dataObatLengkap } from "@/lib/data/obat"
 import React from "react"
+import BarcodeScanner from "@/components/widget/cek-obat/barcode-scanner"
 
 export default function DaftarObat() {
   const [selectedCategory, setSelectedCategory] = useState("Semua")
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
+  const [showScanner, setShowScanner] = useState(false)
 
   // Icon mapping for sidebar
   const iconMap: Record<string, React.ReactNode> = {
@@ -110,6 +112,10 @@ export default function DaftarObat() {
       },
     },
   }
+
+  const handleBarcodeDetected = (barcode: string) => {
+    setSearchQuery(barcode); // atau lakukan pencarian otomatis
+  };
 
   return (
     <>
@@ -210,7 +216,10 @@ export default function DaftarObat() {
                   <motion.div
                     className="absolute right-4 top-1/2 transform -translate-y-1/2"
                   >
-                    <ScanBarcode className="w-10 h-10 text-teal-600 cursor-pointer hover:bg-gray-100 p-2 rounded-xl" />
+                    <ScanBarcode
+                      className="w-10 h-10 text-teal-600 cursor-pointer hover:bg-gray-100 p-2 rounded-xl"
+                      onClick={() => setShowScanner(true)}
+                    />
                   </motion.div>
                 </div>
               </motion.div>
@@ -369,6 +378,12 @@ export default function DaftarObat() {
           </div>
         </div>
       </div>
+      {showScanner && (
+        <BarcodeScanner
+          onDetected={handleBarcodeDetected}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </>
   )
 }
