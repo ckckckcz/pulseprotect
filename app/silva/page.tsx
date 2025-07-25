@@ -8,6 +8,7 @@ import { authService } from "@/src/services/authService"
 import { aiService, AIModel, Message } from "@/src/services/aiService"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Zap,
@@ -29,17 +30,42 @@ import {
   LogOut,
   DoorOpen,
   House,
-  X
+  X,
+  Mic,
+  ThumbsUp,
+  ThumbsDown,
+  RefreshCw,
+  Volume2,
+  Share2,
+  FileText,
+  Download,
+  Mail,
+  Copy as CopyIcon,
+  Flag,
+  Images
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import Image from "next/image"
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 const models = [
   { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
   { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM", requiredMembership: "plus" },
   { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
 ]
+
+interface ChatActionsProps {
+  textContent: string
+  onRegenerate?: () => void
+  onSpeak?: (text: string) => void
+  onCopy?: (text: string) => void
+}
 
 const chatHistory = [
   "Supabase URL Environment Error",
@@ -62,7 +88,7 @@ const translations = [
   { lang: "한국어", text: "무엇을 만들고 싶으신가요?" },
 ];
 
-export default function ChatInterface() {
+export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCopy }: ChatActionsProps) {
   const [selectedModel, setSelectedModel] = useState<AIModel>("google-gemini") // Updated default model
   const [user, setUser] = useState<any>(null)
   const [isAuthChecking, setIsAuthChecking] = useState(true)
@@ -71,6 +97,11 @@ export default function ChatInterface() {
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   const [showBottomCard, setShowBottomCard] = useState(false);
   const [activeMembershipType, setActiveMembershipType] = useState<"free" | "plus" | "pro">("free");
+  const [liked, setLiked] = useState(false)
+  const [disliked, setDisliked] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reportReason, setReportReason] = useState("")
+  const [reportDetails, setReportDetails] = useState("")
 
   // Avatar URL state
   const [avatarUrl, setAvatarUrl] = useState<string>("");
@@ -116,6 +147,82 @@ export default function ChatInterface() {
   const [isAiTyping, setIsAiTyping] = useState(false);
   // Add modal open state for image preview
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // State untuk modal report
+  const [reportChecks, setReportChecks] = useState<{ [k: string]: boolean }>({});
+  const reportOptions = [
+    "Konten tidak pantas",
+    "Informasi yang salah",
+    "Spam atau berulang",
+    "Melanggar kebijakan",
+    "Lainnya",
+  ]
+
+  const handleLike = () => {
+    setLiked(!liked)
+    if (disliked) setDisliked(false)
+  }
+
+  const handleDislike = () => {
+    setDisliked(!disliked)
+    if (liked) setLiked(false)
+  }
+
+  const handleShare = (type: string) => {
+    switch (type) {
+      case "PDF":
+        // Implement PDF export
+        console.log("Exporting to PDF...")
+        break
+      case "Word":
+        // Implement Word export
+        console.log("Exporting to Word...")
+        break
+      case "Gmail":
+        // Implement Gmail share
+        const subject = encodeURIComponent("Shared Chat Content")
+        const body = encodeURIComponent(textContent)
+        window.open(`mailto:?subject=${subject}&body=${body}`)
+        break
+    }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(textContent)
+    onCopy?.(textContent)
+  }
+
+  const handleReportSend = () => {
+    if (reportReason) {
+      console.log("Report sent:", { reason: reportReason, details: reportDetails })
+      setReportOpen(false)
+      setReportReason("")
+      setReportDetails("")
+    }
+  }
+
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const ttsUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const speak = (text: string) => {
+    if (!window.speechSynthesis) {
+      alert("Browser tidak mendukung text-to-speech.");
+      return;
+    }
+    // Jika sedang berbicara, stop
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    // Siapkan utterance baru
+    const utter = new window.SpeechSynthesisUtterance(text);
+    utter.lang = "id-ID";
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onend = () => setIsSpeaking(false);
+    utter.onerror = () => setIsSpeaking(false);
+    ttsUtteranceRef.current = utter;
+    window.speechSynthesis.speak(utter);
+  };
 
   // Close image preview modal on ESC key
   useEffect(() => {
@@ -394,6 +501,30 @@ export default function ChatInterface() {
     }
   }, [user?.foto_profile, user?.nama_lengkap]);
 
+  // Speech recognition states
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
+
+  // Update input with transcript when listening stops
+  useEffect(() => {
+    if (!listening && transcript) {
+      setInput(prev => prev ? prev + ' ' + transcript : transcript);
+      resetTranscript();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listening]);
+
+  // Optionally, show warning if browser doesn't support
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) {
+      console.warn("Browser does not support speech recognition.");
+    }
+  }, [browserSupportsSpeechRecognition]);
+
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -661,29 +792,93 @@ export default function ChatInterface() {
                       </Button>
                     </div>
                   ))}
-                  <div className="relative">
-                    {" "}
-                    <Input
-                      value={input}
-                      onChange={handleInputChange}
-                      placeholder="Ask Silva anything..."
-                      className="w-full pl-4 pr-[80px] py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
-                    />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-4">
-                      {/* Tombol upload gambar */}
-                      <label className="cursor-pointer flex items-center">
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
-                        <Paperclip className="w-4 h-4 text-gray-500 hover:text-gray-700" />
-                      </label>
-                      <Button
-                        type={isLoading ? "button" : "submit"}
-                        size="sm"
-                        className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
-                        disabled={!input.trim() && !imageFiles.length && !isLoading}
-                        onClick={isLoading ? () => setIsLoading(false) : undefined}
-                      >
-                        {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
-                      </Button>
+                  <div className="w-full">
+                    <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
+                      {/* Input area - now at the top */}
+                      <div className="relative px-6 py-4">
+                        <Input
+                          value={input}
+                          onChange={handleInputChange}
+                          placeholder="Minta Silva Menjawab..."
+                          className="w-full bg-transparent border-none text-black placeholder-gray-00 text-md pr-16"
+                          style={{outline:"none"}}
+                        />
+
+                        {/* Send button */}
+                        <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
+                          <Button
+                            type={isLoading ? "button" : "submit"}
+                            size="sm"
+                            className={`rounded-full w-10 h-10 p-0 transition-all ${(!input.trim() && !imageFiles.length) || isLoading
+                                ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
+                                : "bg-teal-600 hover:bg-teal-700 text-white"
+                              }`}
+                            disabled={!input.trim() && !imageFiles.length && !isLoading}
+                            onClick={isLoading ? () => setIsLoading(false) : undefined}
+                          >
+                            {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Image preview area */}
+                      {imageFiles.length > 0 && (
+                        <div className="px-6 pb-4">
+                          <div className="flex flex-wrap gap-2">
+                            {imageFiles.map((file, index) => (
+                              <div key={index} className="relative">
+                                <img
+                                  src={URL.createObjectURL(file) || "/placeholder.svg"}
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-16 h-16 object-cover rounded-lg border border-gray-600"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action buttons row - now at the bottom */}
+                      <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
+                        <div className="flex items-center space-x-4">
+                          <label className="cursor-pointer">
+                            <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm"
+                              asChild
+                            >
+                              <span>
+                                <Images className="w-4 h-4" />
+                                {/* Gambar */}
+                              </span>
+                            </Button>
+                            {/* Microphone button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!browserSupportsSpeechRecognition) {
+                                  alert("Browser does not support speech recognition.")
+                                  return
+                                }
+                                if (listening) {
+                                  SpeechRecognition.stopListening()
+                                } else {
+                                  resetTranscript()
+                                  SpeechRecognition.startListening({ continuous: false, language: "id-ID" })
+                                }
+                              }}
+                              className={`p-2 rounded-full transition-colors ${listening ? "bg-teal-600 text-white animate-pulse" : "text-gray-500 hover:text-black hover:bg-gray-200"
+                                }`}
+                              aria-label={listening ? "Stop recording" : "Start recording"}
+                            >
+                              <Mic className="w-4 h-4" />
+                            </button>
+                          </label>
+                        </div>
+
+                      </div>
                     </div>
                   </div>
                 </form>
@@ -750,8 +945,8 @@ export default function ChatInterface() {
             /* Chat Messages Area */
             <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto">
               {/* Scrollable message container with hidden scrollbar */}
-              <div className="flex-1 overflow-y-auto px-6 pt-6 pb-28 scrollbar-none" style={{ maxHeight: "calc(100vh - 120px)" }}>
-                <div className="space-y-6 w-full">
+              <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 120px)" }}>
+                <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
                     const isLastAi =
                       message.role === "assistant" &&
@@ -765,9 +960,9 @@ export default function ChatInterface() {
                       : message.content;
 
                     return (
-                      <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div key={message.id} className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}>
                         <div
-                          className={`max-w-[75%] sm:max-w-[70%] px-4 py-3 
+                          className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-4 py-2.5 mb-0 last:mb-0 min-h-0 h-auto items-start align-middle 
                             ${message.role === "user"
                               ? "bg-teal-600 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
                               : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
@@ -783,10 +978,258 @@ export default function ChatInterface() {
                               style={{ maxHeight: 220 }}
                             />
                           )}
-                          <div className="whitespace-pre-wrap break-words">
+                          <div className="whitespace-pre-wrap break-words leading-relaxed">
                             {isLastAi && aiTypingText ? aiTypingText : textContent}
                           </div>
                         </div>
+                        {/* Action bar untuk balasan AI, di bawah bubble */}
+                        {message.role === "assistant" && (
+                          <TooltipProvider>
+                            <div className="flex mt-1 items-center text-gray-500">
+                              {/* Like Button */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={handleLike}
+                                      className="hover:bg-gray-50 hover:text-teal-600 transition-colors duration-200"
+                                    >
+                                      <motion.div
+                                        animate={{
+                                          scale: liked ? [1, 1.2, 1] : 1,
+                                          rotate: liked ? [0, -10, 10, 0] : 0,
+                                        }}
+                                        transition={{ duration: 0.3 }}
+                                      >
+                                        <ThumbsUp
+                                          className={`w-4 h-4 transition-all duration-200 ${liked ? "fill-teal-500 text-teal-500" : ""
+                                            }`}
+                                        />
+                                      </motion.div>
+                                    </Button>
+                                  </motion.div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-white text-black border-gray-200 rounded">
+                                  <p>Suka</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {/* Dislike Button */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={handleDislike}
+                                      className="hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
+                                    >
+                                      <motion.div
+                                        animate={{
+                                          scale: disliked ? [1, 1.2, 1] : 1,
+                                          rotate: disliked ? [0, 10, -10, 0] : 0,
+                                        }}
+                                        transition={{ duration: 0.3 }}
+                                      >
+                                        <ThumbsDown
+                                          className={`w-4 h-4 transition-all duration-200 ${disliked ? "fill-red-500 text-red-500" : ""}`}
+                                        />
+                                      </motion.div>
+                                    </Button>
+                                  </motion.div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-white text-black border-gray-200 rounded">
+                                  <p>Tidak suka</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {/* Regenerate Button */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={onRegenerate}
+                                      className="hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200"
+                                    >
+                                      <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
+                                        <RefreshCw className="w-4 h-4" />
+                                      </motion.div>
+                                    </Button>
+                                  </motion.div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-white text-black border-gray-200 rounded">
+                                  <p>Ulangi</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {/* Speak Button */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => speak(textContent)}
+                                      className="hover:bg-gray-50 hover:text-purple-600 transition-colors duration-200"
+                                    >
+                                      <Volume2 className={`w-4 h-4 ${isSpeaking ? 'text-teal-600 animate-pulse' : ''}`} />
+                                    </Button>
+                                  </motion.div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-white text-black border-gray-200 rounded">
+                                  <p>Dengarkan</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {/* Share Dropdown */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="hover:bg-gray-50 hover:text-orange-600 transition-colors duration-200"
+                                        >
+                                          <Share2 className="w-4 h-4" />
+                                        </Button>
+                                      </motion.div>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-48 p-2 rounded bg-white text-black border border-gray-200" align="start">
+                                      <DropdownMenuItem
+                                        onClick={() => handleShare("PDF")}
+                                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2"
+                                      >
+                                        <FileText className="w-4 h-4 text-red-500" />
+                                        <span>Ekspor ke PDF</span>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleShare("Word")}
+                                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2"
+                                      >
+                                        <Download className="w-4 h-4 text-blue-500" />
+                                        <span>Ekspor ke Word</span>
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleShare("Gmail")}
+                                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2"
+                                      >
+                                        <Mail className="w-4 h-4 text-green-500" />
+                                        <span>Kirim via Gmail</span>
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-white text-black border-gray-200 rounded">
+                                  <p>Bagikan</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {/* Copy Button */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={handleCopy}
+                                      className="hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200"
+                                    >
+                                      <CopyIcon className="w-4 h-4" />
+                                    </Button>
+                                  </motion.div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-white text-black border-gray-200 rounded">
+                                  <p>Salin</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              {/* Report Button */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                                    <DialogTrigger asChild>
+                                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="hover:bg-gray-50 hover:text-red-600 transition-colors duration-200"
+                                        >
+                                          <Flag className="w-4 h-4" />
+                                        </Button>
+                                      </motion.div>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-md bg-white">
+                                      <DialogHeader className="space-y-3">
+                                        <DialogTitle className="text-xl font-semibold text-gray-900">Laporkan Chat</DialogTitle>
+                                        <p className="text-sm text-gray-600">
+                                          Bantu kami meningkatkan layanan dengan melaporkan konten yang tidak sesuai.
+                                        </p>
+                                      </DialogHeader>
+
+                                      <div className="space-y-4 py-4">
+                                        <div className="space-y-3">
+                                          <Label className="text-sm font-medium text-gray-700">Pilih alasan laporan:</Label>
+                                          <div className="space-y-2">
+                                            {reportOptions.map((option) => (
+                                              <label
+                                                key={option}
+                                                className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
+                                              >
+                                                <Checkbox
+                                                  checked={reportReason === option}
+                                                  onCheckedChange={(checked) => {
+                                                    if (checked) setReportReason(option)
+                                                  }}
+                                                  className="data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 border border-gray-300 rounded"
+                                                />
+                                                <span className="text-sm text-gray-700">{option}</span>
+                                              </label>
+                                            ))}
+                                          </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                          <Label htmlFor="details" className="text-sm font-medium text-gray-700">
+                                            Detail tambahan (opsional):
+                                          </Label>
+                                          <Textarea
+                                            id="details"
+                                            placeholder="Berikan detail lebih lanjut tentang masalah ini..."
+                                            value={reportDetails}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReportDetails(e.target.value)}
+                                            className="min-h-[80px] resize-none rounded bg-white border border-gray-200"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <DialogFooter className="flex gap-2 pt-1">
+                                        <Button variant="outline" onClick={() => setReportOpen(false)} className="flex-1 rounded bg-white text-black border border-gray-200 hover:bg-gray-200 hover:text-black">
+                                          Batal
+                                        </Button>
+                                        <Button
+                                          onClick={handleReportSend}
+                                          disabled={!reportReason}
+                                          className="flex-1 rounded bg-red-500 hover:bg-red-600 text-white"
+                                        >
+                                          Kirim Laporan
+                                        </Button>
+                                      </DialogFooter>
+                                    </DialogContent>
+                                  </Dialog>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-white text-black border-gray-200 rounded">
+                                  <p>Laporkan</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
+                        )}
                       </div>
                     );
                   })}

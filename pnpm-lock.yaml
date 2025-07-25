@@ -203,6 +203,9 @@ dependencies:
   react-resizable-panels:
     specifier: ^2.1.7
     version: 2.1.9(react-dom@19.1.0)(react@19.1.0)
+  react-speech-recognition:
+    specifier: ^4.0.1
+    version: 4.0.1(react@19.1.0)
   recharts:
     specifier: 2.15.0
     version: 2.15.0(react-dom@19.1.0)(react@19.1.0)
@@ -241,6 +244,9 @@ devDependencies:
   '@types/react-dom':
     specifier: ^19
     version: 19.1.6(@types/react@19.1.8)
+  '@types/react-speech-recognition':
+    specifier: ^3.9.6
+    version: 3.9.6
   postcss:
     specifier: ^8.5
     version: 8.5.6
@@ -2072,6 +2078,10 @@ packages:
     resolution: {integrity: sha512-xFdR6tkm0MWvBfO8xXCSsinYxHcqkQUlcHeSpMC2ukzOb6lwQAfDmW+Qt0AvlGd8HpsS28qKsB+oPeJn9I39jg==}
     dev: false
 
+  /@types/dom-speech-recognition@0.0.6:
+    resolution: {integrity: sha512-o7pAVq9UQPJL5RDjO1f/fcpfFHdgiMnR4PoIU2N/ZQrYOS3C5rzdOJMsrpqeBCbii2EE9mERXgqspQqPDdPahw==}
+    dev: true
+
   /@types/js-cookie@3.0.6:
     resolution: {integrity: sha512-wkw9yd1kEXOPnvEeEV1Go1MmxtBJL0RR79aOTAApecWFVu7w0NNXNqhcWgvw2YgZDYadliXkl14pa3WXw5jlCQ==}
     dev: true
@@ -2097,6 +2107,12 @@ packages:
       '@types/react': ^19.0.0
     dependencies:
       '@types/react': 19.1.8
+
+  /@types/react-speech-recognition@3.9.6:
+    resolution: {integrity: sha512-cdzwXIZXWyp8zfM2XI7APDW1rZf4Nz73T4SIS2y+cC7zHnZluCdumYKH6HacxgxJH+zemAq2oXbHWXcyW0eT3A==}
+    dependencies:
+      '@types/dom-speech-recognition': 0.0.6
+    dev: true
 
   /@types/react@19.1.8:
     resolution: {integrity: sha512-AwAfQ2Wa5bCx9WP8nZL2uMZWod7J7/JSplxbTmBQ5ms6QpqNYm672H0Vu9ZVKVngQ+ii4R/byguVEUZQyeg44g==}
@@ -2892,6 +2908,10 @@ packages:
   /lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
+  /lodash.debounce@4.0.8:
+    resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
+    dev: false
+
   /lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
     dev: false
@@ -3331,6 +3351,15 @@ packages:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
       react-transition-group: 4.4.5(react-dom@19.1.0)(react@19.1.0)
+    dev: false
+
+  /react-speech-recognition@4.0.1(react@19.1.0):
+    resolution: {integrity: sha512-0fIqzLtfY8vuYA6AmJVK7qiabZx0oFKOO+rbiBgFI3COWVGREy0A+gdU16hWXmFebeyrI8JsOLYsWk6WaHUXRw==}
+    peerDependencies:
+      react: '>=16.8.0'
+    dependencies:
+      lodash.debounce: 4.0.8
+      react: 19.1.0
     dev: false
 
   /react-style-singleton@2.2.3(@types/react@19.1.8)(react@19.1.0):

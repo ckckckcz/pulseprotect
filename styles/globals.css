@@ -100,3 +100,15 @@ body {
 .animate-carousel-left {
   animation: carousel-left 30s linear infinite;
 }
+
+.ai-bubble p,
+.ai-bubble ul,
+.ai-bubble ol,
+.ai-bubble pre,
+.ai-bubble blockquote {
+  margin-bottom: 0 !important;
+}
+
+.silvaFocus{
+  display: none;
+}
