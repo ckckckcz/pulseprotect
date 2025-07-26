@@ -20,6 +20,7 @@ export const metadata: Metadata = {
       "https://d2f3dnusg0rbp7.cloudfront.net " +
       "https://pay.google.com " +
       "https://js-agent.newrelic.com " +
+      "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" +
       "https://bam.nr-data.net " +
       "https://*.midtrans.com; " +
       "connect-src 'self' " +

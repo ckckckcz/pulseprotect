@@ -7,7 +7,6 @@ import Link from "next/link"
 import { authService } from "@/src/services/authService"
 import { aiService, AIModel, Message } from "@/src/services/aiService"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -288,8 +287,36 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     return () => clearTimeout(timeout);
   }, [displayText, isTyping, isErasing, currentLanguageIndex]);
   // Custom input handler
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
+  }
+
+  // Handle keyboard events for Ctrl+Enter
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault()
+      // Insert new line at cursor position
+      const target = e.target as HTMLTextAreaElement
+      const start = target.selectionStart
+      const end = target.selectionEnd
+      const newValue = input.substring(0, start) + '\n' + input.substring(end)
+      setInput(newValue)
+
+      // Set cursor position after the new line
+      setTimeout(() => {
+        target.setSelectionRange(start + 1, start + 1)
+        target.focus()
+      }, 0)
+    } else if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+      // Submit form on Enter (without Ctrl or Shift)
+      e.preventDefault()
+      if (input.trim() || imageFiles.length > 0) {
+        const form = e.currentTarget.closest('form')
+        if (form) {
+          form.requestSubmit()
+        }
+      }
+    }
   }
 
   // Handle image selection
@@ -524,6 +551,101 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       console.warn("Browser does not support speech recognition.");
     }
   }, [browserSupportsSpeechRecognition]);
+
+  // Tambahkan di state utama komponen
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream|null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioContextRef = useRef<AudioContext|null>(null);
+  const analyserRef = useRef<AnalyserNode|null>(null);
+  const animationFrameIdRef = useRef<number|null>(null);
+
+  // Fungsi untuk mulai merekam audio dan menampilkan waveform
+  const startWaveformRecording = async () => {
+    setIsRecording(true);
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    setAudioStream(stream);
+    audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const source = audioContextRef.current.createMediaStreamSource(stream);
+    analyserRef.current = audioContextRef.current.createAnalyser();
+    source.connect(analyserRef.current);
+    analyserRef.current.fftSize = 256;
+    const bufferLength = analyserRef.current.fftSize;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const draw = () => {
+      if (!canvasRef.current || !analyserRef.current) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      analyserRef.current.getByteTimeDomainData(dataArray);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#14b8a6';
+      ctx.beginPath();
+      const sliceWidth = canvas.width / bufferLength;
+      let x = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = (v * canvas.height) / 2;
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        x += sliceWidth;
+      }
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+      animationFrameIdRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+  };
+
+  // Fungsi untuk stop waveform dan audio
+  const stopWaveformRecording = () => {
+    setIsRecording(false);
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    if (audioStream) {
+      audioStream.getTracks().forEach(track => track.stop());
+      setAudioStream(null);
+    }
+    if (animationFrameIdRef.current) {
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+  };
+
+  // Handler untuk tombol mic (ubah agar pakai waveform)
+  const handleMicButton = async () => {
+    if (!browserSupportsSpeechRecognition) {
+      alert("Browser does not support speech recognition.");
+      return;
+    }
+    if (isRecording) {
+      stopWaveformRecording();
+      SpeechRecognition.stopListening();
+    } else {
+      resetTranscript();
+      await startWaveformRecording();
+      SpeechRecognition.startListening({ continuous: false, language: "id-ID" });
+    }
+  };
+
+  // Handler checklist: terima hasil suara
+  const handleAcceptVoice = () => {
+    setInput(prev => prev ? prev + (prev.endsWith('\n') ? '' : '\n') + transcript : transcript);
+    stopWaveformRecording();
+    SpeechRecognition.stopListening();
+  };
+  // Handler cancel: batalkan suara
+  const handleCancelVoice = () => {
+    stopWaveformRecording();
+    SpeechRecognition.stopListening();
+  };
 
   // If still checking auth, show a loading state
   if (isAuthChecking) {
@@ -796,29 +918,35 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                     <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
                       {/* Input area - now at the top */}
                       <div className="relative px-6 py-4">
-                        <Input
+                        <Textarea
                           value={input}
                           onChange={handleInputChange}
+                          onKeyDown={handleKeyDown}
                           placeholder="Minta Silva Menjawab..."
-                          className="w-full bg-transparent border-none text-black placeholder-gray-00 text-md pr-16"
-                          style={{outline:"none"}}
+                          className="w-full bg-transparent border-none text-black placeholder-gray-500 text-xl resize-none min-h-[38px] overflow-y-auto"
+                          style={{ outline: "none" }}
+                          rows={1}
+                          onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                          }}
                         />
-
-                        {/* Send button */}
-                        <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
-                          <Button
-                            type={isLoading ? "button" : "submit"}
-                            size="sm"
-                            className={`rounded-full w-10 h-10 p-0 transition-all ${(!input.trim() && !imageFiles.length) || isLoading
-                                ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
-                                : "bg-teal-600 hover:bg-teal-700 text-white"
-                              }`}
-                            disabled={!input.trim() && !imageFiles.length && !isLoading}
-                            onClick={isLoading ? () => setIsLoading(false) : undefined}
-                          >
-                            {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
-                          </Button>
-                        </div>
+                        {isRecording && (
+                          <div className="absolute left-0 right-0 top-0 flex flex-col items-center justify-center z-20" style={{pointerEvents:'none'}}>
+                            <canvas
+                              ref={canvasRef}
+                              width={400}
+                              height={40}
+                              className="mx-auto my-2 bg-transparent"
+                              style={{ maxWidth: '100%' }}
+                            />
+                            <div className="flex gap-2 justify-center mt-2" style={{pointerEvents:'auto'}}>
+                              <Button type="button" size="icon" className="bg-teal-600 text-white" onClick={handleAcceptVoice}><span>✔️</span></Button>
+                              <Button type="button" size="icon" className="bg-red-500 text-white" onClick={handleCancelVoice}><span>❌</span></Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Image preview area */}
@@ -840,7 +968,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
                       {/* Action buttons row - now at the bottom */}
                       <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
-                        <div className="flex items-center space-x-4">
+                        {/* Left side - Image button only */}
+                        <div className="flex items-center space-x-2">
                           <label className="cursor-pointer">
                             <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
                             <Button
@@ -850,34 +979,45 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               asChild
                             >
                               <span>
-                                <Images className="w-4 h-4" />
-                                {/* Gambar */}
+                                <Images className="w-4 h-4 mr-2" />
+                                Gambar
                               </span>
                             </Button>
-                            {/* Microphone button */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!browserSupportsSpeechRecognition) {
-                                  alert("Browser does not support speech recognition.")
-                                  return
-                                }
-                                if (listening) {
-                                  SpeechRecognition.stopListening()
-                                } else {
-                                  resetTranscript()
-                                  SpeechRecognition.startListening({ continuous: false, language: "id-ID" })
-                                }
-                              }}
-                              className={`p-2 rounded-full transition-colors ${listening ? "bg-teal-600 text-white animate-pulse" : "text-gray-500 hover:text-black hover:bg-gray-200"
-                                }`}
-                              aria-label={listening ? "Stop recording" : "Start recording"}
-                            >
-                              <Mic className="w-4 h-4" />
-                            </button>
                           </label>
                         </div>
 
+                        {/* Right side - Dynamic button (Mic/Send) */}
+                        <div>
+                          {input.trim() || imageFiles.length > 0 ? (
+                            // Show Send button when there's input
+                            <Button
+                              type={isLoading ? "button" : "submit"}
+                              size="sm"
+                              className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
+                                ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
+                                : "bg-teal-600 hover:bg-teal-700 text-white"
+                                }`}
+                              disabled={isLoading}
+                              onClick={isLoading ? () => setIsLoading(false) : undefined}
+                            >
+                              {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
+                            </Button>
+                          ) : (
+                            // Show Microphone button when no input
+                            <Button
+                              type="button"
+                              size="sm"
+                              className={`rounded-full w-10 h-10 p-0 transition-all ${listening
+                                ? "bg-teal-600 text-white animate-pulse"
+                                : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"
+                                }`}
+                              onClick={handleMicButton}
+                              aria-label={listening ? "Stop recording" : "Start recording"}
+                            >
+                              <Mic className="w-5 h-5" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1258,51 +1398,96 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </div>
 
               {/* Input Form - Fixed at bottom with absolute positioning */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gray-50 z-10">
-                <div className="max-w-4xl mx-auto w-full px-6 py-1 pb-4">
-                  <form onSubmit={onSubmit}>
-                    {imagePreviews.map((preview, idx) => (
-                      <div key={idx} className="relative inline-block mr-2">
-                        <Image src={preview} alt={`preview-${idx}`} width={128} height={128} className="rounded-xl object-cover max-h-32 max-w-32" />
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="absolute -top-2 -right-2 text-white bg-red-500 hover:bg-red-600 border-2 border-white rounded-full w-6 h-6 p-0 shadow-lg"
-                          onClick={() => {
-                            setImageFiles(files => files.filter((_, i) => i !== idx));
-                            setImagePreviews(previews => previews.filter((_, i) => i !== idx));
-                          }}
-                        >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))}
-                    <div className="relative">
-                      {" "}
-                      <Input
-                        value={input}
-                        onChange={handleInputChange}
-                        placeholder="Ask Silva anything..."
-                        className="w-full pl-4 pr-[80px] py-6 text-md bg-gray-100 text-black border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent"
-                      />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-4">
-                        {/* Tombol upload gambar */}
-                        <label className="cursor-pointer flex items-center">
-                          <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
-                          <Paperclip className="w-4 h-4 text-gray-500 hover:text-gray-700" />
-                        </label>
+              <div className="w-full mb-5">
+                <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
+                  {/* Input area - now at the top */}
+                  <div className="relative px-6 py-4">
+                    <Textarea
+                      value={input}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Minta Silva Menjawab..."
+                      className="w-full bg-transparent border-none text-black placeholder-gray-500 text-sm resize-none min-h-[44px] max-h-32 overflow-y-auto"
+                      style={{ outline: "none" }}
+                      rows={1}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                      }}
+                    />
+
+                    {/* Dynamic button (Mic/Send) */}
+                    <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
+                      {input.trim() || imageFiles.length > 0 ? (
+                        // Show Send button when there's input
                         <Button
                           type={isLoading ? "button" : "submit"}
                           size="sm"
-                          className="bg-teal-600 hover:bg-teal-700 text-white rounded-full w-8 h-8 p-0"
-                          disabled={!input.trim() && !imageFiles.length && !isLoading}
+                          className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
+                            ? "bg-gray-300 hover:bg-gray-600 text-gray-200"
+                            : "bg-teal-600 hover:bg-teal-700 text-white"
+                            }`}
+                          disabled={isLoading}
                           onClick={isLoading ? () => setIsLoading(false) : undefined}
                         >
-                          {isLoading ? <X className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
+                          {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
                         </Button>
+                      ) : (
+                        // Show Microphone button when no input
+                        <Button
+                          type="button"
+                          size="sm"
+                          className={`rounded-full w-10 h-10 p-0 transition-all ${listening
+                            ? "bg-teal-600 text-white animate-pulse"
+                            : "bg-gray-300 hover:bg-gray-600 text-gray-200"
+                            }`}
+                          onClick={handleMicButton}
+                          aria-label={listening ? "Stop recording" : "Start recording"}
+                        >
+                          <Mic className="w-5 h-5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Image preview area */}
+                  {imageFiles.length > 0 && (
+                    <div className="px-6 pb-4">
+                      <div className="flex flex-wrap gap-2">
+                        {imageFiles.map((file, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(file) || "/placeholder.svg"}
+                              alt={`Upload ${index + 1}`}
+                              className="w-16 h-16 object-cover rounded-lg border border-gray-600"
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </form>
+                  )}
+
+                  {/* Action buttons row - now at the bottom */}
+                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
+                    {/* Left side - Image button only */}
+                    <div className="flex items-center space-x-2">
+                      <label className="cursor-pointer">
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm"
+                          asChild
+                        >
+                          <span>
+                            <Images className="w-4 h-4" />
+                            {/* Gambar */}
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
