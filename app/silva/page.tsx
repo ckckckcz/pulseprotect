@@ -199,7 +199,7 @@ const EnhancedWaveform: React.FC<{
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const width = canvas.width;
+    const width = canvas.width
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
 
@@ -330,7 +330,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [reportDetails, setReportDetails] = useState("")
 
   // Avatar URL state
-  const [avatarUrl, setAvatarUrl] = useState<string>("")
+  const [avatarUrl, setAvatarUrl] = useState("")
 
   // Image upload states
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -339,6 +339,28 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   // Enhanced audio recording states
   const [isRecording, setIsRecording] = useState(false)
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
+
+  // Chat room states
+  const [chatID, setChatID] = useState<string>(() => {
+    // Try to get last chatID from localStorage
+    const lastID = localStorage.getItem("currentChatID")
+    return lastID || `room-${Date.now()}`
+  })
+  const [chatRooms, setChatRooms] = useState<{ [id: string]: { name: string; messages: any[] } }>(() => {
+    // Load from localStorage
+    const stored = localStorage.getItem("chatRooms")
+    return stored ? JSON.parse(stored) : {}
+  })
+
+  // Helper: Save chatRooms to localStorage
+  const saveChatRooms = (rooms: any) => {
+    localStorage.setItem("chatRooms", JSON.stringify(rooms))
+  }
+
+  // Helper: Save current chatID
+  const saveCurrentChatID = (id: string) => {
+    localStorage.setItem("currentChatID", id)
+  }
 
   // Check authentication on component mount
   useEffect(() => {
@@ -665,6 +687,12 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   }
 
   const startNewChat = () => {
+    const newID = `room-${Date.now()}`
+    setChatID(newID)
+    setChatRooms((prev) => ({
+      ...prev,
+      [newID]: { name: `Chat ${Object.keys(prev).length + 1}`, messages: [] },
+    }))
     setMessages([])
     setInput("")
     setShowSuggestions(true)
@@ -863,16 +891,32 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <div className="p-4">
               <h3 className="text-md font-medium text-gray-900 mb-3">Chats</h3>
               <div className="space-y-1">
-                {chatHistory.map((chat, index) => (
+                {Object.entries(chatRooms).map(([id, room], index) => (
                   <div
-                    key={index}
-                    className="w-full justify-center items-center cursor-pointer px-4 py-1 hover:bg-gray-100 rounded-xl flex group"
+                    key={id}
+                    className={`w-full justify-center items-center cursor-pointer px-4 py-1 hover:bg-gray-100 rounded-xl flex group ${chatID === id ? "bg-gray-100" : ""}`}
+                    onClick={() => setChatID(id)}
                   >
-                    <span className="text-sm text-gray-900 truncate flex-1">{chat}</span>
+                    <span className="text-sm text-gray-900 truncate flex-1">{room.name}</span>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-gray-900 hover:bg-gray-100 hover:text-gray-900 p-1"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        // Optionally: delete chat room
+                        setChatRooms((prev) => {
+                          const updated = { ...prev }
+                          delete updated[id]
+                          saveChatRooms(updated)
+                          // If deleted current, switch to another
+                          if (chatID === id) {
+                            const keys = Object.keys(updated)
+                            setChatID(keys[0] || `room-${Date.now()}`)
+                          }
+                          return updated
+                        })
+                      }}
                     >
                       <MoreHorizontal className="w-4 h-4" />
                     </Button>
@@ -1076,7 +1120,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           onChange={handleInputChange}
                           onKeyDown={handleKeyDown}
                           placeholder="Minta Silva Menjawab..."
-                          className="w-full bg-transparent border-none text-black placeholder-gray-500 text-xl resize-none min-h-[38px] overflow-y-auto"
+                          className="w-full bg-transparent border-none text-black placeholder-gray-500 lg:text-lg text-md resize-none min-h-[38px] overflow-y-auto"
                           style={{ outline: "none" }}
                           rows={1}
                           onInput={(e) => {
@@ -1528,7 +1572,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
                       placeholder="Minta Silva Menjawab..."
-                      className="w-full bg-transparent border-none text-black placeholder-gray-500 text-xl resize-none min-h-[38px] overflow-y-auto"
+                      className="w-full bg-transparent border-none text-black placeholder-gray-500 lg:text-lg text-md resize-none min-h-[38px] overflow-y-auto"
                       style={{ outline: "none" }}
                       rows={1}
                       onInput={(e) => {
