@@ -1062,7 +1062,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   ))}
                   <div className="w-full">
                     <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
-                      {/* Enhanced Waveform Overlay */}
                       <EnhancedWaveform
                         isRecording={isRecording}
                         onAccept={handleAcceptVoice}
