@@ -101,7 +101,9 @@ const EnhancedWaveform: React.FC<{
   useEffect(() => {
     if (!containerRef.current) return;
     const handleResize = () => {
-      setCanvasWidth(containerRef.current!.offsetWidth);
+      if (containerRef.current) {
+        setCanvasWidth(containerRef.current.offsetWidth);
+      }
     };
     handleResize();
     const observer = new window.ResizeObserver(handleResize);
@@ -550,8 +552,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         console.error("Supabase upload error:", error, data)
         alert(
           "Gagal upload gambar.\n" +
-            (typeof error === "string" ? error : error?.message || "Unknown error") +
-            "\nCek quota storage, ukuran file, dan permission bucket chat-images.",
+          (typeof error === "string" ? error : error?.message || "Unknown error") +
+          "\nCek quota storage, ukuran file, dan permission bucket chat-images.",
         )
         return null
       }
@@ -812,9 +814,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div
-        className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${
-          isSidebarExpanded ? "w-72" : "w-[69px]"
-        }`}
+        className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? "w-72" : "w-[69px]"
+          }`}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
@@ -838,9 +839,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <Button
               onClick={startNewChat}
               variant="ghost"
-              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${
-                isSidebarExpanded ? "justify-start" : "justify-center"
-              }`}
+              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"
+                }`}
             >
               <Plus className="w-4 h-4 min-w-[16px]" />
               {isSidebarExpanded && <span className="ml-3">New chat</span>}
@@ -848,9 +848,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
             <Button
               variant="ghost"
-              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${
-                isSidebarExpanded ? "justify-start" : "justify-center"
-              }`}
+              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"
+                }`}
             >
               <Search className="w-4 h-4 min-w-[16px]" />
               {isSidebarExpanded && <span className="ml-3">Search chats</span>}
@@ -903,12 +902,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           >
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${
-                  activeMembershipType === "pro"
-                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
-                    : activeMembershipType === "plus"
-                      ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
-                      : ""
+                ${activeMembershipType === "pro"
+                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
+                  : activeMembershipType === "plus"
+                    ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
+                    : ""
                 }
               `}
               style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
@@ -1045,8 +1043,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       <Image
                         src={preview || "/placeholder.svg"}
                         alt={`preview-${idx}`}
-                        width={128}
-                        height={128}
+                        width={100}
+                        height={100}
                         className="rounded-xl object-cover max-h-32 max-w-32"
                       />
                       <Button
@@ -1090,23 +1088,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         />
                       </div>
 
-                      {/* Image preview area */}
-                      {imageFiles.length > 0 && (
-                        <div className="px-6 pb-4">
-                          <div className="flex flex-wrap gap-2">
-                            {imageFiles.map((file, index) => (
-                              <div key={index} className="relative">
-                                <img
-                                  src={URL.createObjectURL(file) || "/placeholder.svg"}
-                                  alt={`Upload ${index + 1}`}
-                                  className="w-16 h-16 object-cover rounded-lg border border-gray-600"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Action buttons row */}
                       <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
                         <div className="flex items-center space-x-2">
@@ -1137,11 +1118,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             <Button
                               type={isLoading ? "button" : "submit"}
                               size="sm"
-                              className={`rounded-full w-10 h-10 p-0 transition-all ${
-                                isLoading
+                              className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
                                   ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
                                   : "bg-teal-600 hover:bg-teal-700 text-white"
-                              }`}
+                                }`}
                               disabled={isLoading}
                               onClick={isLoading ? () => setIsLoading(false) : undefined}
                             >
@@ -1151,11 +1131,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             <Button
                               type="button"
                               size="sm"
-                              className={`rounded-full w-10 h-10 p-0 transition-all ${
-                                isRecording
+                              className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording
                                   ? "bg-red-500 text-white shadow-lg animate-pulse"
                                   : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"
-                              }`}
+                                }`}
                               onClick={handleMicButton}
                               aria-label={isRecording ? "Stop recording" : "Start recording"}
                             >
@@ -1210,10 +1189,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       >
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-4 py-2.5 mb-0 last:mb-0 min-h-0 h-auto items-start align-middle 
-                            ${
-                              message.role === "user"
-                                ? "bg-teal-600 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
-                                : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
+                            ${message.role === "user"
+                              ? "bg-teal-600 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
+                              : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
                             }`}
                         >
                           {imageUrlMatch && (
@@ -1249,9 +1227,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                                         transition={{ duration: 0.3 }}
                                       >
                                         <ThumbsUp
-                                          className={`w-4 h-4 transition-all duration-200 ${
-                                            liked ? "fill-teal-500 text-teal-500" : ""
-                                          }`}
+                                          className={`w-4 h-4 transition-all duration-200 ${liked ? "fill-teal-500 text-teal-500" : ""
+                                            }`}
                                         />
                                       </motion.div>
                                     </Button>
@@ -1513,8 +1490,30 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </div>
 
               {/* Input Form - Fixed at bottom */}
-              <div className="w-full mb-5">
-                <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
+              {imagePreviews.map((preview, idx) => (
+                <div key={idx} className="relative inline-block mr-2 mb-4">
+                  <Image
+                    src={preview || "/placeholder.svg"}
+                    alt={`preview-${idx}`}
+                    width={100}
+                    height={100}
+                    className="rounded-xl object-cover max-h-32 max-w-32"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="absolute -top-2 -right-2 text-white bg-red-500 hover:bg-red-600 border-2 border-white rounded-full w-6 h-6 p-0 shadow-lg"
+                    onClick={() => {
+                      setImageFiles((files) => files.filter((_, i) => i !== idx))
+                      setImagePreviews((previews) => previews.filter((_, i) => i !== idx))
+                    }}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+              <div className="w-full">
+                <div className="relative mb-2 bg-white rounded-3xl border border-gray-200 shadow-lg">
                   {/* Enhanced Waveform Overlay */}
                   <EnhancedWaveform
                     isRecording={isRecording}
@@ -1530,7 +1529,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}
                       placeholder="Minta Silva Menjawab..."
-                      className="w-full bg-transparent border-none text-black placeholder-gray-500 text-sm resize-none min-h-[44px] max-h-32 overflow-y-auto"
+                      className="w-full bg-transparent border-none text-black placeholder-gray-500 text-xl resize-none min-h-[38px] overflow-y-auto"
                       style={{ outline: "none" }}
                       rows={1}
                       onInput={(e) => {
@@ -1539,18 +1538,42 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         target.style.height = Math.min(target.scrollHeight, 128) + "px"
                       }}
                     />
+                  </div>
 
-                    {/* Dynamic button (Mic/Send) */}
-                    <div className="absolute right-6 top-1/2 transform -translate-y-1/2">
+                  {/* Action buttons row */}
+                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
+                    <div className="flex items-center space-x-2">
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleImageChange}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm"
+                          asChild
+                        >
+                          <span>
+                            <Images className="w-4 h-4 mr-2" />
+                            Gambar
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+
+                    <div>
                       {input.trim() || imageFiles.length > 0 ? (
                         <Button
                           type={isLoading ? "button" : "submit"}
                           size="sm"
-                          className={`rounded-full w-10 h-10 p-0 transition-all ${
-                            isLoading
-                              ? "bg-gray-300 hover:bg-gray-600 text-gray-200"
+                          className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
+                              ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
                               : "bg-teal-600 hover:bg-teal-700 text-white"
-                          }`}
+                            }`}
                           disabled={isLoading}
                           onClick={isLoading ? () => setIsLoading(false) : undefined}
                         >
@@ -1560,53 +1583,16 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         <Button
                           type="button"
                           size="sm"
-                          className={`rounded-full w-10 h-10 p-0 transition-all ${
-                            isRecording
+                          className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording
                               ? "bg-red-500 text-white shadow-lg animate-pulse"
-                              : "bg-gray-300 hover:bg-gray-600 text-gray-200"
-                          }`}
+                              : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"
+                            }`}
                           onClick={handleMicButton}
                           aria-label={isRecording ? "Stop recording" : "Start recording"}
                         >
                           <Mic className="w-5 h-5" />
                         </Button>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Image preview area */}
-                  {imageFiles.length > 0 && (
-                    <div className="px-6 pb-4">
-                      <div className="flex flex-wrap gap-2">
-                        {imageFiles.map((file, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={URL.createObjectURL(file) || "/placeholder.svg"}
-                              alt={`Upload ${index + 1}`}
-                              className="w-16 h-16 object-cover rounded-lg border border-gray-600"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action buttons row */}
-                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
-                    <div className="flex items-center space-x-2">
-                      <label className="cursor-pointer">
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm"
-                          asChild
-                        >
-                          <span>
-                            <Images className="w-4 h-4" />
-                          </span>
-                        </Button>
-                      </label>
                     </div>
                   </div>
                 </div>
@@ -1619,9 +1605,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         <div className="fixed bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
           <Button
             onClick={toggleBottomCard}
-            className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${
-              showBottomCard ? "rotate-180" : ""
-            }`}
+            className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${showBottomCard ? "rotate-180" : ""
+              }`}
           >
             <ArrowUp className="w-full h-full" />
           </Button>
