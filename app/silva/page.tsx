@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { authService } from "@/src/services/authService"
-import { aiService, type AIModel, type Message } from "@/src/services/aiService"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import type React from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { authService } from "@/src/services/authService";
+import { aiService, type AIModel, type Message } from "@/src/services/aiService";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Zap,
   PanelLeft,
@@ -38,39 +38,33 @@ import {
   Flag,
   Images,
   Check,
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import { supabase } from "@/lib/supabase"
-import Image from "next/image"
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const models = [
   { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
   { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM", requiredMembership: "plus" },
   { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
-]
+];
 
 interface ChatActionsProps {
-  textContent: string
-  onRegenerate?: () => void
-  onSpeak?: (text: string) => void
-  onCopy?: (text: string) => void
+  textContent: string;
+  onRegenerate?: () => void;
+  onSpeak?: (text: string) => void;
+  onCopy?: (text: string) => void;
 }
 
-const chatHistory = ["Supabase URL Environment Error"]
+const chatHistory = ["Supabase URL Environment Error"];
 
-const suggestions = [
-  "Generate a blog UI",
-  "Rewrite my LinkedIn bio",
-  "Create a slideshow",
-  "Synthesise an excel document",
-  "Find me the average cost",
-]
+const suggestions = ["Generate a blog UI", "Rewrite my LinkedIn bio", "Create a slideshow", "Synthesise an excel document", "Find me the average cost"];
 
 // Add language translations
 const translations = [
@@ -79,21 +73,21 @@ const translations = [
   { lang: "日本語", text: "何を作りたいですか?" },
   { lang: "Français", text: "Qu'aimeriez-vous créer?" },
   { lang: "한국어", text: "무엇을 만들고 싶으신가요?" },
-]
+];
 
 // Enhanced Waveform Component with better audio responsiveness
 const EnhancedWaveform: React.FC<{
-  isRecording: boolean
-  onAccept: () => void
-  onCancel: () => void
-  audioStream: MediaStream | null
+  isRecording: boolean;
+  onAccept: () => void;
+  onCancel: () => void;
+  audioStream: MediaStream | null;
 }> = ({ isRecording, onAccept, onCancel, audioStream }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const animationFrameIdRef = useRef<number | null>(null)
-  const [amplitudeData, setAmplitudeData] = useState<number[]>(new Array(80).fill(0))
-  const [isVoiceDetected, setIsVoiceDetected] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
+  const [amplitudeData, setAmplitudeData] = useState<number[]>(new Array(80).fill(0));
+  const [isVoiceDetected, setIsVoiceDetected] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasWidth, setCanvasWidth] = useState(400);
 
@@ -113,93 +107,93 @@ const EnhancedWaveform: React.FC<{
 
   useEffect(() => {
     if (isRecording && audioStream) {
-      initializeAudioContext()
+      initializeAudioContext();
     } else {
-      cleanup()
+      cleanup();
     }
 
-    return cleanup
-  }, [isRecording, audioStream])
+    return cleanup;
+  }, [isRecording, audioStream]);
 
   const initializeAudioContext = async () => {
-    if (!audioStream) return
+    if (!audioStream) return;
 
     try {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      const source = audioContextRef.current.createMediaStreamSource(audioStream)
-      analyserRef.current = audioContextRef.current.createAnalyser()
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContextRef.current.createMediaStreamSource(audioStream);
+      analyserRef.current = audioContextRef.current.createAnalyser();
 
       // Optimize for voice detection
-      analyserRef.current.fftSize = 512
-      analyserRef.current.smoothingTimeConstant = 0.3
-      analyserRef.current.minDecibels = -90
-      analyserRef.current.maxDecibels = -10
+      analyserRef.current.fftSize = 512;
+      analyserRef.current.smoothingTimeConstant = 0.3;
+      analyserRef.current.minDecibels = -90;
+      analyserRef.current.maxDecibels = -10;
 
-      source.connect(analyserRef.current)
-      startVisualization()
+      source.connect(analyserRef.current);
+      startVisualization();
     } catch (error) {
-      console.error("Error initializing audio context:", error)
+      console.error("Error initializing audio context:", error);
     }
-  }
+  };
 
   const startVisualization = () => {
-    if (!analyserRef.current) return
+    if (!analyserRef.current) return;
 
-    const bufferLength = analyserRef.current.frequencyBinCount
-    const dataArray = new Uint8Array(bufferLength)
+    const bufferLength = analyserRef.current.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
 
     const draw = () => {
-      if (!analyserRef.current || !canvasRef.current) return
+      if (!analyserRef.current || !canvasRef.current) return;
 
-      analyserRef.current.getByteFrequencyData(dataArray)
+      analyserRef.current.getByteFrequencyData(dataArray);
 
       // Process frequency data for voice detection
-      const barCount = 80
-      const barWidth = Math.floor(bufferLength / barCount)
-      const newAmplitudeData: number[] = []
-      let totalEnergy = 0
+      const barCount = 80;
+      const barWidth = Math.floor(bufferLength / barCount);
+      const newAmplitudeData: number[] = [];
+      let totalEnergy = 0;
 
       for (let i = 0; i < barCount; i++) {
-        let sum = 0
-        const start = i * barWidth
-        const end = Math.min(start + barWidth, bufferLength)
+        let sum = 0;
+        const start = i * barWidth;
+        const end = Math.min(start + barWidth, bufferLength);
 
         for (let j = start; j < end; j++) {
-          sum += dataArray[j]
+          sum += dataArray[j];
         }
 
-        const average = sum / (end - start)
-        totalEnergy += average
+        const average = sum / (end - start);
+        totalEnergy += average;
 
         // Enhanced amplitude calculation for better voice response
-        const normalizedAmplitude = Math.min((average / 255) * 1.5, 1)
+        const normalizedAmplitude = Math.min((average / 255) * 1.5, 1);
 
         // Apply voice threshold - only show bars when there's actual sound
-        const threshold = 0.1
-        const finalAmplitude = normalizedAmplitude > threshold ? normalizedAmplitude : 0
+        const threshold = 0.1;
+        const finalAmplitude = normalizedAmplitude > threshold ? normalizedAmplitude : 0;
 
-        newAmplitudeData.push(finalAmplitude)
+        newAmplitudeData.push(finalAmplitude);
       }
 
       // Detect if voice is present
-      const averageEnergy = totalEnergy / barCount
-      setIsVoiceDetected(averageEnergy > 15)
+      const averageEnergy = totalEnergy / barCount;
+      setIsVoiceDetected(averageEnergy > 15);
 
-      setAmplitudeData(newAmplitudeData)
-      drawWaveform(newAmplitudeData)
+      setAmplitudeData(newAmplitudeData);
+      drawWaveform(newAmplitudeData);
 
-      animationFrameIdRef.current = requestAnimationFrame(draw)
-    }
+      animationFrameIdRef.current = requestAnimationFrame(draw);
+    };
 
-    draw()
-  }
+    draw();
+  };
 
   const drawWaveform = (amplitudes: number[]) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const width = canvas.width
+    const width = canvas.width;
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
 
@@ -218,33 +212,33 @@ const EnhancedWaveform: React.FC<{
     const startX = Math.round((width - totalWidth) / 2);
 
     const centerY = height / 2;
-    const maxLineHeight = height * 0.9 / 2;
+    const maxLineHeight = (height * 0.9) / 2;
 
     amplitudes.forEach((amplitude, index) => {
       const x = startX + index * (lineWidth + gap) + lineWidth / 2;
       const lineHeight = amplitude * maxLineHeight;
       ctx.beginPath();
-      ctx.strokeStyle = '#222';
+      ctx.strokeStyle = "#222";
       ctx.lineWidth = lineWidth;
-      ctx.lineCap = 'round';
+      ctx.lineCap = "round";
       ctx.moveTo(x, centerY - lineHeight);
       ctx.lineTo(x, centerY + lineHeight);
       ctx.stroke();
     });
-  }
+  };
 
   const cleanup = () => {
     if (animationFrameIdRef.current) {
-      cancelAnimationFrame(animationFrameIdRef.current)
-      animationFrameIdRef.current = null
+      cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
     }
     if (audioContextRef.current) {
-      audioContextRef.current.close()
-      audioContextRef.current = null
+      audioContextRef.current.close();
+      audioContextRef.current = null;
     }
-    setAmplitudeData(new Array(80).fill(0))
-    setIsVoiceDetected(false)
-  }
+    setAmplitudeData(new Array(80).fill(0));
+    setIsVoiceDetected(false);
+  };
 
   return (
     <AnimatePresence>
@@ -259,36 +253,20 @@ const EnhancedWaveform: React.FC<{
           {/* Header with recording indicator */}
           <div className="flex items-center justify-between p-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-                className="w-2 h-2 bg-red-500 rounded-full"
-              />
-              <span className="text-sm font-medium text-gray-700">
-                {isVoiceDetected ? "Listening..." : "Speak now"}
-              </span>
+              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }} className="w-2 h-2 bg-red-500 rounded-full" />
+              <span className="text-sm font-medium text-gray-700">{isVoiceDetected ? "Listening..." : "Speak now"}</span>
             </div>
 
             {/* Action buttons in header */}
             <div className="flex gap-2">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={onCancel}
-                  size="sm"
-                  variant="ghost"
-                  className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full"
-                >
+                <Button onClick={onCancel} size="sm" variant="ghost" className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full">
                   <X className="w-4 h-4 text-gray-600" />
                 </Button>
               </motion.div>
 
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={onAccept}
-                  size="sm"
-                  variant="ghost"
-                  className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full"
-                >
+                <Button onClick={onAccept} size="sm" variant="ghost" className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full">
                   <Check className="w-4 h-4 text-teal-600" />
                 </Button>
               </motion.div>
@@ -298,349 +276,340 @@ const EnhancedWaveform: React.FC<{
           {/* Waveform container - contained within card */}
           <div className="flex flex-1 items-center justify-center">
             <div className="w-full">
-              <div ref={containerRef} className="w-full"><canvas ref={canvasRef} width={canvasWidth} height={80} className="w-full h-20 px-10 rounded-lg" style={{ maxWidth: '100%' }} /></div>
+              <div ref={containerRef} className="w-full">
+                <canvas ref={canvasRef} width={canvasWidth} height={80} className="w-full h-20 px-10 rounded-lg" style={{ maxWidth: "100%" }} />
+              </div>
             </div>
           </div>
 
           {/* Footer with instructions */}
           <div className="p-4 border-t border-gray-100">
-            <p className="text-xs text-gray-500 text-center">
-              {isVoiceDetected ? "Voice detected - keep speaking" : "Start speaking to see waveform"}
-            </p>
+            <p className="text-xs text-gray-500 text-center">{isVoiceDetected ? "Voice detected - keep speaking" : "Start speaking to see waveform"}</p>
           </div>
         </motion.div>
       )}
     </AnimatePresence>
-  )
-}
+  );
+};
 
 export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCopy }: ChatActionsProps) {
-  const [selectedModel, setSelectedModel] = useState<AIModel>("google-gemini")
-  const [user, setUser] = useState<any>(null)
-  const [isAuthChecking, setIsAuthChecking] = useState(true)
-  const router = useRouter()
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true)
-  const [isLogoHovered, setIsLogoHovered] = useState(false)
-  const [showBottomCard, setShowBottomCard] = useState(false)
-  const [activeMembershipType, setActiveMembershipType] = useState<"free" | "plus" | "pro">("free")
-  const [liked, setLiked] = useState(false)
-  const [disliked, setDisliked] = useState(false)
-  const [reportOpen, setReportOpen] = useState(false)
-  const [reportReason, setReportReason] = useState("")
-  const [reportDetails, setReportDetails] = useState("")
+  const [selectedModel, setSelectedModel] = useState<AIModel>("google-gemini");
+  const [user, setUser] = useState<any>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const router = useRouter();
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isLogoHovered, setIsLogoHovered] = useState(false);
+  const [showBottomCard, setShowBottomCard] = useState(false);
+  const [activeMembershipType, setActiveMembershipType] = useState<"free" | "plus" | "pro">("free");
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
 
   // Avatar URL state
-  const [avatarUrl, setAvatarUrl] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   // Image upload states
-  const [imageFiles, setImageFiles] = useState<File[]>([])
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   // Enhanced audio recording states
-  const [isRecording, setIsRecording] = useState(false)
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
-  // Chat room states
-  const [chatID, setChatID] = useState<string>(() => {
-    // Try to get last chatID from localStorage
-    const lastID = localStorage.getItem("currentChatID")
-    return lastID || `room-${Date.now()}`
-  })
-  const [chatRooms, setChatRooms] = useState<{ [id: string]: { name: string; messages: any[] } }>(() => {
-    // Load from localStorage
-    const stored = localStorage.getItem("chatRooms")
-    return stored ? JSON.parse(stored) : {}
-  })
+  // Chat room states (localStorage removed)
+  const [chatID, setChatID] = useState<string>("room-1");
+  const [chatRooms, setChatRooms] = useState<{ [id: string]: { name: string; messages: any[] } }>({
+    "room-1": { name: "Chat 1", messages: [] },
+  });
 
   // Helper: Save chatRooms to localStorage
   const saveChatRooms = (rooms: any) => {
-    localStorage.setItem("chatRooms", JSON.stringify(rooms))
-  }
+    localStorage.setItem("chatRooms", JSON.stringify(rooms));
+  };
 
   // Helper: Save current chatID
   const saveCurrentChatID = (id: string) => {
-    localStorage.setItem("currentChatID", id)
-  }
+    localStorage.setItem("currentChatID", id);
+  };
 
   // Check authentication on component mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await authService.getCurrentUser()
+        const currentUser = await authService.getCurrentUser();
         if (!currentUser) {
-          router.push("/login")
-          return
+          router.push("/login");
+          return;
         }
-        setUser(currentUser)
+        setUser(currentUser);
       } catch (error) {
-        console.error("Auth check error:", error)
-        router.push("/login")
+        console.error("Auth check error:", error);
+        router.push("/login");
       } finally {
-        setIsAuthChecking(false)
+        setIsAuthChecking(false);
       }
-    }
+    };
 
-    checkAuth()
-  }, [router])
+    checkAuth();
+  }, [router]);
 
-  const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([])
-  const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [showSuggestions, setShowSuggestions] = useState(true)
-  const [currentLanguageIndex, setCurrentLanguageIndex] = useState(0)
-  const [displayText, setDisplayText] = useState("")
-  const [isTyping, setIsTyping] = useState(true)
-  const [isErasing, setIsErasing] = useState(false)
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-  const profileMenuRef = useRef<HTMLDivElement>(null)
-  const fullTextRef = useRef(translations[0].text)
-  const [aiTypingText, setAiTypingText] = useState("")
-  const [isAiTyping, setIsAiTyping] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [reportChecks, setReportChecks] = useState<{ [k: string]: boolean }>({})
-  const reportOptions = [
-    "Konten tidak pantas",
-    "Informasi yang salah",
-    "Spam atau berulang",
-    "Melanggar kebijakan",
-    "Lainnya",
-  ]
+  const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [currentLanguageIndex, setCurrentLanguageIndex] = useState(0);
+  const [displayText, setDisplayText] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
+  const [isErasing, setIsErasing] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const fullTextRef = useRef(translations[0].text);
+  const [aiTypingText, setAiTypingText] = useState("");
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [reportChecks, setReportChecks] = useState<{ [k: string]: boolean }>({});
+  const reportOptions = ["Konten tidak pantas", "Informasi yang salah", "Spam atau berulang", "Melanggar kebijakan", "Lainnya"];
 
   const handleLike = () => {
-    setLiked(!liked)
-    if (disliked) setDisliked(false)
-  }
+    setLiked(!liked);
+    if (disliked) setDisliked(false);
+  };
 
   const handleDislike = () => {
-    setDisliked(!disliked)
-    if (liked) setLiked(false)
-  }
+    setDisliked(!disliked);
+    if (liked) setLiked(false);
+  };
 
   const handleShare = (type: string) => {
     switch (type) {
       case "PDF":
-        console.log("Exporting to PDF...")
-        break
+        console.log("Exporting to PDF...");
+        break;
       case "Word":
-        console.log("Exporting to Word...")
-        break
+        console.log("Exporting to Word...");
+        break;
       case "Gmail":
-        const subject = encodeURIComponent("Shared Chat Content")
-        const body = encodeURIComponent(textContent)
-        window.open(`mailto:?subject=${subject}&body=${body}`)
-        break
+        const subject = encodeURIComponent("Shared Chat Content");
+        const body = encodeURIComponent(textContent);
+        window.open(`mailto:?subject=${subject}&body=${body}`);
+        break;
     }
-  }
+  };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(textContent)
-    onCopy?.(textContent)
-  }
+    navigator.clipboard.writeText(textContent);
+    onCopy?.(textContent);
+  };
 
   const handleReportSend = () => {
     if (reportReason) {
-      console.log("Report sent:", { reason: reportReason, details: reportDetails })
-      setReportOpen(false)
-      setReportReason("")
-      setReportDetails("")
+      console.log("Report sent:", { reason: reportReason, details: reportDetails });
+      setReportOpen(false);
+      setReportReason("");
+      setReportDetails("");
     }
-  }
+  };
 
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const ttsUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const ttsUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const speak = (text: string) => {
     if (!window.speechSynthesis) {
-      alert("Browser tidak mendukung text-to-speech.")
-      return
+      alert("Browser tidak mendukung text-to-speech.");
+      return;
     }
     if (isSpeaking) {
-      window.speechSynthesis.cancel()
-      setIsSpeaking(false)
-      return
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
     }
-    const utter = new window.SpeechSynthesisUtterance(text)
-    utter.lang = "id-ID"
-    utter.onstart = () => setIsSpeaking(true)
-    utter.onend = () => setIsSpeaking(false)
-    utter.onerror = () => setIsSpeaking(false)
-    ttsUtteranceRef.current = utter
-    window.speechSynthesis.speak(utter)
-  }
+    const utter = new window.SpeechSynthesisUtterance(text);
+    utter.lang = "id-ID";
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onend = () => setIsSpeaking(false);
+    utter.onerror = () => setIsSpeaking(false);
+    ttsUtteranceRef.current = utter;
+    window.speechSynthesis.speak(utter);
+  };
 
   // Close image preview modal on ESC key
   useEffect(() => {
-    if (!isModalOpen) return
+    if (!isModalOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsModalOpen(false)
-    }
-    window.addEventListener("keydown", handleEsc)
-    return () => window.removeEventListener("keydown", handleEsc)
-  }, [isModalOpen])
+      if (e.key === "Escape") setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isModalOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-        setIsProfileMenuOpen(false)
+        setIsProfileMenuOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Typing animation effect
   useEffect(() => {
-    let timeout: NodeJS.Timeout
+    let timeout: NodeJS.Timeout;
 
-    fullTextRef.current = translations[currentLanguageIndex].text
+    fullTextRef.current = translations[currentLanguageIndex].text;
 
     if (isTyping && !isErasing) {
       if (displayText.length < fullTextRef.current.length) {
         timeout = setTimeout(() => {
-          setDisplayText(fullTextRef.current.substring(0, displayText.length + 1))
-        }, 50)
+          setDisplayText(fullTextRef.current.substring(0, displayText.length + 1));
+        }, 50);
       } else {
         timeout = setTimeout(() => {
-          setIsErasing(true)
-        }, 100)
+          setIsErasing(true);
+        }, 100);
       }
     }
 
     if (isErasing) {
       if (displayText.length > 0) {
         timeout = setTimeout(() => {
-          setDisplayText(displayText.substring(0, displayText.length - 1))
-        }, 50)
+          setDisplayText(displayText.substring(0, displayText.length - 1));
+        }, 50);
       } else {
-        setIsErasing(false)
-        setCurrentLanguageIndex((prevIndex) => (prevIndex === translations.length - 1 ? 0 : prevIndex + 1))
+        setIsErasing(false);
+        setCurrentLanguageIndex((prevIndex) => (prevIndex === translations.length - 1 ? 0 : prevIndex + 1));
       }
     }
 
-    return () => clearTimeout(timeout)
-  }, [displayText, isTyping, isErasing, currentLanguageIndex])
+    return () => clearTimeout(timeout);
+  }, [displayText, isTyping, isErasing, currentLanguageIndex]);
 
   // Custom input handler
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value)
-  }
+    setInput(e.target.value);
+  };
 
   // Handle keyboard events for Ctrl+Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.ctrlKey && e.key === "Enter") {
-      e.preventDefault()
-      const target = e.target as HTMLTextAreaElement
-      const start = target.selectionStart
-      const end = target.selectionEnd
-      const newValue = input.substring(0, start) + "\n" + input.substring(end)
-      setInput(newValue)
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const newValue = input.substring(0, start) + "\n" + input.substring(end);
+      setInput(newValue);
 
       setTimeout(() => {
-        target.setSelectionRange(start + 1, start + 1)
-        target.focus()
-      }, 0)
+        target.setSelectionRange(start + 1, start + 1);
+        target.focus();
+      }, 0);
     } else if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
-      e.preventDefault()
+      e.preventDefault();
       if (input.trim() || imageFiles.length > 0) {
-        const form = e.currentTarget.closest("form")
+        const form = e.currentTarget.closest("form");
         if (form) {
-          form.requestSubmit()
+          form.requestSubmit();
         }
       }
     }
-  }
+  };
 
   // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    const newFiles = files.slice(0, 3 - imageFiles.length)
-    setImageFiles((prev) => [...prev, ...newFiles].slice(0, 3))
-    setImagePreviews((prev) => [...prev, ...newFiles.map((file) => URL.createObjectURL(file))].slice(0, 3))
-  }
+    const files = Array.from(e.target.files || []);
+    const newFiles = files.slice(0, 3 - imageFiles.length);
+    setImageFiles((prev) => [...prev, ...newFiles].slice(0, 3));
+    setImagePreviews((prev) => [...prev, ...newFiles.map((file) => URL.createObjectURL(file))].slice(0, 3));
+  };
 
   // Upload image to Supabase Storage and return public URL
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      const fileName = `${Date.now()}-${file.name}`
-      const { data, error } = await supabase.storage
-        .from("chat-images")
-        .upload(fileName, file, { cacheControl: "3600", upsert: false })
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage.from("chat-images").upload(fileName, file, { cacheControl: "3600", upsert: false });
 
       if (error || !data) {
-        console.error("Supabase upload error:", error, data)
-        alert(
-          "Gagal upload gambar.\n" +
-          (typeof error === "string" ? error : error?.message || "Unknown error") +
-          "\nCek quota storage, ukuran file, dan permission bucket chat-images.",
-        )
-        return null
+        console.error("Supabase upload error:", error, data);
+        alert("Gagal upload gambar.\n" + (typeof error === "string" ? error : error?.message || "Unknown error") + "\nCek quota storage, ukuran file, dan permission bucket chat-images.");
+        return null;
       }
 
-      const { data: urlData } = supabase.storage.from("chat-images").getPublicUrl(fileName)
+      const { data: urlData } = supabase.storage.from("chat-images").getPublicUrl(fileName);
 
       if (!urlData?.publicUrl) {
-        console.error("Get public URL error: No publicUrl found", urlData)
-        alert(
-          "Gagal mendapatkan URL gambar.\n" + "Tidak ditemukan publicUrl.\nPastikan bucket chat-images sudah public.",
-        )
-        return null
+        console.error("Get public URL error: No publicUrl found", urlData);
+        alert("Gagal mendapatkan URL gambar.\n" + "Tidak ditemukan publicUrl.\nPastikan bucket chat-images sudah public.");
+        return null;
       }
 
-      return urlData.publicUrl
+      return urlData.publicUrl;
     } catch (err: any) {
-      console.error("UploadImage Exception:", err)
-      alert("Terjadi error saat upload gambar: " + (err?.message || err))
-      return null
+      console.error("UploadImage Exception:", err);
+      alert("Terjadi error saat upload gambar: " + (err?.message || err));
+      return null;
     }
-  }
+  };
 
   // Custom submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const imageUrls: string[] = []
+    e.preventDefault();
+    if (isLoading) return; // Jangan submit jika masih loading
+
+    // Pastikan input atau gambar ada
+    if (!input.trim() && imageFiles.length === 0) return;
+
+    setIsLoading(true); // Set loading lebih awal
+
+    // Kosongkan input & gambar langsung agar UI responsif
+    setInput("");
+    setImageFiles([]);
+    setImagePreviews([]);
+
+    // Proses upload gambar
+    const imageUrls: string[] = [];
     for (const file of imageFiles) {
-      const url = await uploadImage(file)
-      if (url) imageUrls.push(url)
+      const url = await uploadImage(file);
+      if (url) imageUrls.push(url);
     }
-    let content = imageUrls.map((url) => url).join("\n")
-    if (input) content += (content ? "\n" : "") + input
+
+    let content = imageUrls.map((url) => url).join("\n");
+    if (input) content += (content ? "\n" : "") + input;
 
     const userMessage = {
       id: Date.now().toString(),
       role: "user" as const,
       content,
-    }
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
-    setImageFiles([])
-    setImagePreviews([])
-    setIsLoading(true)
-    setIsAiTyping(false)
-    setAiTypingText("")
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsAiTyping(false);
+    setAiTypingText("");
 
     try {
       const messageHistory: Message[] = messages.concat(userMessage).map((msg) => ({
         role: msg.role,
         content: msg.content,
-      }))
+      }));
 
-      const response = await aiService.generateCompletion(selectedModel, messageHistory)
+      const response = await aiService.generateCompletion(selectedModel, messageHistory);
 
-      setIsAiTyping(true)
-      let i = 0
-      const text = response.text
-      setAiTypingText("")
+      setIsAiTyping(true);
+      let i = 0;
+      const text = response.text;
+      setAiTypingText("");
       const typeChar = () => {
         if (i <= text.length) {
-          setAiTypingText(text.slice(0, i))
-          i++
-          setTimeout(typeChar, 18)
+          setAiTypingText(text.slice(0, i));
+          i++;
+          setTimeout(typeChar, 18);
         } else {
-          setIsAiTyping(false)
+          setIsAiTyping(false);
           setMessages((prev) => [
             ...prev,
             {
@@ -648,130 +617,120 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               role: "assistant" as const,
               content: text,
             },
-          ])
-          setAiTypingText("")
+          ]);
+          setAiTypingText("");
         }
-      }
-      typeChar()
+      };
+      typeChar();
     } catch (error) {
-      console.error("AI error:", error)
+      console.error("AI error:", error);
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant" as const,
         content: "Sorry, I encountered an error while processing your request. Please try again.",
-      }
-      setMessages((prev) => [...prev, errorMessage])
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false); // Selalu reset loading
     }
-  }
+  };
 
+  // Gunakan satu handler untuk form
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (input.trim()) {
-      setShowSuggestions(false)
-      handleSubmit(e)
-    }
-  }
+    handleSubmit(e);
+  };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion)
-    setShowSuggestions(false)
+    setInput(suggestion);
+    setShowSuggestions(false);
 
     setTimeout(() => {
-      const form = document.querySelector("form")
+      const form = document.querySelector("form");
       if (form) {
-        form.requestSubmit()
+        form.requestSubmit();
       }
-    }, 100)
-  }
+    }, 100);
+  };
 
   const startNewChat = () => {
-    const newID = `room-${Date.now()}`
-    setChatID(newID)
+    const newID = `room-${Date.now()}`;
+    setChatID(newID);
     setChatRooms((prev) => ({
       ...prev,
       [newID]: { name: `Chat ${Object.keys(prev).length + 1}`, messages: [] },
-    }))
-    setMessages([])
-    setInput("")
-    setShowSuggestions(true)
-  }
+    }));
+    setMessages([]);
+    setInput("");
+    setShowSuggestions(true);
+  };
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem("user")
-      router.push("/login")
+      localStorage.removeItem("user");
+      router.push("/login");
     } catch (error) {
-      console.error("Logout error:", error)
+      console.error("Logout error:", error);
     }
-  }
+  };
 
   const toggleSidebar = () => {
-    setIsSidebarExpanded(!isSidebarExpanded)
-  }
+    setIsSidebarExpanded(!isSidebarExpanded);
+  };
 
   const toggleBottomCard = () => {
-    setShowBottomCard(!showBottomCard)
-  }
+    setShowBottomCard(!showBottomCard);
+  };
 
   // Fetch membership_type dari payment Supabase
   useEffect(() => {
     const fetchMembership = async () => {
       if (!user?.email) {
-        setActiveMembershipType("free")
-        return
+        setActiveMembershipType("free");
+        return;
       }
-      const { data } = await supabase
-        .from("payment")
-        .select("membership_type, created_at, status")
-        .eq("email", user.email)
-        .eq("status", "success")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      const { data } = await supabase.from("payment").select("membership_type, created_at, status").eq("email", user.email).eq("status", "success").order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (data && data.membership_type) {
-        setActiveMembershipType(data.membership_type as "free" | "plus" | "pro")
+        setActiveMembershipType(data.membership_type as "free" | "plus" | "pro");
       } else {
-        setActiveMembershipType("free")
+        setActiveMembershipType("free");
       }
-    }
-    fetchMembership()
-  }, [user?.email])
+    };
+    fetchMembership();
+  }, [user?.email]);
 
   const isModelUnlocked = (modelId: string) => {
-    if (activeMembershipType === "pro") return true
-    if (activeMembershipType === "plus") return modelId === "google-gemini" || modelId === "deepseek-v3"
-    return modelId === "google-gemini"
-  }
+    if (activeMembershipType === "pro") return true;
+    if (activeMembershipType === "plus") return modelId === "google-gemini" || modelId === "deepseek-v3";
+    return modelId === "google-gemini";
+  };
 
   // Update avatar URL when user data changes
   useEffect(() => {
     if (user?.foto_profile) {
-      setAvatarUrl(user.foto_profile)
+      setAvatarUrl(user.foto_profile);
     } else if (user?.nama_lengkap) {
-      setAvatarUrl(`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`)
+      setAvatarUrl(`https://api.dicebear.com/6.x/initials/svg?seed=${user.nama_lengkap}`);
     } else {
-      setAvatarUrl("")
+      setAvatarUrl("");
     }
-  }, [user?.foto_profile, user?.nama_lengkap])
+  }, [user?.foto_profile, user?.nama_lengkap]);
 
   // Speech recognition states
-  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition()
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
   // Update input with transcript when listening stops
   useEffect(() => {
     if (!listening && transcript) {
-      setInput((prev) => (prev ? prev + " " + transcript : transcript))
-      resetTranscript()
+      setInput((prev) => (prev ? prev + " " + transcript : transcript));
+      resetTranscript();
     }
-  }, [listening, transcript, resetTranscript])
+  }, [listening, transcript, resetTranscript]);
 
   // Enhanced audio recording functions
   const startEnhancedRecording = async () => {
     if (!browserSupportsSpeechRecognition) {
-      alert("Browser does not support speech recognition.")
-      return
+      alert("Browser does not support speech recognition.");
+      return;
     }
 
     try {
@@ -781,46 +740,46 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           noiseSuppression: true,
           sampleRate: 44100,
         },
-      })
+      });
 
-      setAudioStream(stream)
-      setIsRecording(true)
-      resetTranscript()
-      SpeechRecognition.startListening({ continuous: true, language: "id-ID" })
+      setAudioStream(stream);
+      setIsRecording(true);
+      resetTranscript();
+      SpeechRecognition.startListening({ continuous: true, language: "id-ID" });
     } catch (error) {
-      console.error("Error accessing microphone:", error)
-      alert("Could not access microphone. Please check permissions.")
+      console.error("Error accessing microphone:", error);
+      alert("Could not access microphone. Please check permissions.");
     }
-  }
+  };
 
   const stopEnhancedRecording = () => {
     if (audioStream) {
-      audioStream.getTracks().forEach((track) => track.stop())
-      setAudioStream(null)
+      audioStream.getTracks().forEach((track) => track.stop());
+      setAudioStream(null);
     }
-    setIsRecording(false)
-    SpeechRecognition.stopListening()
-  }
+    setIsRecording(false);
+    SpeechRecognition.stopListening();
+  };
 
   const handleAcceptVoice = () => {
     if (transcript) {
-      setInput((prev) => (prev ? prev + (prev.endsWith("\n") ? "" : "\n") + transcript : transcript))
+      setInput((prev) => (prev ? prev + (prev.endsWith("\n") ? "" : "\n") + transcript : transcript));
     }
-    stopEnhancedRecording()
-  }
+    stopEnhancedRecording();
+  };
 
   const handleCancelVoice = () => {
-    resetTranscript()
-    stopEnhancedRecording()
-  }
+    resetTranscript();
+    stopEnhancedRecording();
+  };
 
   const handleMicButton = async () => {
     if (isRecording) {
-      stopEnhancedRecording()
+      stopEnhancedRecording();
     } else {
-      await startEnhancedRecording()
+      await startEnhancedRecording();
     }
-  }
+  };
 
   // If still checking auth, show a loading state
   if (isAuthChecking) {
@@ -835,16 +794,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           <p className="text-sm text-gray-500">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div
-        className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? "w-72" : "w-[69px]"
-          }`}
-      >
+      <div className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? "w-72" : "w-[69px]"}`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
@@ -854,31 +810,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               onMouseEnter={() => setIsLogoHovered(true)}
               onMouseLeave={() => setIsLogoHovered(false)}
             >
-              {isLogoHovered ? (
-                <PanelLeft className="w-4 h-4 text-white" />
-              ) : (
-                <Zap className="w-4 h-4 text-white" fill="currentColor" />
-              )}
+              {isLogoHovered ? <PanelLeft className="w-4 h-4 text-white" /> : <Zap className="w-4 h-4 text-white" fill="currentColor" />}
             </div>
           </div>
 
           {/* Navigation Items */}
           <div className="space-y-2">
-            <Button
-              onClick={startNewChat}
-              variant="ghost"
-              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"
-                }`}
-            >
+            <Button onClick={startNewChat} variant="ghost" className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"}`}>
               <Plus className="w-4 h-4 min-w-[16px]" />
               {isSidebarExpanded && <span className="ml-3">New chat</span>}
             </Button>
 
-            <Button
-              variant="ghost"
-              className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"
-                }`}
-            >
+            <Button variant="ghost" className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"}`}>
               <Search className="w-4 h-4 min-w-[16px]" />
               {isSidebarExpanded && <span className="ml-3">Search chats</span>}
             </Button>
@@ -892,30 +835,26 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               <h3 className="text-md font-medium text-gray-900 mb-3">Chats</h3>
               <div className="space-y-1">
                 {Object.entries(chatRooms).map(([id, room], index) => (
-                  <div
-                    key={id}
-                    className={`w-full justify-center items-center cursor-pointer px-4 py-1 hover:bg-gray-100 rounded-xl flex group ${chatID === id ? "bg-gray-100" : ""}`}
-                    onClick={() => setChatID(id)}
-                  >
+                  <div key={id} className={`w-full justify-center items-center cursor-pointer px-4 py-1 hover:bg-gray-100 rounded-xl flex group ${chatID === id ? "bg-gray-100" : ""}`} onClick={() => setChatID(id)}>
                     <span className="text-sm text-gray-900 truncate flex-1">{room.name}</span>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-gray-900 hover:bg-gray-100 hover:text-gray-900 p-1"
                       onClick={(e) => {
-                        e.stopPropagation()
+                        e.stopPropagation();
                         // Optionally: delete chat room
                         setChatRooms((prev) => {
-                          const updated = { ...prev }
-                          delete updated[id]
-                          saveChatRooms(updated)
+                          const updated = { ...prev };
+                          delete updated[id];
+                          saveChatRooms(updated);
                           // If deleted current, switch to another
                           if (chatID === id) {
-                            const keys = Object.keys(updated)
-                            setChatID(keys[0] || `room-${Date.now()}`)
+                            const keys = Object.keys(updated);
+                            setChatID(keys[0] || `room-${Date.now()}`);
                           }
-                          return updated
-                        })
+                          return updated;
+                        });
                       }}
                     >
                       <MoreHorizontal className="w-4 h-4" />
@@ -927,10 +866,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           ) : (
             <div className="flex flex-col items-center pt-4">
               {chatHistory.slice(0, 5).map((_, index) => (
-                <div
-                  key={index}
-                  className="w-8 hidden h-8 mb-2 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer"
-                >
+                <div key={index} className="w-8 hidden h-8 mb-2 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer">
                   <span className="text-xs">{index + 1}</span>
                 </div>
               ))}
@@ -940,15 +876,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
         {/* User Profile */}
         <div className="p-4 border-t border-gray-200 relative" ref={profileMenuRef}>
-          <div
-            className="flex items-center space-x-3 cursor-pointer"
-            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-          >
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}>
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${activeMembershipType === "pro"
-                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
-                  : activeMembershipType === "plus"
+                ${
+                  activeMembershipType === "pro"
+                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
+                    : activeMembershipType === "plus"
                     ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
                     : ""
                 }
@@ -956,41 +890,25 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
             >
               {avatarUrl ? (
-                <img
-                  src={avatarUrl || "/placeholder.svg"}
-                  alt={user?.nama_lengkap || "User"}
-                  className="w-full h-full object-cover rounded-full"
-                />
+                <img src={avatarUrl || "/placeholder.svg"} alt={user?.nama_lengkap || "User"} className="w-full h-full object-cover rounded-full" />
               ) : (
-                <span className="text-sm font-medium text-white">
-                  {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}
-                </span>
+                <span className="text-sm font-medium text-white">{user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}</span>
               )}
             </div>
             {isSidebarExpanded && (
               <>
                 <div className="flex-1 overflow-hidden">
                   <div className="text-sm font-medium truncate">{user?.email || "User"}</div>
-                  <div className="text-xs text-gray-400">
-                    {activeMembershipType === "pro"
-                      ? "Pro Plan"
-                      : activeMembershipType === "plus"
-                        ? "Plus Plan"
-                        : "Free Plan"}
-                  </div>
+                  <div className="text-xs text-gray-400">{activeMembershipType === "pro" ? "Pro Plan" : activeMembershipType === "plus" ? "Plus Plan" : "Free Plan"}</div>
                 </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""}`}
-                />
+                <ChevronDown className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""}`} />
               </>
             )}
           </div>
 
           {/* Profile Dropdown Menu */}
           {isProfileMenuOpen && (
-            <div
-              className={`absolute bottom-full ${isSidebarExpanded ? "left-2" : "left-16"} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}
-            >
+            <div className={`absolute bottom-full ${isSidebarExpanded ? "left-2" : "left-16"} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}>
               <Link href="/" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 <Home className="w-4 h-4 mr-2" />
                 Home
@@ -999,10 +917,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <User className="w-4 h-4 mr-2" />
                 Profile
               </Link>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left"
-              >
+              <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left">
                 <LogOut className="w-4 h-4 mr-2" />
                 Keluar
               </button>
@@ -1019,7 +934,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <Select
               value={selectedModel}
               onValueChange={(value) => {
-                if (isModelUnlocked(value)) setSelectedModel(value as AIModel)
+                if (isModelUnlocked(value)) setSelectedModel(value as AIModel);
               }}
             >
               <SelectTrigger className="w-48 h-12 bg-white text-black border-2 border-gray-200 rounded-xl">
@@ -1027,31 +942,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </SelectTrigger>
               <SelectContent className="max-h-60 overflow-y-auto bg-white border-2 border-gray-200 text-black rounded-xl">
                 {models.map((model) => {
-                  const unlocked = isModelUnlocked(model.id)
+                  const unlocked = isModelUnlocked(model.id);
                   return (
-                    <SelectItem
-                      key={model.id}
-                      value={model.id}
-                      disabled={!unlocked}
-                      className={!unlocked ? "opacity-50 cursor-not-allowed" : ""}
-                    >
+                    <SelectItem key={model.id} value={model.id} disabled={!unlocked} className={!unlocked ? "opacity-50 cursor-not-allowed" : ""}>
                       <div className="flex flex-col">
                         <div className="font-medium text-gray-900 flex items-center">
                           {model.name}
-                          {!unlocked && (
-                            <span className="ml-2 text-xs text-amber-600 font-semibold">
-                              {model.requiredMembership === "plus"
-                                ? "Unlock Plus"
-                                : model.requiredMembership === "pro"
-                                  ? "Unlock Pro"
-                                  : ""}
-                            </span>
-                          )}
+                          {!unlocked && <span className="ml-2 text-xs text-amber-600 font-semibold">{model.requiredMembership === "plus" ? "Unlock Plus" : model.requiredMembership === "pro" ? "Unlock Pro" : ""}</span>}
                         </div>
                         <div className="text-xs text-gray-500">{model.description}</div>
                       </div>
                     </SelectItem>
-                  )
+                  );
                 })}
               </SelectContent>
             </Select>
@@ -1071,9 +973,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             /* Welcome Screen */
             <div className="flex-1 flex flex-col justify-center items-center space-y-8 overflow-y-auto px-6">
               <div className="flex flex-col items-center">
-                <span className="text-sm font-medium text-gray-500 mb-2">
-                  {translations[currentLanguageIndex].lang}
-                </span>
+                <span className="text-sm font-medium text-gray-500 mb-2">{translations[currentLanguageIndex].lang}</span>
                 <h1 className="text-4xl font-semibold text-gray-900 text-center h-12">
                   {displayText}
                   <span className="inline-block w-1 h-6 bg-gray-900 ml-1 animate-blink"></span>
@@ -1084,20 +984,14 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <form onSubmit={onSubmit}>
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
-                      <Image
-                        src={preview || "/placeholder.svg"}
-                        alt={`preview-${idx}`}
-                        width={100}
-                        height={100}
-                        className="rounded-xl object-cover max-h-32 max-w-32"
-                      />
+                      <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={100} height={100} className="rounded-xl object-cover max-h-32 max-w-32" />
                       <Button
                         type="button"
                         size="sm"
                         className="absolute -top-2 -right-2 text-white bg-red-500 hover:bg-red-600 border-2 border-white rounded-full w-6 h-6 p-0 shadow-lg"
                         onClick={() => {
-                          setImageFiles((files) => files.filter((_, i) => i !== idx))
-                          setImagePreviews((previews) => previews.filter((_, i) => i !== idx))
+                          setImageFiles((files) => files.filter((_, i) => i !== idx));
+                          setImagePreviews((previews) => previews.filter((_, i) => i !== idx));
                         }}
                       >
                         <X className="w-3 h-3" />
@@ -1106,12 +1000,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   ))}
                   <div className="w-full">
                     <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
-                      <EnhancedWaveform
-                        isRecording={isRecording}
-                        onAccept={handleAcceptVoice}
-                        onCancel={handleCancelVoice}
-                        audioStream={audioStream}
-                      />
+                      <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
 
                       {/* Input area */}
                       <div className="relative px-6 py-4">
@@ -1124,9 +1013,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           style={{ outline: "none" }}
                           rows={1}
                           onInput={(e) => {
-                            const target = e.target as HTMLTextAreaElement
-                            target.style.height = "auto"
-                            target.style.height = Math.min(target.scrollHeight, 128) + "px"
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = "auto";
+                            target.style.height = Math.min(target.scrollHeight, 128) + "px";
                           }}
                         />
                       </div>
@@ -1135,19 +1024,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
                         <div className="flex items-center space-x-2">
                           <label className="cursor-pointer">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              className="hidden"
-                              onChange={handleImageChange}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm"
-                              asChild
-                            >
+                            <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm" asChild>
                               <span>
                                 <Images className="w-4 h-4 mr-2" />
                                 Gambar
@@ -1159,14 +1037,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         <div>
                           {input.trim() || imageFiles.length > 0 ? (
                             <Button
-                              type={isLoading ? "button" : "submit"}
+                              type="submit"
                               size="sm"
                               className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
-                                  ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
-                                  : "bg-teal-600 hover:bg-teal-700 text-white"
-                                }`}
+                                ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
+                                : "bg-teal-600 hover:bg-teal-700 text-white"
+                              }`}
                               disabled={isLoading}
-                              onClick={isLoading ? () => setIsLoading(false) : undefined}
                             >
                               {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
                             </Button>
@@ -1174,10 +1051,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             <Button
                               type="button"
                               size="sm"
-                              className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording
-                                  ? "bg-red-500 text-white shadow-lg animate-pulse"
-                                  : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"
-                                }`}
+                              className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording ? "bg-red-500 text-white shadow-lg animate-pulse" : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"}`}
                               onClick={handleMicButton}
                               aria-label={isRecording ? "Stop recording" : "Start recording"}
                             >
@@ -1196,8 +1070,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                     className="flex items-center space-x-1 px-4 py-2 border border-gray-300 transition-all duration-200 ease-in-out cursor-pointer hover:bg-teal-600 hover:text-white hover:border-teal-600 font-semibold rounded-xl"
                     disabled={isLoading}
                     onClick={() => {
-                      setIsLoading(true)
-                      setTimeout(() => setIsLoading(false), 4000)
+                      setIsLoading(true);
+                      setTimeout(() => setIsLoading(false), 4000);
                     }}
                   >
                     <Link href="/pricing">
@@ -1211,43 +1085,22 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           ) : (
             /* Chat Messages Area */
             <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto">
-              <div
-                className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0"
-                style={{ maxHeight: "calc(100vh - 120px)" }}
-              >
+              <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 120px)" }}>
                 <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
-                    const isLastAi =
-                      message.role === "assistant" && idx === messages.length - 1 && (isAiTyping || aiTypingText)
+                    const isLastAi = message.role === "assistant" && idx === messages.length - 1 && (isAiTyping || aiTypingText);
 
-                    const imageUrlMatch = message.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|svg)/i)
-                    const textContent = imageUrlMatch
-                      ? message.content.replace(imageUrlMatch[0], "").trim()
-                      : message.content
+                    const imageUrlMatch = message.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|svg)/i);
+                    const textContent = imageUrlMatch ? message.content.replace(imageUrlMatch[0], "").trim() : message.content;
 
                     return (
-                      <div
-                        key={message.id}
-                        className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}
-                      >
+                      <div key={message.id} className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}>
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-4 py-2.5 mb-0 last:mb-0 min-h-0 h-auto items-start align-middle 
-                            ${message.role === "user"
-                              ? "bg-teal-600 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl"
-                              : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"
-                            }`}
+                            ${message.role === "user" ? "bg-teal-600 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl" : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"}`}
                         >
-                          {imageUrlMatch && (
-                            <img
-                              src={imageUrlMatch[0] || "/placeholder.svg"}
-                              alt="uploaded"
-                              className="mb-2 rounded-xl max-w-full h-auto"
-                              style={{ maxHeight: 220 }}
-                            />
-                          )}
-                          <div className="whitespace-pre-wrap break-words leading-relaxed">
-                            {isLastAi && aiTypingText ? aiTypingText : textContent}
-                          </div>
+                          {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-2 rounded-xl max-w-full h-auto" style={{ maxHeight: 220 }} />}
+                          <div className="whitespace-pre-wrap break-words leading-relaxed">{isLastAi && aiTypingText ? aiTypingText : textContent}</div>
                         </div>
 
                         {message.role === "assistant" && (
@@ -1256,12 +1109,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={handleLike}
-                                      className="hover:bg-gray-50 hover:text-teal-600 transition-colors duration-200"
-                                    >
+                                    <Button size="icon" variant="ghost" onClick={handleLike} className="hover:bg-gray-50 hover:text-teal-600 transition-colors duration-200">
                                       <motion.div
                                         animate={{
                                           scale: liked ? [1, 1.2, 1] : 1,
@@ -1269,10 +1117,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                                         }}
                                         transition={{ duration: 0.3 }}
                                       >
-                                        <ThumbsUp
-                                          className={`w-4 h-4 transition-all duration-200 ${liked ? "fill-teal-500 text-teal-500" : ""
-                                            }`}
-                                        />
+                                        <ThumbsUp className={`w-4 h-4 transition-all duration-200 ${liked ? "fill-teal-500 text-teal-500" : ""}`} />
                                       </motion.div>
                                     </Button>
                                   </motion.div>
@@ -1285,12 +1130,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={handleDislike}
-                                      className="hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
-                                    >
+                                    <Button size="icon" variant="ghost" onClick={handleDislike} className="hover:bg-red-50 hover:text-red-600 transition-colors duration-200">
                                       <motion.div
                                         animate={{
                                           scale: disliked ? [1, 1.2, 1] : 1,
@@ -1298,9 +1138,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                                         }}
                                         transition={{ duration: 0.3 }}
                                       >
-                                        <ThumbsDown
-                                          className={`w-4 h-4 transition-all duration-200 ${disliked ? "fill-red-500 text-red-500" : ""}`}
-                                        />
+                                        <ThumbsDown className={`w-4 h-4 transition-all duration-200 ${disliked ? "fill-red-500 text-red-500" : ""}`} />
                                       </motion.div>
                                     </Button>
                                   </motion.div>
@@ -1313,12 +1151,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={onRegenerate}
-                                      className="hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200"
-                                    >
+                                    <Button size="icon" variant="ghost" onClick={onRegenerate} className="hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200">
                                       <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
                                         <RefreshCw className="w-4 h-4" />
                                       </motion.div>
@@ -1333,15 +1166,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={() => speak(textContent)}
-                                      className="hover:bg-gray-50 hover:text-purple-600 transition-colors duration-200"
-                                    >
-                                      <Volume2
-                                        className={`w-4 h-4 ${isSpeaking ? "text-teal-600 animate-pulse" : ""}`}
-                                      />
+                                    <Button size="icon" variant="ghost" onClick={() => speak(textContent)} className="hover:bg-gray-50 hover:text-purple-600 transition-colors duration-200">
+                                      <Volume2 className={`w-4 h-4 ${isSpeaking ? "text-teal-600 animate-pulse" : ""}`} />
                                     </Button>
                                   </motion.div>
                                 </TooltipTrigger>
@@ -1355,37 +1181,21 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="hover:bg-gray-50 hover:text-orange-600 transition-colors duration-200"
-                                        >
+                                        <Button size="icon" variant="ghost" className="hover:bg-gray-50 hover:text-orange-600 transition-colors duration-200">
                                           <Share2 className="w-4 h-4" />
                                         </Button>
                                       </motion.div>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      className="w-48 p-2 rounded bg-white text-black border border-gray-200"
-                                      align="start"
-                                    >
-                                      <DropdownMenuItem
-                                        onClick={() => handleShare("PDF")}
-                                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2"
-                                      >
+                                    <DropdownMenuContent className="w-48 p-2 rounded bg-white text-black border border-gray-200" align="start">
+                                      <DropdownMenuItem onClick={() => handleShare("PDF")} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2">
                                         <FileText className="w-4 h-4 text-red-500" />
                                         <span>Ekspor ke PDF</span>
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={() => handleShare("Word")}
-                                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2"
-                                      >
+                                      <DropdownMenuItem onClick={() => handleShare("Word")} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2">
                                         <Download className="w-4 h-4 text-blue-500" />
                                         <span>Ekspor ke Word</span>
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={() => handleShare("Gmail")}
-                                        className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2"
-                                      >
+                                      <DropdownMenuItem onClick={() => handleShare("Gmail")} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-md p-2">
                                         <Mail className="w-4 h-4 text-green-500" />
                                         <span>Kirim via Gmail</span>
                                       </DropdownMenuItem>
@@ -1400,12 +1210,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={handleCopy}
-                                      className="hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200"
-                                    >
+                                    <Button size="icon" variant="ghost" onClick={handleCopy} className="hover:bg-gray-50 hover:text-gray-700 transition-colors duration-200">
                                       <CopyIcon className="w-4 h-4" />
                                     </Button>
                                   </motion.div>
@@ -1420,40 +1225,27 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                                   <Dialog open={reportOpen} onOpenChange={setReportOpen}>
                                     <DialogTrigger asChild>
                                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="hover:bg-gray-50 hover:text-red-600 transition-colors duration-200"
-                                        >
+                                        <Button size="icon" variant="ghost" className="hover:bg-gray-50 hover:text-red-600 transition-colors duration-200">
                                           <Flag className="w-4 h-4" />
                                         </Button>
                                       </motion.div>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-md bg-white">
                                       <DialogHeader className="space-y-3">
-                                        <DialogTitle className="text-xl font-semibold text-gray-900">
-                                          Laporkan Chat
-                                        </DialogTitle>
-                                        <p className="text-sm text-gray-600">
-                                          Bantu kami meningkatkan layanan dengan melaporkan konten yang tidak sesuai.
-                                        </p>
+                                        <DialogTitle className="text-xl font-semibold text-gray-900">Laporkan Chat</DialogTitle>
+                                        <p className="text-sm text-gray-600">Bantu kami meningkatkan layanan dengan melaporkan konten yang tidak sesuai.</p>
                                       </DialogHeader>
 
                                       <div className="space-y-4 py-4">
                                         <div className="space-y-3">
-                                          <Label className="text-sm font-medium text-gray-700">
-                                            Pilih alasan laporan:
-                                          </Label>
+                                          <Label className="text-sm font-medium text-gray-700">Pilih alasan laporan:</Label>
                                           <div className="space-y-2">
                                             {reportOptions.map((option) => (
-                                              <label
-                                                key={option}
-                                                className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors"
-                                              >
+                                              <label key={option} className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors">
                                                 <Checkbox
                                                   checked={reportReason === option}
                                                   onCheckedChange={(checked) => {
-                                                    if (checked) setReportReason(option)
+                                                    if (checked) setReportReason(option);
                                                   }}
                                                   className="data-[state=checked]:bg-teal-600 data-[state=checked]:border-teal-600 border border-gray-300 rounded"
                                                 />
@@ -1471,27 +1263,17 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                                             id="details"
                                             placeholder="Berikan detail lebih lanjut tentang masalah ini..."
                                             value={reportDetails}
-                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                                              setReportDetails(e.target.value)
-                                            }
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReportDetails(e.target.value)}
                                             className="min-h-[80px] resize-none rounded bg-white border border-gray-200"
                                           />
                                         </div>
                                       </div>
 
                                       <DialogFooter className="flex gap-2 pt-1">
-                                        <Button
-                                          variant="outline"
-                                          onClick={() => setReportOpen(false)}
-                                          className="flex-1 rounded bg-white text-black border border-gray-200 hover:bg-gray-200 hover:text-black"
-                                        >
+                                        <Button variant="outline" onClick={() => setReportOpen(false)} className="flex-1 rounded bg-white text-black border border-gray-200 hover:bg-gray-200 hover:text-black">
                                           Batal
                                         </Button>
-                                        <Button
-                                          onClick={handleReportSend}
-                                          disabled={!reportReason}
-                                          className="flex-1 rounded bg-red-500 hover:bg-red-600 text-white"
-                                        >
+                                        <Button onClick={handleReportSend} disabled={!reportReason} className="flex-1 rounded bg-red-500 hover:bg-red-600 text-white">
                                           Kirim Laporan
                                         </Button>
                                       </DialogFooter>
@@ -1506,7 +1288,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           </TooltipProvider>
                         )}
                       </div>
-                    )
+                    );
                   })}
 
                   {isLoading && (
@@ -1515,14 +1297,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         <div className="flex items-center space-x-2">
                           <div className="flex space-x-1">
                             <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"></div>
-                            <div
-                              className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.1s" }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 bg-teal-600 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.2s" }}
-                            ></div>
+                            <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+                            <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
                           </div>
                           <span className="text-sm text-gray-500">AI is thinking...</span>
                         </div>
@@ -1535,20 +1311,14 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               {/* Input Form - Fixed at bottom */}
               {imagePreviews.map((preview, idx) => (
                 <div key={idx} className="relative inline-block mr-2 mb-4">
-                  <Image
-                    src={preview || "/placeholder.svg"}
-                    alt={`preview-${idx}`}
-                    width={100}
-                    height={100}
-                    className="rounded-xl object-cover max-h-32 max-w-32"
-                  />
+                  <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={100} height={100} className="rounded-xl object-cover max-h-32 max-w-32" />
                   <Button
                     type="button"
                     size="sm"
                     className="absolute -top-2 -right-2 text-white bg-red-500 hover:bg-red-600 border-2 border-white rounded-full w-6 h-6 p-0 shadow-lg"
                     onClick={() => {
-                      setImageFiles((files) => files.filter((_, i) => i !== idx))
-                      setImagePreviews((previews) => previews.filter((_, i) => i !== idx))
+                      setImageFiles((files) => files.filter((_, i) => i !== idx));
+                      setImagePreviews((previews) => previews.filter((_, i) => i !== idx));
                     }}
                   >
                     <X className="w-3 h-3" />
@@ -1558,12 +1328,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               <div className="w-full">
                 <div className="relative mb-2 bg-white rounded-3xl border border-gray-200 shadow-lg">
                   {/* Enhanced Waveform Overlay */}
-                  <EnhancedWaveform
-                    isRecording={isRecording}
-                    onAccept={handleAcceptVoice}
-                    onCancel={handleCancelVoice}
-                    audioStream={audioStream}
-                  />
+                  <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
 
                   {/* Input area */}
                   <div className="relative px-6 py-4">
@@ -1576,9 +1341,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       style={{ outline: "none" }}
                       rows={1}
                       onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement
-                        target.style.height = "auto"
-                        target.style.height = Math.min(target.scrollHeight, 128) + "px"
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = "auto";
+                        target.style.height = Math.min(target.scrollHeight, 128) + "px";
                       }}
                     />
                   </div>
@@ -1587,19 +1352,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
                     <div className="flex items-center space-x-2">
                       <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={handleImageChange}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm"
-                          asChild
-                        >
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm" asChild>
                           <span>
                             <Images className="w-4 h-4 mr-2" />
                             Gambar
@@ -1611,14 +1365,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                     <div>
                       {input.trim() || imageFiles.length > 0 ? (
                         <Button
-                          type={isLoading ? "button" : "submit"}
+                          type="submit"
                           size="sm"
                           className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
-                              ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
-                              : "bg-teal-600 hover:bg-teal-700 text-white"
-                            }`}
+                            ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
+                            : "bg-teal-600 hover:bg-teal-700 text-white"
+                          }`}
                           disabled={isLoading}
-                          onClick={isLoading ? () => setIsLoading(false) : undefined}
                         >
                           {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
                         </Button>
@@ -1626,10 +1379,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         <Button
                           type="button"
                           size="sm"
-                          className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording
-                              ? "bg-red-500 text-white shadow-lg animate-pulse"
-                              : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"
-                            }`}
+                          className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording ? "bg-red-500 text-white shadow-lg animate-pulse" : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"}`}
                           onClick={handleMicButton}
                           aria-label={isRecording ? "Stop recording" : "Start recording"}
                         >
@@ -1646,19 +1396,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
         {/* Mobile Bottom Toggle Button */}
         <div className="fixed bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
-          <Button
-            onClick={toggleBottomCard}
-            className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${showBottomCard ? "rotate-180" : ""
-              }`}
-          >
+          <Button onClick={toggleBottomCard} className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${showBottomCard ? "rotate-180" : ""}`}>
             <ArrowUp className="w-full h-full" />
           </Button>
         </div>
 
         {/* Overlay when bottom card is open */}
-        {showBottomCard && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden" onClick={toggleBottomCard}></div>
-        )}
+        {showBottomCard && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden" onClick={toggleBottomCard}></div>}
 
         {/* Bottom Action Card - Mobile Only */}
         <motion.div
@@ -1676,15 +1420,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center overflow-hidden">
                 {avatarUrl ? (
-                  <img
-                    src={avatarUrl || "/placeholder.svg"}
-                    alt={user?.nama_lengkap || "User"}
-                    className="w-full h-full object-cover rounded-full"
-                  />
+                  <img src={avatarUrl || "/placeholder.svg"} alt={user?.nama_lengkap || "User"} className="w-full h-full object-cover rounded-full" />
                 ) : (
-                  <span className="text-sm font-medium text-white">
-                    {user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}
-                  </span>
+                  <span className="text-sm font-medium text-white">{user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}</span>
                 )}
               </div>
               <div>
@@ -1698,26 +1436,19 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 variant="outline"
                 className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
                 onClick={() => {
-                  startNewChat()
-                  setShowBottomCard(false)
+                  startNewChat();
+                  setShowBottomCard(false);
                 }}
               >
                 <Plus className="w-5 h-5 text-teal-600" />
                 <span>New Chat</span>
               </Button>
 
-              <Button
-                variant="outline"
-                className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
-              >
+              <Button variant="outline" className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
                 <House className="w-4 h-4" />
                 <span>Home</span>
               </Button>
-              <Button
-                variant="outline"
-                className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl"
-                onClick={handleLogout}
-              >
+              <Button variant="outline" className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl" onClick={handleLogout}>
                 <DoorOpen className="w-4 h-4" />
                 <span>Keluar</span>
               </Button>
@@ -1738,5 +1469,5 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         </div>
       </div>
     </div>
-  )
+  );
 }
