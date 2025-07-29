@@ -603,7 +603,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             },
           ]);
           setAiTypingText("");
-          setIsLoading(false); // <= Pindah ke sini!
+          setIsLoading(false);
         }
       };
       typeChar();
@@ -1079,17 +1079,17 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
                     return (
                       <div key={message.id} className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}>
+                        {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-0 rounded-xl max-w-full h-auto" style={{ maxHeight: 130 }} />}
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
-                            ${message.role === "user" ? "bg-teal-600 text-white rounded-tl-xl rounded-br-xl rounded-bl-xl" : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-xl rounded-br-xl rounded-bl-xl"}`}
+                            ${message.role === "user" ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl" : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"}`}
                           style={{
                             lineHeight: "1.35", // lebih rapat
-                            fontSize: "1rem", // bisa diganti "0.95rem" untuk lebih kecil
+                            fontSize: "1.1rem", // bisa diganti "0.95rem" untuk lebih kecil
                             marginBottom: "4px", // antar bubble lebih rapat
                             minHeight: "unset",
                           }}
                         >
-                          {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-2 rounded-xl max-w-full h-auto" style={{ maxHeight: 220 }} />}
                           <div className="whitespace-pre-wrap break-words leading-relaxed">{isLastAi && aiTypingText ? aiTypingText : textContent}</div>
                         </div>
 
