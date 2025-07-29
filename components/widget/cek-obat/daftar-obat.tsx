@@ -2,18 +2,35 @@
 
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
-  Search, ShoppingCart, Heart, Star, ListFilter, Sparkles, Pill, FlaskConical, Salad, Leaf, Baby, Hospital,
-  Brush, Eye, Ticket, Droplet, TestTube, Brain, Sun, Dumbbell, Scissors, Stethoscope, Ear, Activity, HeartPulse, Smile,
-  ScanBarcode
+  Search,
+  ShoppingCart,
+  Heart,
+  ListFilter,
+  Sparkles,
+  Pill,
+  Droplet,
+  TestTube,
+  Brain,
+  Sun,
+  Dumbbell,
+  Scissors,
+  Stethoscope,
+  Ear,
+  Activity,
+  HeartPulse,
+  Smile,
+  ScanBarcode,
+  Grid3X3,
+  List,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import PilObat from  "@/public/images/obat.png"
+import { Card, CardContent } from "@/components/ui/card"
 import { dataObatLengkap } from "@/lib/data/obat"
-import React from "react"
+import type React from "react"
 import BarcodeScanner from "@/components/widget/cek-obat/barcode-scanner"
 
 export default function DaftarObat() {
@@ -21,31 +38,42 @@ export default function DaftarObat() {
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
   const [showScanner, setShowScanner] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  // Handle scroll for navbar detection
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   // Icon mapping for sidebar
   const iconMap: Record<string, React.ReactNode> = {
-    Darah: <Droplet className="w-5 h-5" />,
-    Hormon: <TestTube className="w-5 h-5" />,
-    Kepala: <Brain className="w-5 h-5" />,
-    Kulit: <Sun className="w-5 h-5" />,
-    "Liver/Hati, Pankreas & Empedu": <HeartPulse className="w-5 h-5" />,
-    "Otot, Sendi & Tulang": <Dumbbell className="w-5 h-5" />,
-    Rambut: <Scissors className="w-5 h-5" />,
-    "Rongga Mulut & Gigi": <Smile className="w-5 h-5" />,
-    "Obat Saluran Pencernaan": <Stethoscope className="w-5 h-5" />,
-    "Saluran Kemih, Ginjal & Prostat": <TestTube className="w-5 h-5" />,
-    "Telinga, Hidung & Tenggorokan": <Ear className="w-5 h-5" />,
-    Tubuh: <Activity className="w-5 h-5" />,
+    Darah: <Droplet className="w-4 h-4 sm:w-5 sm:h-5" />,
+    Hormon: <TestTube className="w-4 h-4 sm:w-5 sm:h-5" />,
+    Kepala: <Brain className="w-4 h-4 sm:w-5 sm:h-5" />,
+    Kulit: <Sun className="w-4 h-4 sm:w-5 sm:h-5" />,
+    "Liver/Hati, Pankreas & Empedu": <HeartPulse className="w-4 h-4 sm:w-5 sm:h-5" />,
+    "Otot, Sendi & Tulang": <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5" />,
+    Rambut: <Scissors className="w-4 h-4 sm:w-5 sm:h-5" />,
+    "Rongga Mulut & Gigi": <Smile className="w-4 h-4 sm:w-5 sm:h-5" />,
+    "Obat Saluran Pencernaan": <Stethoscope className="w-4 h-4 sm:w-5 sm:h-5" />,
+    "Saluran Kemih, Ginjal & Prostat": <TestTube className="w-4 h-4 sm:w-5 sm:h-5" />,
+    "Telinga, Hidung & Tenggorokan": <Ear className="w-4 h-4 sm:w-5 sm:h-5" />,
+    Tubuh: <Activity className="w-4 h-4 sm:w-5 sm:h-5" />,
   }
 
   // Sidebar categories generated from dataObatLengkap
   const sidebarCategories = [
-    { name: "Semua", icon: <Sparkles className="w-5 h-5" />, color: "from-teal-600 to-teal-500" },
+    { name: "Semua", icon: <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />, color: "from-teal-600 to-teal-500" },
     ...dataObatLengkap.map((kategori) => ({
       name: kategori.namaKategori,
-      icon: iconMap[kategori.namaKategori] || <Droplet className="w-5 h-5" />,
-      color: "from-teal-600 to-teal-500"
-    }))
+      icon: iconMap[kategori.namaKategori] || <Droplet className="w-4 h-4 sm:w-5 sm:h-5" />,
+      color: "from-teal-600 to-teal-500",
+    })),
   ]
 
   // Flatten all medicines for 'Semua'
@@ -53,17 +81,14 @@ export default function DaftarObat() {
     kategori.data.map((obat, i) => ({
       ...obat,
       id: `${idx}-${i}`,
-      category: kategori.namaKategori
-    }))
+      category: kategori.namaKategori,
+    })),
   )
 
   // Filtered medicines based on selected category and search
-  const filteredMedicines = (selectedCategory === "Semua"
-    ? allMedicines
-    : allMedicines.filter((obat) => obat.category === selectedCategory)
-  ).filter((obat) =>
-    obat.NamaObat.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredMedicines = (
+    selectedCategory === "Semua" ? allMedicines : allMedicines.filter((obat) => obat.category === selectedCategory)
+  ).filter((obat) => obat.NamaObat.toLowerCase().includes(searchQuery.toLowerCase()))
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -72,7 +97,6 @@ export default function DaftarObat() {
       transition: {
         staggerChildren: 0.08,
         delayChildren: 0.1,
-        // Tidak perlu ease di sini
       },
     },
   }
@@ -84,7 +108,7 @@ export default function DaftarObat() {
       y: 0,
       scale: 1,
       transition: {
-        duration: 0.6
+        duration: 0.6,
       },
     },
   }
@@ -96,137 +120,177 @@ export default function DaftarObat() {
       y: 0,
       rotateX: 0,
       transition: {
-        duration: 0.7
-      },
-    },
-  }
-
-  const floatingVariants = {
-    animate: {
-      y: [-10, 10, -10],
-      rotate: [-2, 2, -2],
-      transition: {
-        duration: 6,
-        repeat: Number.POSITIVE_INFINITY,
-        ease: "easeInOut",
+        duration: 0.7,
       },
     },
   }
 
   const handleBarcodeDetected = (barcode: string) => {
-    setSearchQuery(barcode); // atau lakukan pencarian otomatis
-  };
+    setSearchQuery(barcode)
+  }
 
   return (
     <>
-      <div className="min-h-screen bg-white mt-0 relative overflow-hidden">
-        {/* Top Categories */}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/20 relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 sm:w-96 sm:h-96 bg-teal-100/20 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 sm:w-80 sm:h-80 bg-blue-100/15 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
+
+        {/* Header Section */}
         <motion.div
-          className="bg-white/80 backdrop-blur-md border-b border-gray-200"
+          className="bg-white/80 backdrop-blur-md border-b border-gray-200 relative z-10"
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="text-center mb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-teal-100 px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm mb-6"
+              >
+                <Pill className="w-4 h-4 text-teal-600" />
+                <span className="text-teal-700 font-medium text-sm">Daftar Obat Lengkap</span>
+              </motion.div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+                Temukan{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">Obat</span>{" "}
+                yang Anda Butuhkan
+              </h1>
+              <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto">
+                Jelajahi koleksi obat lengkap dengan informasi detail dan harga terbaik
+              </p>
+            </div>
+
+            {/* Search Bar */}
             <motion.div
-              className="flex items-center justify-between overflow-x-auto gap-8 pb-2"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+              className="max-w-4xl mx-auto"
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
             >
-              {/* Removed topCategories as it's no longer needed */}
+              <div className="bg-white/80 backdrop-blur-md rounded-2xl border border-gray-200 shadow-lg p-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+                  <div className="flex-1 flex items-center gap-3 px-4 py-2 sm:py-0">
+                    <Search className="w-5 h-5 text-teal-600 flex-shrink-0" />
+                    <Input
+                      type="text"
+                      placeholder="Cari obat yang Anda butuhkan..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="flex-1 border-none bg-transparent text-gray-700 placeholder:text-gray-400 text-sm sm:text-base focus:outline-none focus:ring-0"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowScanner(true)}
+                      className="border-teal-200 text-teal-700 hover:bg-teal-50 px-3 py-2 rounded-xl"
+                    >
+                      <ScanBarcode className="w-4 h-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">Scan</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                      className="border-gray-200 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-xl"
+                    >
+                      {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </motion.div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar */}
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            {/* Sticky Sidebar */}
             <motion.div
-              className="lg:w-80 bg-white max-h-[900px] backdrop-blur-md rounded-3xl p-6 border border-gray-200"
-              initial={{ opacity: 0, x: -50, rotateY: -15 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
+              className="lg:w-80 lg:sticky lg:top-24 lg:self-start"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <ListFilter className="w-6 h-6 text-teal-600" />
-                <h3 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Kategori Obat
-                </h3>
-              </div>
-              <div className="space-y-3">
-                {sidebarCategories.map((category, index) => (
-                  <motion.button
-                    key={category.name}
-                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-2xl text-left transition-all duration-300 relative overflow-hidden ${selectedCategory === category.name
-                      ? `bg-gradient-to-r ${category.color} text-white shadow-lg transform scale-105`
-                      : "text-gray-700 hover:bg-white/60 border border-gray-200"
-                      }`}
-                    onClick={() => setSelectedCategory(category.name)}
-                    variants={itemVariants}
-                    initial="hidden"
-                    animate="visible"
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <motion.div
-                      className="text-lg"
-                      transition={{ duration: 0.5 }}
+              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-md overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl flex items-center justify-center">
+                      <ListFilter className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">Kategori Obat</h3>
+                  </div>
+
+                  {/* Mobile Category Dropdown */}
+                  <div className="lg:hidden mb-4">
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
-                      {category.icon}
-                    </motion.div>
-                    <span className="text-sm font-medium leading-tight">{category.name}</span>
-                    {selectedCategory === category.name && (
-                      <motion.div
-                        className="absolute inset-0 bg-white/10 rounded-2xl"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    )}
-                  </motion.button>
-                ))}
-              </div>
+                      {sidebarCategories.map((category) => (
+                        <option key={category.name} value={category.name}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Desktop Category List */}
+                  <div className="hidden lg:block space-y-2 max-h-96 overflow-y-auto">
+                    {sidebarCategories.map((category, index) => (
+                      <motion.button
+                        key={category.name}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-300 relative overflow-hidden ${
+                          selectedCategory === category.name
+                            ? `bg-gradient-to-r ${category.color} text-white shadow-lg`
+                            : "text-gray-700 hover:bg-gray-50 border border-gray-100"
+                        }`}
+                        onClick={() => setSelectedCategory(category.name)}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        transition={{ delay: index * 0.05 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex-shrink-0">{category.icon}</div>
+                        <span className="text-sm font-medium leading-tight line-clamp-2">{category.name}</span>
+                        {selectedCategory === category.name && (
+                          <motion.div
+                            className="absolute inset-0 bg-white/10 rounded-xl"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                          />
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  {/* Category Stats */}
+                  <div className="mt-6 p-4 bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl border border-teal-100">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-teal-600 mb-1">{filteredMedicines.length}</div>
+                      <div className="text-sm text-gray-600">Obat Tersedia</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
 
-            {/* Main Content */}
+            {/* Products Grid */}
             <div className="flex-1">
-              {/* Search Bar */}
               <motion.div
-                className="bg-white/70 backdrop-blur-md rounded-3xl border border-gray-200 mb-8"
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-              >
-                <div className="relative">
-                  <motion.div
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-teal-500"
-                  >
-                    <Search className="w-6 h-6 text-teal-600" />
-                  </motion.div>
-                  <Input
-                    type="text"
-                    placeholder="Cari obat yang Anda butuhkan..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-14 pr-6 py-8 w-full text-black border-none bg-white/50 rounded-3xl text-lg placeholder:text-gray-400 transition-all duration-300 focus:outline-none focus:ring-0 focus:border-0 focus:shadow-none outline-none"
-                  />
-
-                  <motion.div
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2"
-                  >
-                    <ScanBarcode
-                      className="w-10 h-10 text-teal-600 cursor-pointer hover:bg-gray-100 p-2 rounded-xl"
-                      onClick={() => setShowScanner(true)}
-                    />
-                  </motion.div>
-                </div>
-              </motion.div>
-
-              {/* Products Grid - Fixed 3 columns */}
-              <motion.div
-                className="grid lg:grid-cols-3 grid-cols-1 gap-2"
+                className={`grid gap-4 sm:gap-6 ${
+                  viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"
+                }`}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -234,156 +298,163 @@ export default function DaftarObat() {
                 {filteredMedicines.map((medicine, index) => (
                   <motion.div
                     key={`${medicine.category}-${medicine.NamaObat}`}
-                    className="bg-white/70 backdrop-blur-md rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden group border border-white/20 relative"
                     variants={cardVariants}
                     transition={{ delay: index * 0.1 }}
                     onHoverStart={() => setHoveredCard(medicine.id)}
                     onHoverEnd={() => setHoveredCard(null)}
-                    style={{
-                      transformStyle: "preserve-3d",
-                    }}
                   >
-                    {/* Floating Background Gradient */}
-                    <motion.div
-                      className="absolute inset-0 text-black rounded-3xl"
-                      animate={{
-                        opacity: hoveredCard === medicine.id ? 1 : 0,
-                        scale: hoveredCard === medicine.id ? 1.05 : 1,
-                      }}
-                      transition={{ duration: 0.3 }}
-                    />
+                    <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-500 overflow-hidden group bg-white/80 backdrop-blur-sm">
+                      <CardContent className="p-0">
+                        {viewMode === "grid" ? (
+                          <>
+                            {/* Grid View */}
+                            <div className="relative aspect-square h-48 sm:h-52 w-full overflow-hidden">
+                              <Image
+                                src={medicine.GambarObat || "/placeholder.svg?height=200&width=200"}
+                                alt={medicine.NamaObat}
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                    {/* Product Image */}
-                    <div className="relative aspect-square h-52 w-full overflow-hidden rounded-t-3xl">
-                      <motion.div
-                        className="absolute inset-0 text-black"
-                        animate={{
-                          opacity: hoveredCard === medicine.id ? 0.8 : 0.3,
-                        }}
-                      />
-                      <Image
-                        src={medicine.GambarObat || "/placeholder.svg"}
-                        alt={medicine.NamaObat}
-                        fill
-                        className="object-cover transition-transform duration-700 "
-                      />
+                              {/* Wishlist Button */}
+                              <motion.div
+                                className="absolute top-3 right-3"
+                                initial={{ opacity: 0, scale: 0 }}
+                                animate={{
+                                  opacity: hoveredCard === medicine.id ? 1 : 0,
+                                  scale: hoveredCard === medicine.id ? 1 : 0,
+                                }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="bg-white/90 backdrop-blur-sm hover:bg-white rounded-full p-2 shadow-lg"
+                                >
+                                  <Heart className="w-4 h-4 text-red-500" />
+                                </Button>
+                              </motion.div>
 
-                      {/* Floating Badges */}
-                      {/* No isPopular or isNew in new data, so remove badges */}
+                              {/* Discount Badge */}
+                              {medicine.Diskon && (
+                                <div className="absolute top-3 left-3">
+                                  <Badge className="bg-red-500 text-white border-0 font-medium px-2 py-1 text-xs">
+                                    Diskon
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
 
-                      {/* Availability Indicator */}
-                      {/* Remove availability indicator as it's not in new data */}
-                      {/* Wishlist Button */}
-                      <motion.div
-                        className="absolute top-4 left-4"
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{
-                          opacity: hoveredCard === medicine.id ? 1 : 0,
-                          scale: hoveredCard === medicine.id ? 1 : 0,
-                        }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="bg-white/80 backdrop-blur-sm hover:bg-white rounded-full p-2 shadow-lg"
-                        >
-                          <Heart className="w-5 h-4 text-red-500" />
-                        </Button>
-                      </motion.div>
-                    </div>
+                            <div className="p-4 sm:p-6">
+                              <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-3 line-clamp-2 leading-tight">
+                                {medicine.NamaObat}
+                              </h4>
 
-                    {/* Product Info */}
-                    <div className="p-4 relative">
-                      {/* {medicine.discount && (
-                        <motion.div
-                          initial={{ scale: 0, rotate: -90 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{ delay: 0.3, type: "spring" }}
-                        >
-                          <Badge className="bg-gradient-to-r from-red-400 to-pink-500 text-white shadow-lg">
-                            -{medicine.discount}
-                          </Badge>
-                        </motion.div>
-                      )} */}
-                      <motion.h4
-                        className="font-bold text-gray-800 text-base mb-3 line-clamp-2 leading-tight"
-                      >
-                        {medicine.NamaObat}
-                      </motion.h4>
+                              <div className="flex items-center gap-2 mb-4">
+                                <span className="font-bold text-lg sm:text-xl text-teal-600">
+                                  Rp{" "}
+                                  {medicine.Diskon && medicine.HargaDiskon > 0
+                                    ? medicine.HargaDiskon.toLocaleString()
+                                    : medicine.HargaAsli.toLocaleString()}
+                                </span>
+                                {medicine.Diskon && medicine.HargaDiskon > 0 && (
+                                  <span className="text-sm text-gray-400 line-through">
+                                    Rp {medicine.HargaAsli.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
 
-                      {/* Rating */}
-                      {/* <motion.div className="flex items-center gap-2 mb-3">
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < Math.floor(medicine.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm font-medium text-gray-700">{medicine.rating}</span>
-                        <span className="text-xs text-gray-400">({medicine.reviews} ulasan)</span>
-                      </motion.div> */}
-
-                      {/* Price */}
-                      <motion.div className="flex items-center gap-2 mb-4">
-                        <span className="font-bold text-xl text-black bg-clip-text">
-                          Rp {medicine.Diskon && medicine.HargaDiskon > 0 ? medicine.HargaDiskon.toLocaleString() : medicine.HargaAsli.toLocaleString()}
-                        </span>
-                        {medicine.Diskon && (
-                          <span className="text-sm text-gray-400 line-through">Rp {medicine.HargaAsli.toLocaleString()}</span>
+                              <Button className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base py-2 sm:py-3">
+                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                Tambah ke Keranjang
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* List View */}
+                            <div className="flex items-center gap-4 p-4 sm:p-6">
+                              <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 overflow-hidden rounded-xl">
+                                <Image
+                                  src={medicine.GambarObat || "/placeholder.svg?height=100&width=100"}
+                                  alt={medicine.NamaObat}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-2 line-clamp-1">
+                                  {medicine.NamaObat}
+                                </h4>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span className="font-bold text-lg text-teal-600">
+                                    Rp{" "}
+                                    {medicine.Diskon && medicine.HargaDiskon > 0
+                                      ? medicine.HargaDiskon.toLocaleString()
+                                      : medicine.HargaAsli.toLocaleString()}
+                                  </span>
+                                  {medicine.Diskon && medicine.HargaDiskon > 0 && (
+                                    <span className="text-sm text-gray-400 line-through">
+                                      Rp {medicine.HargaAsli.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="bg-gray-50 hover:bg-gray-100 rounded-full p-2"
+                                >
+                                  <Heart className="w-4 h-4 text-red-500" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl px-4 py-2"
+                                >
+                                  <ShoppingCart className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </>
                         )}
-                      </motion.div>
-
-                      {/* Pharmacy */}
-                      {/* <motion.div
-                        className="text-sm text-gray-600 mb-4 bg-gradient-to-r from-gray-50 to-teal-50 px-3 py-2 rounded-xl border border-gray-100"
-                      >
-                        📍 {medicine.pharmacy}
-                      </motion.div> */}
-
-                      {/* Add to Cart Button */}
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button className="w-full bg-teal-600 text-white hover:bg-teal-700 hover:text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                          {/* <ShoppingCart className="w-5 h-5 mr-2" /> */}
-                          Tambah ke Keranjang
-                        </Button>
-                      </motion.div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   </motion.div>
                 ))}
               </motion.div>
 
-              {/* Load More Button */}
-              {/* <motion.div
-                className="text-center mt-12"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2 }}
-              >
-                <motion.div whileTap={{ scale: 0.95 }}>
+              {/* No Results */}
+              {filteredMedicines.length === 0 && (
+                <motion.div
+                  className="text-center py-16"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Search className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Obat Tidak Ditemukan</h3>
+                  <p className="text-gray-600 mb-6">Coba ubah kata kunci pencarian atau pilih kategori lain</p>
                   <Button
-                    size="lg"
-                    className="px-12 py-4 bg-gradient-to-r from-teal-500 to-purple-600 hover:from-teal-600 hover:to-purple-700 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300"
+                    onClick={() => {
+                      setSearchQuery("")
+                      setSelectedCategory("Semua")
+                    }}
+                    className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white rounded-xl px-6 py-3"
                   >
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Muat Lebih Banyak Obat
+                    Reset Pencarian
                   </Button>
                 </motion.div>
-              </motion.div> */}
+              )}
             </div>
           </div>
         </div>
       </div>
-      {showScanner && (
-        <BarcodeScanner
-          onDetected={handleBarcodeDetected}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
+
+      {showScanner && <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setShowScanner(false)} />}
     </>
   )
 }
