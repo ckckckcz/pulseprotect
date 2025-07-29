@@ -1066,8 +1066,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             </div>
           ) : (
             /* Chat Messages Area */
-            <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto">
-              <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 120px)" }}>
+            <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto relative" style={{ minHeight: 0 }}> 
+              <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 180px)" }}>
                 <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
                     const isLastAi = message.role === "assistant" && idx === messages.length - 1 && (isAiTyping || aiTypingText);
@@ -1307,7 +1307,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   </Button>
                 </div>
               ))}
-              <div className="w-full">
+              <div className="w-full sticky z-10 pb-1 bottom-0">
                 <form onSubmit={onSubmit}>
                   <div className="relative mb-2 bg-white rounded-3xl border border-gray-200 shadow-lg">
                     {/* Enhanced Waveform Overlay */}
