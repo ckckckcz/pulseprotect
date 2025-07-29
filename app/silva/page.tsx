@@ -325,14 +325,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   });
 
   // Helper: Save chatRooms to localStorage
-  const saveChatRooms = (rooms: any) => {
-    localStorage.setItem("chatRooms", JSON.stringify(rooms));
-  };
-
-  // Helper: Save current chatID
-  const saveCurrentChatID = (id: string) => {
-    localStorage.setItem("currentChatID", id);
-  };
+  // (localStorage logic dihapus, chat statis)
 
   // Check authentication on component mount
   useEffect(() => {
@@ -559,25 +552,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   // Custom submit handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isLoading) return; // Jangan submit jika masih loading
-
-    // Pastikan input atau gambar ada
-    if (!input.trim() && imageFiles.length === 0) return;
-
-    setIsLoading(true); // Set loading lebih awal
-
-    // Kosongkan input & gambar langsung agar UI responsif
-    setInput("");
-    setImageFiles([]);
-    setImagePreviews([]);
-
-    // Proses upload gambar
     const imageUrls: string[] = [];
     for (const file of imageFiles) {
       const url = await uploadImage(file);
       if (url) imageUrls.push(url);
     }
-
     let content = imageUrls.map((url) => url).join("\n");
     if (input) content += (content ? "\n" : "") + input;
 
@@ -586,8 +565,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       role: "user" as const,
       content,
     };
-
     setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setImageFiles([]);
+    setImagePreviews([]);
+    setIsLoading(true);
     setIsAiTyping(false);
     setAiTypingText("");
 
@@ -631,13 +613,16 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsLoading(false); // Selalu reset loading
+      setIsLoading(false);
     }
   };
 
-  // Gunakan satu handler untuk form
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    handleSubmit(e);
+    e.preventDefault();
+    if (input.trim()) {
+      setShowSuggestions(false);
+      handleSubmit(e);
+    }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -847,7 +832,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         setChatRooms((prev) => {
                           const updated = { ...prev };
                           delete updated[id];
-                          saveChatRooms(updated);
                           // If deleted current, switch to another
                           if (chatID === id) {
                             const keys = Object.keys(updated);
@@ -1037,13 +1021,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         <div>
                           {input.trim() || imageFiles.length > 0 ? (
                             <Button
-                              type="submit"
+                              type={isLoading ? "button" : "submit"}
                               size="sm"
-                              className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
-                                ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
-                                : "bg-teal-600 hover:bg-teal-700 text-white"
-                              }`}
+                              className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading ? "bg-gray-300 hover:bg-gray-600 text-gray-700" : "bg-teal-600 hover:bg-teal-700 text-white"}`}
                               disabled={isLoading}
+                              onClick={isLoading ? () => setIsLoading(false) : undefined}
                             >
                               {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
                             </Button>
@@ -1326,69 +1308,69 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 </div>
               ))}
               <div className="w-full">
-                <div className="relative mb-2 bg-white rounded-3xl border border-gray-200 shadow-lg">
-                  {/* Enhanced Waveform Overlay */}
-                  <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
+                <form onSubmit={onSubmit}>
+                  <div className="relative mb-2 bg-white rounded-3xl border border-gray-200 shadow-lg">
+                    {/* Enhanced Waveform Overlay */}
+                    <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
 
-                  {/* Input area */}
-                  <div className="relative px-6 py-4">
-                    <Textarea
-                      value={input}
-                      onChange={handleInputChange}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Minta Silva Menjawab..."
-                      className="w-full bg-transparent border-none text-black placeholder-gray-500 lg:text-lg text-md resize-none min-h-[38px] overflow-y-auto"
-                      style={{ outline: "none" }}
-                      rows={1}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = "auto";
-                        target.style.height = Math.min(target.scrollHeight, 128) + "px";
-                      }}
-                    />
-                  </div>
-
-                  {/* Action buttons row */}
-                  <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
-                    <div className="flex items-center space-x-2">
-                      <label className="cursor-pointer">
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
-                        <Button variant="ghost" size="sm" className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm" asChild>
-                          <span>
-                            <Images className="w-4 h-4 mr-2" />
-                            Gambar
-                          </span>
-                        </Button>
-                      </label>
+                    {/* Input area */}
+                    <div className="relative px-6 py-4">
+                      <Textarea
+                        value={input}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Minta Silva Menjawab..."
+                        className="w-full bg-transparent border-none text-black placeholder-gray-500 lg:text-lg text-md resize-none min-h-[38px] overflow-y-auto"
+                        style={{ outline: "none" }}
+                        rows={1}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = "auto";
+                          target.style.height = Math.min(target.scrollHeight, 128) + "px";
+                        }}
+                      />
                     </div>
 
-                    <div>
-                      {input.trim() || imageFiles.length > 0 ? (
-                        <Button
-                          type="submit"
-                          size="sm"
-                          className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading
-                            ? "bg-gray-300 hover:bg-gray-600 text-gray-700"
-                            : "bg-teal-600 hover:bg-teal-700 text-white"
-                          }`}
-                          disabled={isLoading}
-                        >
-                          {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
-                        </Button>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording ? "bg-red-500 text-white shadow-lg animate-pulse" : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"}`}
-                          onClick={handleMicButton}
-                          aria-label={isRecording ? "Stop recording" : "Start recording"}
-                        >
-                          <Mic className="w-5 h-5" />
-                        </Button>
-                      )}
+                    {/* Action buttons row */}
+                    <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
+                      <div className="flex items-center space-x-2">
+                        <label className="cursor-pointer">
+                          <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
+                          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm" asChild>
+                            <span>
+                              <Images className="w-4 h-4 mr-2" />
+                              Gambar
+                            </span>
+                          </Button>
+                        </label>
+                      </div>
+
+                      <div>
+                        {input.trim() || imageFiles.length > 0 ? (
+                          <Button
+                            type={isLoading ? "button" : "submit"}
+                            size="sm"
+                            className={`rounded-full w-10 h-10 p-0 transition-all ${isLoading ? "bg-gray-300 hover:bg-gray-600 text-gray-700" : "bg-teal-600 hover:bg-teal-700 text-white"}`}
+                            disabled={isLoading}
+                            onClick={isLoading ? () => setIsLoading(false) : undefined}
+                          >
+                            {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className={`rounded-full w-10 h-10 p-0 transition-all ${isRecording ? "bg-red-500 text-white shadow-lg animate-pulse" : "bg-gray-200 hover:bg-gray-300 hover:text-gray-600 text-gray-400"}`}
+                            onClick={handleMicButton}
+                            aria-label={isRecording ? "Stop recording" : "Start recording"}
+                          >
+                            <Mic className="w-5 h-5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
           )}
