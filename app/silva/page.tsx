@@ -1066,7 +1066,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             </div>
           ) : (
             /* Chat Messages Area */
-            <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto relative" style={{ minHeight: 0 }}> 
+            <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto relative" style={{ minHeight: 0 }}>
               <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 180px)" }}>
                 <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
@@ -1078,8 +1078,14 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                     return (
                       <div key={message.id} className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}>
                         <div
-                          className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-4 py-2.5 mb-0 last:mb-0 min-h-0 h-auto items-start align-middle 
-                            ${message.role === "user" ? "bg-teal-600 text-white rounded-tl-2xl rounded-br-2xl rounded-bl-2xl" : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl"}`}
+                          className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
+                            ${message.role === "user" ? "bg-teal-600 text-white rounded-tl-xl rounded-br-xl rounded-bl-xl" : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tr-xl rounded-br-xl rounded-bl-xl"}`}
+                          style={{
+                            lineHeight: "1.35", // lebih rapat
+                            fontSize: "1rem", // bisa diganti "0.95rem" untuk lebih kecil
+                            marginBottom: "4px", // antar bubble lebih rapat
+                            minHeight: "unset",
+                          }}
                         >
                           {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-2 rounded-xl max-w-full h-auto" style={{ maxHeight: 220 }} />}
                           <div className="whitespace-pre-wrap break-words leading-relaxed">{isLastAi && aiTypingText ? aiTypingText : textContent}</div>
