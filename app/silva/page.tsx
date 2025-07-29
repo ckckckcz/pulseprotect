@@ -579,8 +579,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         content: msg.content,
       }));
 
+      // Fetch response from AI
       const response = await aiService.generateCompletion(selectedModel, messageHistory);
 
+      // MULAI TYPING ANIM LANGSUNG!
       setIsAiTyping(true);
       let i = 0;
       const text = response.text;
@@ -601,6 +603,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             },
           ]);
           setAiTypingText("");
+          setIsLoading(false); // <= Pindah ke sini!
         }
       };
       typeChar();
@@ -612,7 +615,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         content: "Sorry, I encountered an error while processing your request. Please try again.",
       };
       setMessages((prev) => [...prev, errorMessage]);
-    } finally {
       setIsLoading(false);
     }
   };
