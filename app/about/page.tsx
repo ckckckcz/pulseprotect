@@ -1,5 +1,4 @@
 import CreativitySection from "@/components/widget/about/creativity-section"
-import StrategyDesignSection from "@/components/widget/about/strategy-design-section"
 import IdeaToImpactSection from "@/components/widget/about/idea-to-impact-section"
 import Mechaminds from "@/components/widget/mechaminds"
 // import ExperienceSection from "@/components/widgetabout/experience-section"
@@ -14,7 +13,6 @@ export default function About() {
         <div className="min-h-screen mt-28 overflow-x-hidden bg-white">
             <CreativitySection />
             <Mechaminds />
-            <StrategyDesignSection />
             <IdeaToImpactSection />
             {/* <ExperienceSection /> */}
             <TeamSection />
