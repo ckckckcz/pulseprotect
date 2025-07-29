@@ -194,7 +194,7 @@ export default function DaftarObat() {
             <div className="flex-1">
               {/* Search Bar */}
               <motion.div
-                className="bg-white/70 backdrop-blur-md rounded-3xl shadow-xl px-2 py-4 mb-8 border border-white/20"
+                className="bg-white/70 backdrop-blur-md rounded-3xl border border-gray-200 mb-8"
                 initial={{ opacity: 0, y: 30, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
@@ -210,7 +210,7 @@ export default function DaftarObat() {
                     placeholder="Cari obat yang Anda butuhkan..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-14 pr-6 py-4 w-full text-black border-none bg-white/50 rounded-2xl text-lg placeholder:text-gray-400 transition-all duration-300 focus:outline-none focus:ring-0 focus:border-0 focus:shadow-none outline-none"
+                    className="pl-14 pr-6 py-8 w-full text-black border-none bg-white/50 rounded-3xl text-lg placeholder:text-gray-400 transition-all duration-300 focus:outline-none focus:ring-0 focus:border-0 focus:shadow-none outline-none"
                   />
 
                   <motion.div
@@ -358,7 +358,7 @@ export default function DaftarObat() {
               </motion.div>
 
               {/* Load More Button */}
-              <motion.div
+              {/* <motion.div
                 className="text-center mt-12"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -373,7 +373,7 @@ export default function DaftarObat() {
                     Muat Lebih Banyak Obat
                   </Button>
                 </motion.div>
-              </motion.div>
+              </motion.div> */}
             </div>
           </div>
         </div>
