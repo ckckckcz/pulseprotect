@@ -121,7 +121,7 @@ export default function DaftarObat() {
     <>
       {/* Navbar is assumed to be fixed/sticky at the top */}
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/20 relative overflow-hidden">
+      <div className="min-h-screen bg-white relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 sm:w-96 sm:h-96 bg-teal-100/20 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 sm:w-80 sm:h-80 bg-blue-100/15 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
@@ -160,13 +160,13 @@ export default function DaftarObat() {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setShowScanner(true)} className="border-teal-200 text-teal-700 hover:bg-teal-50 px-3 py-2 rounded-xl">
+                    <Button variant="outline" size="sm" onClick={() => setShowScanner(true)} className="border-gray-200 bg-white text-teal-700 hover:bg-teal-600   px-3 py-2 rounded-xl">
                       <ScanBarcode className="w-4 h-4 mr-1 sm:mr-2" />
                       <span className="hidden sm:inline">Scan</span>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")} className="border-gray-200 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-xl">
+                    {/* <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")} className="border-gray-200 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-xl">
                       {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </div>
@@ -182,7 +182,6 @@ export default function DaftarObat() {
               <Card
                 className="border-0 shadow-none bg-transparent"
                 style={{
-                  maxHeight: "calc(100vh - 8rem)",
                   overflowY: "auto",
                 }}
               >
@@ -206,7 +205,7 @@ export default function DaftarObat() {
                   </div>
 
                   {/* Desktop Category List */}
-                  <div className="hidden lg:block space-y-2 max-h-[calc(100vh-15rem)] overflow-y-auto pr-2">
+                  <div className="hidden lg:block space-y-2 overflow-y-auto pr-2">
                     {sidebarCategories.map((category, index) => (
                       <motion.button
                         key={category.name}
