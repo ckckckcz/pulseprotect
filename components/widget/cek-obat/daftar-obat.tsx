@@ -1,8 +1,41 @@
 "use client";
 
 import Image from "next/image";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { Search, ShoppingCart, Heart, ListFilter, Sparkles, Pill, Droplet, TestTube, Brain, Sun, Dumbbell, Scissors, Stethoscope, Ear, Activity, HeartPulse, Smile, ScanBarcode, Grid3X3, List } from "lucide-react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import {
+  CheckCircle,
+  XCircle,
+  X,
+  Package,
+  Search,
+  ShoppingCart,
+  Heart,
+  ListFilter,
+  Sparkles,
+  Pill,
+  Droplet,
+  TestTube,
+  Brain,
+  Sun,
+  Dumbbell,
+  Scissors,
+  Stethoscope,
+  Ear,
+  Activity,
+  HeartPulse,
+  Smile,
+  ScanBarcode,
+  Grid3X3,
+  List,
+  Barcode,
+  FileText,
+  Scale,
+  Utensils,
+  Package2,
+  Archive,
+  Clock,
+  Ruler,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +47,19 @@ import Navbar from "@/components/widget/navbar";
 import { useEffect, useState } from "react";
 import Footer from "@/components/widget/footer";
 
+interface ProductData {
+  nama: string;
+  status: string;
+  barcode: string;
+  nomorRegistrasi: string;
+  gramasi: string;
+  anjuranSajian: string;
+  sajianPerKantong: string;
+  jumlahKarton: string;
+  masaSimpan: string;
+  dimensiKarton: string;
+}
+
 export default function DaftarObat() {
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,11 +67,32 @@ export default function DaftarObat() {
   const [showScanner, setShowScanner] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sidebarTop, setSidebarTop] = useState(0);
+  const [modalData, setModalData] = useState<any>(null);
 
   // Framer Motion hooks for sticky sidebar animation
   const { scrollY } = useScroll();
   const sidebarShadow = useTransform(scrollY, [0, 50], ["shadow-lg", "shadow-xl ring-1 ring-gray-100"]);
   const sidebarBg = useTransform(scrollY, [0, 50], ["rgba(255, 255, 255, 0.8)", "rgba(255, 255, 255, 0.95)"]);
+
+  const productFields = [
+    { label: "Nama Produk", value: modalData?.nama, icon: Package },
+    { label: "Barcode", value: modalData?.barcode, icon: Barcode },
+    { label: "No. Registrasi", value: modalData?.nomorRegistrasi, icon: FileText },
+    { label: "Gramasi", value: modalData?.gramasi, icon: Scale },
+    { label: "Anjuran Sajian", value: modalData?.anjuranSajian, icon: Utensils },
+    { label: "Sajian per Kantong", value: modalData?.sajianPerKantong, icon: Package2 },
+    { label: "Jumlah Karton", value: modalData?.jumlahKarton, icon: Archive },
+    { label: "Masa Simpan", value: modalData?.masaSimpan, icon: Clock },
+    { label: "Dimensi Karton", value: modalData?.dimensiKarton, icon: Ruler },
+  ];
+
+  const getStatusIcon = (status: string) => {
+    return status.toLowerCase().includes("terdaftar") || status.toLowerCase().includes("approved") ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />;
+  };
+
+  const getStatusColor = (status: string) => {
+    return status.toLowerCase().includes("terdaftar") || status.toLowerCase().includes("approved") ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200";
+  };
 
   // Icon mapping for sidebar
   const iconMap: Record<string, React.ReactNode> = {
@@ -100,8 +167,37 @@ export default function DaftarObat() {
     },
   };
 
-  const handleBarcodeDetected = (barcode: string) => {
-    setSearchQuery(barcode);
+  const handleBarcodeDetected = async (qrText: string) => {
+    console.log("📦 Data terdeteksi:", qrText);
+
+    const trimmed = qrText.trim();
+
+    const matchRegistrasi = trimmed.match(/MD\s?\d{15}/i);
+    const nomorRegistrasi = matchRegistrasi ? matchRegistrasi[0].replace(/\s+/g, "") : null;
+
+    const matchBarcode = !nomorRegistrasi && trimmed.match(/^\d{8,14}$/);
+    const barcode = matchBarcode ? trimmed : null;
+
+    if (!nomorRegistrasi && !barcode) {
+      alert("❌ QR/Barcode tidak valid.");
+      return;
+    }
+
+    const apiUrl = nomorRegistrasi ? `/api/cek-obat-by-registrasi?nomor=${nomorRegistrasi}` : `/api/cek-obat?barcode=${barcode}`;
+
+    try {
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+
+      if (data.found) {
+        setModalData(data); // tampilkan modal
+      } else {
+        alert(`❌ Produk tidak ditemukan.\nCek manual di: ${data.saranPengecekan}`);
+      }
+    } catch (err) {
+      console.error("❌ Error:", err);
+      alert("Terjadi kesalahan saat memeriksa kode.");
+    }
   };
 
   useEffect(() => {
@@ -345,6 +441,96 @@ export default function DaftarObat() {
       </div>
 
       {showScanner && <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setShowScanner(false)} />}
+      <AnimatePresence>
+        {modalData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setModalData(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+                duration: 0.3,
+              }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg relative overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-6 py-4 text-white relative">
+                <motion.button whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }} onClick={() => setModalData(null)} className="absolute top-4 right-4 p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+                  <X className="w-5 h-5" />
+                </motion.button>
+
+                <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Package className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Detail Produk</h3>
+                    <p className="text-teal-100 text-sm">Informasi lengkap produk</p>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 max-h-96 overflow-y-auto">
+                {/* Status Badge */}
+                <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }} className="mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-medium mb-4 ${getStatusColor(modalData.status)}`}>
+                    {getStatusIcon(modalData.status)}
+                    Status: {modalData.status}
+                  </div>
+                </motion.div>
+
+                {/* Product Fields */}
+                <div className="space-y-4">
+                  {productFields.map((field, index) => {
+                    const IconComponent = field.icon;
+                    return (
+                      <motion.div
+                        key={field.label}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.1 + index * 0.05 }}
+                        className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="p-2 bg-teal-100 rounded-lg shrink-0">
+                          <IconComponent className="w-4 h-4 text-teal-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 mb-1">{field.label}</p>
+                          <p className="text-sm text-gray-600 break-words">{field.value || "-"}</p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setModalData(null)}
+                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Tutup
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <Footer />
     </>
   );

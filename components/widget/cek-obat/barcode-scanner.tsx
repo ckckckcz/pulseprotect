@@ -1,80 +1,72 @@
-"use client"
+"use client";
 
-import { useEffect, useRef, useState } from "react"
-import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser"
-import { NotFoundException } from "@zxing/library"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { X, Camera, AlertCircle, Loader2 } from "lucide-react"
+import { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser";
+import { NotFoundException } from "@zxing/library";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X, Camera, AlertCircle, Loader2 } from "lucide-react";
 
-export default function BarcodeScanner({
-  onDetected,
-  onClose,
-}: {
-  onDetected: (result: string) => void
-  onClose: () => void
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const scannerControlsRef = useRef<IScannerControls | null>(null)
+export default function BarcodeScanner({ onDetected, onClose }: { onDetected: (result: string) => void; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const scannerControlsRef = useRef<IScannerControls | null>(null);
 
   useEffect(() => {
-    const codeReader = new BrowserMultiFormatReader()
-    let active = true
+    const codeReader = new BrowserMultiFormatReader();
+    let active = true;
 
     const startScanning = async () => {
       try {
-        const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices()
+        const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
 
         if (videoInputDevices.length === 0) {
-          setError("No camera found on this device")
-          setIsLoading(false)
-          return
+          setError("No camera found on this device");
+          setIsLoading(false);
+          return;
         }
 
         // Prefer back camera on mobile devices
-        const preferredDevice =
-          videoInputDevices.find(
-            (device) => device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear"),
-          ) || videoInputDevices[0]
+        const preferredDevice = videoInputDevices.find((device) => device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear")) || videoInputDevices[0];
 
         await codeReader.decodeFromVideoDevice(preferredDevice.deviceId, videoRef.current!, (result, err, controls) => {
           if (controls && !scannerControlsRef.current) {
-            scannerControlsRef.current = controls
-            setIsLoading(false)
+            scannerControlsRef.current = controls;
+            setIsLoading(false);
           }
 
           if (result && active) {
-            onDetected(result.getText())
-            active = false
-            scannerControlsRef.current?.stop()
+            console.log("✅ Barcode ditemukan:", result.getText());
+            onDetected(result.getText());
+            active = false;
+            scannerControlsRef.current?.stop();
           }
 
           if (err && !(err instanceof NotFoundException)) {
-            console.warn("Scanning error:", err)
+            console.warn("Scanning error:", err);
           }
-        })
+        });
       } catch (err) {
-        console.error("Camera access error:", err)
-        setError("Camera access denied. Please allow camera permissions and try again.")
-        setIsLoading(false)
+        console.error("Camera access error:", err);
+        setError("Camera access denied. Please allow camera permissions and try again.");
+        setIsLoading(false);
       }
-    }
+    };
 
-    startScanning()
+    startScanning();
 
     return () => {
-      scannerControlsRef.current?.stop()
-      active = false
-    }
-  }, [onDetected])
+      scannerControlsRef.current?.stop();
+      active = false;
+    };
+  }, [onDetected]);
 
   const handleClose = () => {
-    scannerControlsRef.current?.stop()
-    onClose()
-  }
+    scannerControlsRef.current?.stop();
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -86,12 +78,7 @@ export default function BarcodeScanner({
               <Camera className="w-5 h-5" />
               <h2 className="text-lg font-semibold">Barcode Scanner</h2>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="h-8 w-8 p-0 text-black hover:bg-gray-200 hover:text-black rounded-xl"
-            >
+            <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0 text-black hover:bg-gray-200 hover:text-black rounded-xl">
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -132,10 +119,7 @@ export default function BarcodeScanner({
 
                   {/* Secondary scanning line with different timing */}
                   <div className="absolute inset-x-12 top-12 bottom-12 overflow-hidden">
-                    <div
-                      className="scanning-line absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 via-blue-400 to-transparent opacity-60 rounded-full"
-                      style={{ animationDelay: "1s" }}
-                    ></div>
+                    <div className="scanning-line absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 via-blue-400 to-transparent opacity-60 rounded-full" style={{ animationDelay: "1s" }}></div>
                   </div>
 
                   {/* Pulsing center crosshair */}
@@ -166,9 +150,7 @@ export default function BarcodeScanner({
 
           {/* Instructions */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-teal-600 dark:text-slate-400 mb-4">
-              Position the barcode or QR code within the frame to scan
-            </p>
+            <p className="text-sm text-teal-600 dark:text-slate-400 mb-4">Position the barcode or QR code within the frame to scan</p>
 
             <Button onClick={handleClose} variant="outline" className="w-full bg-transparent border border-gray-200 text-black rounded-xl hover:bg-teal-600 hover:text-white cursor-pointer">
               Cancel
@@ -177,5 +159,5 @@ export default function BarcodeScanner({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
