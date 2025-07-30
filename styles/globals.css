@@ -112,3 +112,8 @@ body {
 .silvaFocus{
   display: none;
 }
+
+.follow-scroll {
+  position: relative;
+  transition: top 0.6s linear;
+}

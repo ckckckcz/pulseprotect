@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useState } from "react";
 import { Search, ShoppingCart, Heart, ListFilter, Sparkles, Pill, Droplet, TestTube, Brain, Sun, Dumbbell, Scissors, Stethoscope, Ear, Activity, HeartPulse, Smile, ScanBarcode, Grid3X3, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { dataObatLengkap } from "@/lib/data/obat";
 import type React from "react";
 import BarcodeScanner from "@/components/widget/cek-obat/barcode-scanner";
-import Navbar from "@/components/widget/navbar"; // Assuming Navbar is fixed/sticky
+import Navbar from "@/components/widget/navbar";
+import { useEffect, useState } from "react";
 import Footer from "@/components/widget/footer";
 
 export default function DaftarObat() {
@@ -20,6 +20,7 @@ export default function DaftarObat() {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sidebarTop, setSidebarTop] = useState(0);
 
   // Framer Motion hooks for sticky sidebar animation
   const { scrollY } = useScroll();
@@ -103,6 +104,19 @@ export default function DaftarObat() {
     setSearchQuery(barcode);
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const maxTop = 120; // posisi maksimal saat di-scroll
+      const minTop = 0; // posisi awal
+      const newTop = Math.min(maxTop, Math.max(minTop, scrollY));
+      setSidebarTop(newTop);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <>
       {/* Navbar is assumed to be fixed/sticky at the top */}
@@ -165,7 +179,13 @@ export default function DaftarObat() {
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 relative">
             {/* Sticky Sidebar */}
             <motion.div className="hidden lg:block w-80 sticky top-24 self-start z-20 rounded-3xl border border-gray-200" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
-              <Card className="border-0 shadow-none bg-transparent">
+              <Card
+                className="border-0 shadow-none bg-transparent"
+                style={{
+                  maxHeight: "calc(100vh - 8rem)",
+                  overflowY: "auto",
+                }}
+              >
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl flex items-center justify-center">
