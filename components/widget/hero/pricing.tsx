@@ -204,7 +204,6 @@ export default function PricingPage() {
           });
           setActiveMembershipType(packageType);
           setIsLoading(null);
-          // Simpan payment ke database, misal recordPayment(...)
         },
         onPending: (result) => {
           toast({
