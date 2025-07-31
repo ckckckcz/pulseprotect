@@ -38,6 +38,7 @@ import {
   Flag,
   Images,
   Check,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -1084,9 +1085,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
                             ${message.role === "user" ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl" : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"}`}
                           style={{
-                            lineHeight: "1.35", // lebih rapat
-                            fontSize: "1.1rem", // bisa diganti "0.95rem" untuk lebih kecil
-                            marginBottom: "4px", // antar bubble lebih rapat
+                            lineHeight: "1.35",
+                            fontSize: "1.1rem",
+                            marginBottom: "4px",
                             minHeight: "unset",
                           }}
                         >
@@ -1435,10 +1436,14 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </Button>
 
               <Button variant="outline" className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
+                <Clock className="w-4 h-4" />
+                <span>Riwayat Chat</span>
+              </Button>
+              <Button variant="outline" className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
                 <House className="w-4 h-4" />
                 <span>Home</span>
               </Button>
-              <Button variant="outline" className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl" onClick={handleLogout}>
+              <Button variant="outline" className="w-full flex items-center justify-start gap-2 h-14 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl" onClick={handleLogout}>
                 <DoorOpen className="w-4 h-4" />
                 <span>Keluar</span>
               </Button>
