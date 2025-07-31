@@ -877,7 +877,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
             >
               {avatarUrl ? (
-                <img src={avatarUrl || "/placeholder.svg"} alt={user?.nama_lengkap || "User"} className="w-full h-full object-cover rounded-full" />
+                <img src={avatarUrl || "/placeholder.svg"} alt={user?.nama_lengkap || "User"} className="w-full h-full object-cover rounded-full border-2 border-teal-500" />
               ) : (
                 <span className="text-sm font-medium text-white">{user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}</span>
               )}
@@ -1386,7 +1386,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         </div>
 
         {/* Mobile Bottom Toggle Button */}
-        <div className="fixed bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
+        <div className="absolute bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
           <Button onClick={toggleBottomCard} className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${showBottomCard ? "rotate-180" : ""}`}>
             <ArrowUp className="w-full h-full" />
           </Button>
@@ -1411,7 +1411,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <div className="flex items-center space-x-3 mb-4">
               <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center overflow-hidden">
                 {avatarUrl ? (
-                  <img src={avatarUrl || "/placeholder.svg"} alt={user?.nama_lengkap || "User"} className="w-full h-full object-cover rounded-full" />
+                  <img src={avatarUrl || "/placeholder.svg"} alt={user?.nama_lengkap || "User"} className="w-full border-2 border-teal-500 h-full object-cover rounded-full" />
                 ) : (
                   <span className="text-sm font-medium text-white">{user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}</span>
                 )}
@@ -1439,10 +1439,12 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <Clock className="w-4 h-4" />
                 <span>Riwayat Chat</span>
               </Button>
-              <Button variant="outline" className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
-                <House className="w-4 h-4" />
-                <span>Home</span>
-              </Button>
+              <Link href="/" className="flex items-center justify-start h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
+                <Button className="gap-3">
+                  <House className="w-4 h-4" />
+                  <span>Home</span>
+                </Button>
+              </Link>
               <Button variant="outline" className="w-full flex items-center justify-start gap-2 h-14 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl" onClick={handleLogout}>
                 <DoorOpen className="w-4 h-4" />
                 <span>Keluar</span>

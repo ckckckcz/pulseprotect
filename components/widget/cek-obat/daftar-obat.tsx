@@ -258,7 +258,7 @@ export default function DaftarObat() {
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => setShowScanner(true)} className="border-gray-200 bg-white text-teal-700 hover:bg-teal-600   px-3 py-2 rounded-xl">
                       <ScanBarcode className="w-4 h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Scan</span>
+                      <span className=" sm:inline">Scan</span>
                     </Button>
                     {/* <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")} className="border-gray-200 text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-xl">
                       {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
