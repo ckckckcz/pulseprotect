@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import Celebration from "@/components/widget/celebration-confetti";
+import { createAIPackagePayment, handleMidtransPayment, PackageDetails } from "@/services/payment";
 
 type PlanType = "free" | "plus" | "pro";
 
@@ -94,7 +95,6 @@ export default function PricingPage() {
     setIsApplyingPromo(true);
     setPromoError("");
 
-    // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const foundPromo = promoCodes.find((promo) => promo.code.toLowerCase() === promoCode.toLowerCase().trim());
@@ -167,7 +167,72 @@ export default function PricingPage() {
   // Mock payment handler for demo
   const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
     e.preventDefault();
-    console.log(`Payment for ${packageType} plan`);
+    setIsLoading(packageType);
+
+    try {
+      const userId = currentUser?.id || "demo-user-id";
+      const period: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
+
+      const packageDetails: PackageDetails = {
+        packageId: `pkg_${packageType}`,
+        packageName: pricingPlans.find((p) => p.type === packageType)?.name || "",
+        price: isYearly ? pricingPlans.find((p) => p.type === packageType)?.yearlyPrice || 0 : pricingPlans.find((p) => p.type === packageType)?.monthlyPrice || 0,
+        period,
+      };
+
+      // Promo logic
+      if (appliedPromo) {
+        packageDetails.price = getDiscountedPrice(packageDetails.price);
+      }
+
+      // Simulasi info customer (HARUS diganti dengan info user beneran)
+      const customerInfo = {
+        firstName: currentUser?.firstName || "Demo",
+        email: currentUser?.email || "demo@email.com",
+        phone: currentUser?.phone || "",
+      };
+
+      // Buat payment token via API
+      const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
+
+      // Tampilkan Midtrans Snap
+      await handleMidtransPayment(paymentResult.token, {
+        onSuccess: (result) => {
+          toast({
+            title: "Pembayaran Berhasil",
+            description: "Terima kasih, pembayaran Anda berhasil.",
+          });
+          setActiveMembershipType(packageType);
+          setIsLoading(null);
+          // Simpan payment ke database, misal recordPayment(...)
+        },
+        onPending: (result) => {
+          toast({
+            title: "Pembayaran Pending",
+            description: "Pembayaran Anda masih diproses.",
+          });
+          setIsLoading(null);
+        },
+        onError: (result) => {
+          toast({
+            title: "Pembayaran Gagal",
+            description: "Terjadi kesalahan saat pembayaran.",
+            variant: "destructive",
+          });
+          setIsLoading(null);
+        },
+        onClose: () => {
+          setIsLoading(null);
+        },
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: String(error),
+        variant: "destructive",
+      });
+      setIsLoading(null);
+    }
   };
 
   return (
