@@ -34,14 +34,14 @@ export default function TeamSection() {
           >
             <h1 className="text-black font-bold text-5xl leading-tight text-left">
               <span>
-                The <span className="italic text-teal-700">Minds</span>
+                The <span className="text-6xl text-teal-700 cardo italic">Minds</span>
               </span>
               <span>
                 <div className="bg-white border-l-2 lg:block hidden border-gray-200 border-dashed ml-1 w-full h-full"></div>
               </span>
               <br className="block lg:hidden" />
               <span>
-                Behind The <span className="italic text-teal-700">Magic</span>
+                Behind The <span className="text-6xl text-teal-700 cardo italic">Magic</span>
               </span>
             </h1>
           </motion.div>

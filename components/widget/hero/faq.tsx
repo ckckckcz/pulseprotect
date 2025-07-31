@@ -93,7 +93,7 @@ export default function FAQ() {
               className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6"
             >
               Questions? We're Glad you{" "}
-              <span className="text-teal-600">asked.</span>
+              <span className="text-teal-600 cardo">asked.</span>
             </motion.h2>
 
             <motion.p

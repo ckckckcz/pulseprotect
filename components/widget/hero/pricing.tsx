@@ -250,7 +250,7 @@ export default function PricingPage() {
           {/* Header Section */}
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.7 }} className="lg:text-center text-start lg:mb-16 mb-6">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Paket Model <span className="text-teal-600">AI Pintar</span>
+              Paket Model <span className="text-teal-600 cardo italic">AI Pintar</span>
               <br />
               <span className="text-gray-900">untuk Setiap Kebutuhan</span>
             </h1>

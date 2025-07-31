@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Grandstander:ital,wght@0,100..900;1,100..900&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -63,4 +64,13 @@
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+.cardo {
+  font-family: "Grandstander", cursive;
+}
+
+.follow-scroll {
+  position: relative;
+  transition: top 0.6s linear;
 }

@@ -182,12 +182,12 @@ export default function CekObat() {
               <div className="space-y-4 sm:space-y-6">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
                   Obat yang{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700 italic">
+                  <span className="text-transparent cardo italic bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">
                     tepat
                   </span>
                   <br />
                   Hidup yang{" "}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700 italic">
+                  <span className="text-transparent cardo italic bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">
                     sehat
                   </span>
                 </h1>
@@ -301,7 +301,7 @@ export default function CekObat() {
         >
           <div className="text-center mb-8 sm:mb-12 px-4 sm:px-6">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Dokter <span className="text-teal-600">Terpercaya</span>
+              Dokter Terpecaya
             </h2>
             <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
               Konsultasi dengan dokter spesialis berpengalaman dan terpercaya di seluruh Indonesia

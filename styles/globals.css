@@ -117,3 +117,7 @@ body {
   position: relative;
   transition: top 0.6s linear;
 }
+
+.cardo {
+  font-family: 'Cardo', serif;
+}

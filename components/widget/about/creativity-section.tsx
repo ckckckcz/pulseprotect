@@ -50,7 +50,7 @@ export default function CreativitySection() {
           >
             <div>
               <h1 className="font-bold text-5xl lg:text-7xl leading-tight mb-8">
-                <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">Creativity</span>
+                <span className="italic text-teal-600 cardo">Creativity</span>
                 <br />
                 <span className="text-gray-900">with purpose</span>
               </h1>
@@ -101,7 +101,7 @@ export default function CreativitySection() {
               </p>
 
               <p className="text-lg lg:text-xl font-medium leading-relaxed text-gray-700">
-                Our strength lies not only in technical skills, but also in our <span className="text-teal-600 font-semibold">collaborative mindset</span>. We actively participate in national and international IT competitions, where we test
+                Our strength lies not only in technical skills, but also in our <span className="text-teal-600 cardo italic">collaborative mindset</span>. We actively participate in national and international IT competitions, where we test
                 our ideas, challenge ourselves, and build solutions that matter. Each challenge fuels our growth and sharpens our expertise.
               </p>
             </div>

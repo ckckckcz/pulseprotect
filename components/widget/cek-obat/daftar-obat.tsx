@@ -236,7 +236,7 @@ export default function DaftarObat() {
                 <span className="text-teal-700 font-medium text-sm">Daftar Obat Lengkap</span>
               </motion.div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-                Temukan <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">Obat</span> yang Anda Butuhkan
+                Temukan <span className="cardo italic text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">Obat</span> yang Anda Butuhkan
               </h1>
               <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto">Jelajahi koleksi obat lengkap dengan informasi detail dan harga terbaik</p>
             </div>

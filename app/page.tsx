@@ -486,9 +486,9 @@ export default function HomePage() {
             className="text-4xl lg:text-6xl font-bold lg:mb-8 mb-2 leading-tight"
           >
             Lindungi Masyarakat dari{" "}
-            <span className="text-teal-600 relative">
+            <span className="text-teal-600 relative cardo italic">
               JAWIR
-              <div className="absolute -bottom-0 left-0 right-0 h-1 bg-teal-100 rounded-full -z-10"></div>
+              {/* <div className="absolute -bottom-0 left-0 right-0 h-1 bg-teal-100 rounded-full -z-10"></div> */}
             </span>
             <br />
             dengan Deteksi Pintar

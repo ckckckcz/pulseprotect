@@ -85,14 +85,14 @@ export default function IdeaToImpactSection() {
               transition={{ duration: 0.7, delay: 0.1 }}
               className="hidden lg:flex items-center justify-center gap-8 mb-6"
             >
-              <h1 className="text-gray-900 font-bold text-5xl lg:text-6xl whitespace-nowrap">From idea</h1>
+              <h1 className="text-transparent cardo italic bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700 font-bold text-5xl lg:text-6xl whitespace-nowrap">From idea</h1>
               <div className="relative flex-1 max-w-xs">
                 <div className="border-t-2 border-gray-200 w-full"></div>
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4">
                   <ArrowRight className="w-6 h-6 text-teal-600" />
                 </div>
               </div>
-              <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700 font-bold text-5xl lg:text-6xl whitespace-nowrap">
+              <h1 className="text-transparent cardo italic bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700 font-bold text-5xl lg:text-6xl whitespace-nowrap">
                 to impact
               </h1>
             </motion.div>
