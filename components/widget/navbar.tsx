@@ -217,7 +217,7 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
                     <div className="relative">
-                      <Avatar className={`h-10 w-10 cursor-pointer hover:ring-2 hover:ring-teal-500 transition-all ${getAvatarClass()}`}>
+                      <Avatar className={`h-10 w-10 cursor-pointer hover:ring-2 hover:ring-teal-500 border-teal-500 border-2 transition-all ${getAvatarClass()}`}>
                         <AvatarImage src={avatarUrl} alt={user.nama_lengkap || "User"} />
                         <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
                       </Avatar>
@@ -374,14 +374,14 @@ export default function Navbar() {
                     <div className="flex flex-col space-y-4">
                       <div className="flex items-center space-x-3 p-2">
                         <div className="relative">
-                          <Avatar className={`h-10 w-10 ${getAvatarClass()}`}>
+                          <Avatar className={`h-10 w-10 border-2 border-teal-500 ${getAvatarClass()}`}>
                             <AvatarImage src={avatarUrl} alt={user.nama_lengkap} />
                             <AvatarFallback className="bg-teal-100 text-teal-800">{getInitials(user.nama_lengkap)}</AvatarFallback>
                           </Avatar>
                           {getMembershipBadge()}
                         </div>
                         <div>
-                          <p className="font-medium">{user.nama_lengkap}</p>
+                          <p className="font-medium text-black">{user.nama_lengkap}</p>
                           <p className="text-sm text-gray-500">{user.email}</p>
                           {user.account_membership && user.account_membership !== "free" && (
                             <p className="text-xs font-medium mt-1 flex items-center">
