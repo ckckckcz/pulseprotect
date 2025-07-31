@@ -245,7 +245,7 @@ export default function PricingPage() {
         )}
       </AnimatePresence>
 
-      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }} className="min-h-screen bg-white py-16 px-4 mt-16">
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }} className="min-h-screen bg-white lg:py-16 py-8 px-4 mt-16">
         <div className="w-full mx-auto">
           {/* Header Section */}
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.7 }} className="lg:text-center text-start lg:mb-16 mb-6">
@@ -277,7 +277,7 @@ export default function PricingPage() {
                 transition: { staggerChildren: 0.15 },
               },
             }}
-            className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+            className="grid md:grid-cols-3 gap-8 container mx-auto px-0 md:px-6"
           >
             {/* Free Plan */}
             <motion.div
@@ -415,7 +415,7 @@ export default function PricingPage() {
           </motion.div>
         </div>
       </motion.div>
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-6xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.6, delay: 0.2 }} className="container mx-auto px-4 md:px-6">
         {appliedPromo ? (
           <AnimatePresence>
             <motion.div
