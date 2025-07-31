@@ -19,6 +19,7 @@ import {
   PhoneOff,
   Pill,
   FileCheck,
+  Phone,
 } from "lucide-react"
 
 interface ConsultationRoomProps {
@@ -113,16 +114,16 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
           <h2 className="text-2xl font-bold">Ruang Konsultasi</h2>
           <p className="text-muted-foreground">Konsultasi aktif dengan pasien</p>
         </div>
-        <Badge variant="default" className="bg-green-600">
+        <Badge variant="default" className="bg-teal-600 px-4 py-2 text-white">
           Sedang Berlangsung
         </Badge>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 ">
         {/* Chat Area */}
         <div className="lg:col-span-2">
-          <Card className="h-[600px] flex flex-col">
-            <CardHeader className="border-b">
+          <Card className="h-[600px] flex flex-col bg-white rounded-xl border border-gray-200 text-black shadow-md">
+            <CardHeader className="border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar>
@@ -135,18 +136,14 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant={isMicOn ? "default" : "destructive"} size="sm" onClick={() => setIsMicOn(!isMicOn)}>
-                    {isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-                  </Button>
                   <Button
-                    variant={isVideoOn ? "default" : "destructive"}
-                    size="sm"
+                    variant="default" className="rounded bg-gray-200 hover:bg-teal-600 hover:text-white"
                     onClick={() => setIsVideoOn(!isVideoOn)}
                   >
                     {isVideoOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
                   </Button>
-                  <Button variant="destructive" size="sm">
-                    <PhoneOff className="h-4 w-4" />
+                  <Button variant="default" className="rounded bg-gray-200 hover:bg-teal-600 hover:text-white">
+                    <Phone className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -158,7 +155,7 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
                   <div key={msg.id} className={`flex ${msg.sender === "doctor" ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-[70%] rounded-lg p-3 ${
-                        msg.sender === "doctor" ? "bg-primary text-primary-foreground" : "bg-muted"
+                        msg.sender === "doctor" ? "bg-teal-600 text-white rounded-tr rounded-br-xl rounded-bl-xl rounded-tl-xl" : "bg-gray-200 rounded-tr-xl rounded-br-xl rounded-bl-xl rounded-tl"
                       }`}
                     >
                       {msg.type === "text" ? (
@@ -181,9 +178,9 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
               </div>
             </CardContent>
 
-            <div className="border-t p-4">
+            <div className="border-t border-gray-200 p-4">
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button className="rounded bg-gray-200">
                   <Paperclip className="h-4 w-4" />
                 </Button>
                 <Input
@@ -191,9 +188,9 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-                  className="flex-1"
+                  className="flex-1 bg-gray-200 border border-gray-200 rounded"
                 />
-                <Button onClick={sendMessage}>
+                <Button className="bg-gray-200 rounded hover:bg-teal-700 hover:text-white" onClick={sendMessage}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
@@ -202,8 +199,8 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
         </div>
 
         {/* Patient Info & Actions */}
-        <div className="space-y-4">
-          <Card>
+        <div className="flex flex-col justify-between lg:space-y-0 space-y-4">
+          <Card className="bg-white rounded-xl border border-gray-200 text-black shadow-md">
             <CardHeader>
               <CardTitle>Informasi Pasien</CardTitle>
             </CardHeader>
@@ -220,43 +217,39 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
                 <label className="text-sm font-medium">Waktu Konsultasi</label>
                 <p className="text-sm text-muted-foreground">{activeConsultation.time}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium">Tipe Konsultasi</label>
-                <p className="text-sm text-muted-foreground">{activeConsultation.type}</p>
-              </div>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Catatan Konsultasi</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea placeholder="Tulis catatan diagnosis dan tindakan..." className="min-h-[100px]" />
             </CardContent>
-          </Card>
+          </Card> */}
 
-          <Card>
+          <Card className="bg-white rounded-xl border border-gray-200 text-black shadow-md">
             <CardHeader>
               <CardTitle>Aksi Cepat</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full justify-start gap-2">
+            <CardContent className="space-y-2 ">
+              <Button className="w-full justify-start gap-2 bg-white rounded-xl border border-gray-200 text-black hover:bg-gray-200">
                 <Pill className="h-4 w-4" />
                 Kirim Resep
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
+              <Button variant="outline" className="w-full justify-start gap-2 bg-white hover:text-black rounded-xl border border-gray-200 text-black hover:bg-gray-200">
                 <FileCheck className="h-4 w-4" />
                 Buat Rujukan
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
+              <Button variant="outline" className="w-full justify-start gap-2 bg-white hover:text-black rounded-xl border border-gray-200 text-black hover:bg-gray-200">
                 <FileText className="h-4 w-4" />
                 Cetak Surat Keterangan
               </Button>
             </CardContent>
           </Card>
 
-          <Button className="w-full" variant="destructive">
+          <Button className="w-full bg-red-600 rounded-xl text-white hover:bg-red-700">
             Selesai Konsultasi
           </Button>
         </div>
