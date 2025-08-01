@@ -81,11 +81,13 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
   const router = useRouter()
   const [doctorName, setDoctorName] = useState("Dr.")
   const [specialty, setSpecialty] = useState("Dokter")
+  const [email, setEmail] = useState("Dokter")
   const [avatarUrl, setAvatarUrl] = useState("/placeholder.svg?height=32&width=32")
   
   useEffect(() => {
     if (user) {
       setDoctorName(user.nama_lengkap || "Dr.")
+      setEmail(user.email)
       
       // Get specialty from profile if available
       if (user.profile && user.profile.spesialis) {
@@ -158,7 +160,7 @@ export function AppSidebar({ activeSection, setActiveSection }: AppSidebarProps)
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{doctorName}</p>
-            <p className="text-xs text-muted-foreground truncate">{specialty}</p>
+            <p className="text-xs text-muted-foreground truncate">{email}</p>
           </div>
           <TooltipProvider>
             <Tooltip>

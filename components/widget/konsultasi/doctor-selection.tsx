@@ -1,43 +1,43 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Star, MessageSquare, Video, Phone, Stethoscope, Loader2 } from "lucide-react"
-import { supabase } from "@/lib/supabaseClient"
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Search, Star, MessageSquare, Video, Phone, Stethoscope, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface Doctor {
-  id: number
-  name: string
-  specialty: string
-  experience: string
-  rating: number
-  reviews: number
+  id: number;
+  name: string;
+  specialty: string;
+  experience: string;
+  rating: number;
+  reviews: number;
   price: {
-    chat: number
-    video: number
-    phone: number
-  }
-  availability: string
-  nextAvailable: string
-  image: string
-  languages: string[]
-  education: string | string[]
+    chat: number;
+    video: number;
+    phone: number;
+  };
+  availability: string;
+  nextAvailable: string;
+  image: string;
+  languages: string[];
+  education: string | string[];
 }
 
 interface DoctorSelectionProps {
-  onSelectDoctor: (doctor: any) => void
+  onSelectDoctor: (doctor: any) => void;
 }
 
 export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedSpecialty, setSelectedSpecialty] = useState("all")
-  const [doctors, setDoctors] = useState<Doctor[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSpecialty, setSelectedSpecialty] = useState("all");
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Local fallback data
   const localDoctors = [
@@ -113,105 +113,107 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
       languages: ["Indonesia"],
       education: "Universitas Padjadjaran",
     },
-  ]
+  ];
 
   // Function to transform database doctor data to component format
   const transformDoctorData = (dbDoctors: any[]): Doctor[] => {
-    return dbDoctors.map(doctor => {
+    return dbDoctors.map((doctor) => {
       // Get user data from the joined user table
-      const userData = doctor.user || {}
-      
+      const userData = doctor.user || {};
+
       // Parse JSON fields if they're strings
-      let languages = doctor.bahasa || ["Indonesia"]
-      if (typeof languages === 'string') {
+      let languages = doctor.bahasa || ["Indonesia"];
+      if (typeof languages === "string") {
         try {
-          languages = JSON.parse(languages)
+          languages = JSON.parse(languages);
         } catch (e) {
-          languages = ["Indonesia"]
+          languages = ["Indonesia"];
         }
       }
-      
-      let education = doctor.pendidikan || "Tidak Tersedia"
-      let educationString = ""
-      
-      if (typeof education === 'string') {
+
+      let education = doctor.pendidikan || "Tidak Tersedia";
+      let educationString = "";
+
+      if (typeof education === "string") {
         try {
-          const parsedEducation = JSON.parse(education)
-          if (parsedEducation.institusi) {
-            educationString = `${parsedEducation.institusi} - ${parsedEducation.gelar || ''} ${parsedEducation.tahun || ''}`
+          const parsed = JSON.parse(education);
+          if (Array.isArray(parsed)) {
+            educationString = parsed.map((edu) => `${edu.gelar || ""} - ${edu.institusi || ""} ${edu.tahun || ""}`).join(", ");
+          } else if (parsed.institusi) {
+            educationString = `${parsed.gelar || ""} - ${parsed.institusi || ""} ${parsed.tahun || ""}`;
           } else {
-            educationString = education
+            educationString = education;
           }
         } catch (e) {
-          educationString = education
+          educationString = education;
         }
+      } else if (Array.isArray(education)) {
+        educationString = education.map((edu) => `${edu.gelar || ""} - ${edu.institusi || ""} ${edu.tahun || ""}`).join(", ");
       } else if (education.institusi) {
-        educationString = `${education.institusi} - ${education.gelar || ''} ${education.tahun || ''}`
+        educationString = `${education.gelar || ""} - ${education.institusi || ""} ${education.tahun || ""}`;
       }
-      
+
       return {
         id: doctor.id,
-        name: userData.nama_lengkap || doctor.email.split('@')[0],
+        name: userData.nama_lengkap || doctor.email.split("@")[0],
         specialty: doctor.spesialis || "Dokter Umum",
         experience: doctor.pengalaman || "Tidak Tersedia",
         rating: doctor.rating || 0,
         reviews: doctor.jumlah_ulasan || 0,
         price: {
           chat: doctor.harga_konsultasi || 50000,
-          video: (doctor.harga_konsultasi ? doctor.harga_konsultasi * 1.5 : 75000),
-          phone: (doctor.harga_konsultasi ? doctor.harga_konsultasi * 1.2 : 60000),
+          video: doctor.harga_konsultasi ? doctor.harga_konsultasi * 1.5 : 75000,
+          phone: doctor.harga_konsultasi ? doctor.harga_konsultasi * 1.2 : 60000,
         },
         availability: "Online", // Default to online for now
         nextAvailable: "Tersedia sekarang",
         image: userData.foto_profile || "/placeholder.svg?height=80&width=80",
         languages: languages,
         education: educationString,
-      }
-    })
-  }
+      };
+    });
+  };
 
   // Fetch doctors data from Supabase
   useEffect(() => {
     const fetchDoctors = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
         // Join the dokter table with the user table to get user details
-        const { data, error } = await supabase
-          .from('dokter')
-          .select(`
+        const { data, error } = await supabase.from("dokter").select(`
             *,
             user:email (
               nama_lengkap,
               foto_profile
             )
-          `)
-        
+          `);
+
         if (error) {
-          throw error
+          throw error;
         }
-        
+
         if (data && data.length > 0) {
           // Transform database data to component format
-          const transformedData = transformDoctorData(data)
-          setDoctors(transformedData)
-          console.log('Fetched doctors:', transformedData)
+          const transformedData = transformDoctorData(data);
+          setDoctors(transformedData);
+          console.log("Fetched doctors:", transformedData);
         } else {
           // If no doctors in database, use local fallback data
-          setDoctors(localDoctors)
-          console.log('No doctors found in database, using fallback data')
+          setDoctors(localDoctors);
+          console.log("No doctors found in database, using fallback data");
         }
       } catch (error: any) {
-        console.error('Error fetching doctors:', error)
-        setError('Failed to fetch doctors data')
+        console.error("Error fetching doctors:", error);
+        setError("Failed to fetch doctors data");
         // Use fallback data on error
-        setDoctors(localDoctors)
+        setDoctors(localDoctors);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchDoctors()
-  }, [])
+    fetchDoctors();
+  }, []);
 
   const specialties = [
     { id: "all", name: "Semua Spesialis" },
@@ -219,34 +221,32 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
     { id: "anak", name: "Dokter Anak" },
     { id: "jantung", name: "Dokter Jantung" },
     { id: "kulit", name: "Dokter Kulit" },
-  ]
+  ];
 
   const filteredDoctors = doctors.filter((doctor) => {
-    const matchesSearch =
-      doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesSpecialty = selectedSpecialty === "all" || doctor.specialty.toLowerCase().includes(selectedSpecialty)
-    return matchesSearch && matchesSpecialty
-  })
+    const matchesSearch = doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) || doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSpecialty = selectedSpecialty === "all" || doctor.specialty.toLowerCase().includes(selectedSpecialty);
+    return matchesSearch && matchesSpecialty;
+  });
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(price)
-  }
+    }).format(price);
+  };
 
   const getAvailabilityColor = (availability: string) => {
     switch (availability) {
       case "Online":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "Busy":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-white p-4 mt-32">
@@ -267,21 +267,11 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Cari dokter atau spesialis..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 text-lg bg-white border border-gray-200 rounded-xl"
-              />
+              <Input placeholder="Cari dokter atau spesialis..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 h-12 text-lg bg-white border border-gray-200 rounded-xl" />
             </div>
             <div className="flex gap-2 overflow-x-auto">
               {specialties.map((specialty) => (
-                <Button
-                  key={specialty.id}
-                  variant={selectedSpecialty === specialty.id ? "default" : "secondary"}
-                  onClick={() => setSelectedSpecialty(specialty.id)}
-                  className="whitespace-nowrap rounded"
-                >
+                <Button key={specialty.id} variant={selectedSpecialty === specialty.id ? "default" : "secondary"} onClick={() => setSelectedSpecialty(specialty.id)} className="whitespace-nowrap rounded">
                   {specialty.name}
                 </Button>
               ))}
@@ -316,24 +306,24 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
               <Card key={doctor.id} className="overflow-hidden hover:shadow-xl transition-shadow duration-300 bg-white rounded-xl border border-gray-200 text-black shadow-md">
                 <CardContent className="p-6">
                   {/* Doctor Info */}
-                  <div className="flex items-start gap-4 mb-4">
-                    <Avatar className="w-16 h-16">
-                      <AvatarImage src={doctor.image || "/placeholder.svg"} />
-                      <AvatarFallback>
-                        {doctor.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div className="flex flex-col items-start gap-4 mb-4">
+                    <div className="flex w-full justify-between">
+                      <Avatar className="w-16 h-16 border-2 border-teal-600">
+                        <AvatarImage src={doctor.image || "/placeholder.svg"} />
+                        <AvatarFallback>
+                          {doctor.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Badge className={`${getAvailabilityColor(doctor.availability)} border bg-teal-700 text-white hover:bg-teal-700 hover:cursor-auto h-7`}>{doctor.availability}</Badge>
+                    </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-lg text-gray-900">{doctor.name}</h3>
                       <p className="text-teal-600 font-medium">{doctor.specialty}</p>
                       <p className="text-sm text-gray-500">{doctor.experience} pengalaman</p>
                     </div>
-                    <Badge className={`${getAvailabilityColor(doctor.availability)} border-0`}>
-                      {doctor.availability}
-                    </Badge>
                   </div>
 
                   {/* Rating and Reviews */}
@@ -351,9 +341,7 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
                       <span className="font-medium">Pendidikan:</span> {doctor.education}
                     </p>
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Bahasa:</span> {Array.isArray(doctor.languages) 
-                        ? doctor.languages.join(", ") 
-                        : doctor.languages}
+                      <span className="font-medium">Bahasa:</span> {Array.isArray(doctor.languages) ? doctor.languages.join(", ") : doctor.languages}
                     </p>
                   </div>
 
@@ -389,11 +377,7 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
                   </div>
 
                   {/* Select Button */}
-                  <Button
-                    onClick={() => onSelectDoctor(doctor)}
-                    className="w-full h-12 text-lg font-semibold rounded-xl bg-gray-200 hover:bg-teal-600 hover:text-white"
-                    disabled={doctor.availability === "Busy"}
-                  >
+                  <Button onClick={() => onSelectDoctor(doctor)} className="w-full h-12 text-lg font-semibold rounded-xl bg-gray-200 hover:bg-teal-600 hover:text-white" disabled={doctor.availability === "Busy"}>
                     {doctor.availability === "Busy" ? "Tidak Tersedia" : "Pilih Dokter"}
                   </Button>
                 </CardContent>
@@ -413,5 +397,5 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
