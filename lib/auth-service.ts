@@ -15,6 +15,7 @@ export interface UserSession {
   role: string | null;
   sessionExpires: number;
   lastActivity: number;
+  foto_profile?: string | null; // Add this property
   profile?: any; // For storing doctor or admin specific data
 }
 

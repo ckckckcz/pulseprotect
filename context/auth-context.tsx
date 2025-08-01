@@ -12,6 +12,7 @@ interface UserData {
   email: string;
   nama_lengkap: string;
   role: string | null;
+  foto_profile?: string | null;  // Add this property
   profile?: any;
 }
 
