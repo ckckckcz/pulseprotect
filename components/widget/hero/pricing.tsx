@@ -170,6 +170,23 @@ export default function PricingPage() {
     setIsLoading(packageType);
 
     try {
+      // Use real user info if available, or prompt for email
+      let email = "";
+      
+      // If currentUser doesn't exist or doesn't have an email, prompt the user
+      if (!currentUser?.email) {
+        email = prompt("Please enter your email for payment confirmation:") || "";
+        if (!email || !email.includes('@')) {
+          toast({
+            title: "Valid Email Required",
+            description: "Please provide a valid email address to continue with payment.",
+            variant: "destructive",
+          });
+          setIsLoading(null);
+          return;
+        }
+      }
+
       const userId = currentUser?.id || "demo-user-id";
       const period: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
 
@@ -185,10 +202,10 @@ export default function PricingPage() {
         packageDetails.price = getDiscountedPrice(packageDetails.price);
       }
 
-      // Simulasi info customer (HARUS diganti dengan info user beneran)
+      // Use the provided email or get from currentUser
       const customerInfo = {
-        firstName: currentUser?.firstName || "Demo",
-        email: currentUser?.email || "demo@email.com",
+        firstName: currentUser?.firstName || email.split('@')[0] || "User", // Use part of email as name if no name
+        email: currentUser?.email || email,
         phone: currentUser?.phone || "",
       };
 

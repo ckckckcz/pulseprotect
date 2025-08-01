@@ -106,24 +106,39 @@ export async function POST(request: Request) {
           category: body.item_category || 'General',
         }];
 
+    // Ensure we have proper customer details for "On Behalf Of" field
+    const customerDetails = body.customer_details ? {
+      first_name: String(body.customer_details.first_name || ''),
+      last_name: String(body.customer_details.last_name || ''),
+      email: String(body.customer_details.email || ''),
+      phone: String(body.customer_details.phone || ''),
+    } : {
+      first_name: 'Customer',
+      last_name: '',
+      email: 'customer@example.com',
+      phone: '',
+    };
+
+    // Make sure we're using email as the customer name if first_name is empty or "Demo"
+    if (!customerDetails.first_name || customerDetails.first_name === 'Demo') {
+      if (customerDetails.email && customerDetails.email !== 'customer@example.com') {
+        customerDetails.first_name = customerDetails.email.split('@')[0];
+      } else {
+        customerDetails.first_name = 'User';
+      }
+    }
+
     // Prepare transaction parameters with validation
     const transactionParams = {
       transaction_details: {
         order_id: String(body.transaction_details.order_id),
         gross_amount: Number(body.transaction_details.gross_amount),
       },
-      customer_details: body.customer_details ? {
-        first_name: String(body.customer_details.first_name || 'Customer'),
-        last_name: String(body.customer_details.last_name || ''),
-        email: String(body.customer_details.email || 'customer@example.com'),
-        phone: String(body.customer_details.phone || '08123456789'),
-      } : {
-        first_name: 'Customer',
-        last_name: '',
-        email: 'customer@example.com',
-        phone: '08123456789',
-      },
+      customer_details: customerDetails,
       item_details: itemDetails,
+      // Include custom fields from request if available
+      custom_field1: body.custom_field1 || '',
+      custom_field2: body.custom_field2 || customerDetails.email || '',
       // Include additional Midtrans parameters
       credit_card: {
         secure: true

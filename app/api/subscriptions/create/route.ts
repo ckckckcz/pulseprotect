@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
     const {
       userId,
-      email, // Add email field
+      email,
       packageId,
       packageName,
       period,
@@ -20,19 +20,39 @@ export async function POST(request: Request) {
       paymentData,
     } = body;
 
+    // Check if we have an email, if not try to find it from payment_intent
+    let userEmail = email;
+    
+    if (!userEmail && orderId) {
+      console.log("Email not provided, looking up from payment_intent for order:", orderId);
+      const { data: intentData } = await supabase
+        .from("payment_intent")
+        .select("email")
+        .eq("order_id", orderId)
+        .single();
+      
+      if (intentData && intentData.email) {
+        userEmail = intentData.email;
+        console.log("Found email from payment_intent:", userEmail);
+      }
+    }
+
     // Validate required fields
-    if (!email || !packageId || !period || !amount || !orderId) {
-      return corsResponse({ error: "Missing required fields" }, { status: 400 });
+    if (!userEmail || !packageId || !period || !amount || !orderId) {
+      return corsResponse({ 
+        error: "Missing required fields", 
+        details: { userEmail, packageId, period, amount, orderId } 
+      }, { status: 400 });
     }
 
     const membershipType = packageId.split("_")[1] || packageId;
 
-    // Create payment record using email instead of userId
-    console.log("Creating payment record with email:", email);
+    // Create payment record using email 
+    console.log("Creating payment record with email:", userEmail);
     const { data: payment, error: paymentError } = await supabase
       .from("payment")
       .insert({
-        email: email,
+        email: userEmail,
         membership_type: membershipType,
         order_id: orderId,
         transaction_type: "purchase",
@@ -78,6 +98,16 @@ export async function POST(request: Request) {
       } catch (err) {
         console.error("Error updating user data:", err);
       }
+    }
+
+    // Update payment intent status if it exists
+    try {
+      await supabase
+        .from("payment_intent")
+        .update({ status: "completed" })
+        .eq("order_id", orderId);
+    } catch (error) {
+      console.warn("Failed to update payment intent:", error);
     }
 
     return corsResponse({

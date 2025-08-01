@@ -27,6 +27,7 @@ export async function createAIPackagePayment(
 ) {
   const orderId = generateOrderId();
 
+  // Make sure email is included in transaction_details as custom field
   const transactionParams = {
     transaction_details: {
       order_id: orderId,
@@ -47,6 +48,8 @@ export async function createAIPackagePayment(
         category: "AI Model",
       },
     ],
+    custom_field1: packageDetails.period, // Store period as custom field
+    custom_field2: customerInfo.email,    // Store email as custom field for backup
   };
 
   try {
@@ -68,6 +71,25 @@ export async function createAIPackagePayment(
 
     const paymentData = await response.json();
     console.log("Payment token created:", paymentData);
+
+    // Pre-record the payment intent with customer email to ensure we have this data
+    try {
+      await fetch("/api/subscriptions/create-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          email: customerInfo.email,
+          packageId: packageDetails.packageId,
+          packageName: packageDetails.packageName,
+          period: packageDetails.period,
+          amount: packageDetails.price,
+          orderId
+        })
+      });
+    } catch (error) {
+      console.warn("Failed to create payment intent, will try again after payment:", error);
+    }
 
     return {
       orderId,
@@ -161,9 +183,16 @@ export async function recordPayment(
     const status = paymentData.transaction_status || "success";
     const cleanMembershipType = membershipType.replace("pkg_", "");
 
-    // Pastikan period dan email selalu ada
-    const period = paymentData.custom_field1 || "monthly";
-    const userEmail = email || paymentData.email || ""; // fallback
+    // Get email from multiple possible sources
+    const userEmail = email || 
+                     paymentData.email || 
+                     paymentData.custom_field2 || 
+                     paymentData.customer_details?.email || 
+                     "";
+
+    // Get period from multiple possible sources
+    const period = paymentData.custom_field1 || 
+                  (membershipType.includes("yearly") ? "yearly" : "monthly");
 
     // Log untuk debug
     console.log("RECORD PAYMENT PARAMS:", {
