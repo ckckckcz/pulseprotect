@@ -26,10 +26,8 @@ export async function POST(request: Request) {
     // Determine package name and make sure it's LOWERCASE
     let finalPackageName = "free"; // default
     if (packageName) {
-      // Convert provided packageName to lowercase
       finalPackageName = packageName.toLowerCase();
     } else if (packageId) {
-      // Extract from packageId and convert to lowercase
       const cleanPackageId = packageId.replace("pkg_", "").toLowerCase();
       if (["pro", "plus", "free"].includes(cleanPackageId)) {
         finalPackageName = cleanPackageId;
@@ -46,7 +44,7 @@ export async function POST(request: Request) {
           email: email,
           order_id: orderId,
           package_id: packageId,
-          package_name: finalPackageName, // This will be lowercase: "pro", "plus", or "free"
+          package_name: finalPackageName,
           period: period,
           amount: Number(amount),
           status: "pending",

@@ -7,7 +7,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await the params since it's now a Promise in newer Next.js versions
     const { id: userId } = await params;
     
     // Get authorization header
@@ -75,3 +74,4 @@ export async function GET(
     );
   }
 }
+
