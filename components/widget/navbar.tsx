@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, User, DoorOpen, Zap, Crown } from "lucide-react";
+import { Menu, X, ChevronDown, User, DoorOpen, Zap, Crown, Stethoscope } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/auth-context";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -266,9 +266,16 @@ export default function Navbar() {
                       <span>Profil</span>
                     </Link>
                   </DropdownMenuItem>
-                  {user.role === "admin" && (
+                  <DropdownMenuSeparator className="border border-gray-200" />
+                  <DropdownMenuItem asChild>
+                    <Link href="/konsultasi">
+                      <Stethoscope className="mr-2 h-4 w-4" />
+                      <span>Konsultasi</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  {user.role === "dokter" && (
                     <DropdownMenuItem className="hover:bg-gray-100" asChild>
-                      <Link href="/admin/dashboard">Dashboard Admin</Link>
+                      <Link href="/dokter">Dashboard</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator className="border border-gray-200" />
