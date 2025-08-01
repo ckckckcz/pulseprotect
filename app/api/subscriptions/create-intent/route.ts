@@ -4,7 +4,6 @@ import { corsHeaders, corsResponse } from "@/lib/cors";
 
 export async function POST(request: Request) {
   try {
-    // Parse request body
     const body = await request.json();
     console.log("Creating payment intent:", body);
 
@@ -86,3 +85,4 @@ export async function OPTIONS() {
     headers: corsHeaders,
   });
 }
+

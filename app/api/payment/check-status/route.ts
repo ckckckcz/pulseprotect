@@ -75,7 +75,6 @@ export async function POST(request: Request) {
     console.log("Payment intent updated:", paymentIntentData);
 
     // Jika status success, database trigger akan otomatis update user membership
-    // Tambahkan ke payment table
     if (status === 'success' && paymentIntentData) {
       const membershipType = paymentIntentData.package_name?.toLowerCase() || 'free';
       const paymentType = midtransData.payment_type || 'unknown';
@@ -135,3 +134,4 @@ export async function POST(request: Request) {
     return corsResponse({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
