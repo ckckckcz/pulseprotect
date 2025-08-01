@@ -259,5 +259,51 @@ export const jwtService = {
       console.error('Token verification failed:', error);
       throw error;
     }
+  },
+  
+  // Add getAuthHeader method to match the class implementation
+  getAuthHeader: () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return {};
+    
+    return {
+      'Authorization': `Bearer ${token}`
+    };
+  },
+  
+  // Add refreshAccessToken method stub to match the class implementation
+  refreshAccessToken: async (): Promise<string | null> => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) return null;
+      
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      
+      if (!response.ok) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        return null;
+      }
+      
+      const data = await response.json();
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
+        return data.accessToken;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      return null;
+    }
   }
 };

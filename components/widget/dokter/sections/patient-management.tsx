@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Search, Plus, Calendar, Phone, Mail, MapPin, MessageSquare, Loader2 } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Database } from "@/lib/supabase"
+import { useAuth } from "@/context/auth-context" // Add import for auth context
 
 interface User {
   id: string
@@ -36,34 +37,13 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [processingUser, setProcessingUser] = useState<string | null>(null)
-  const [currentUserEmail, setCurrentUserEmail] = useState<string>("satria@pulseprotect.com") // Default to current user
   const supabase = createClientComponentClient<Database>()
-
-  useEffect(() => {
-    // Get the authenticated user's email
-    async function getCurrentUser() {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession()
-        
-        if (error) {
-          console.error('Error getting session:', error)
-          return
-        }
-        
-        if (session?.user?.email) {
-          console.log('Using authenticated user email:', session.user.email)
-          setCurrentUserEmail(session.user.email)
-        } else {
-          console.log('No authenticated user found, using default:', currentUserEmail)
-          // Keep using the default email we set in state
-        }
-      } catch (error) {
-        console.error('Error fetching current user:', error)
-      }
-    }
-    
-    getCurrentUser()
-  }, [supabase, currentUserEmail])
+  
+  // Use the auth context to get the logged-in user
+  const { user: authUser } = useAuth()
+  
+  // Get doctor email from auth context
+  const doctorEmail = authUser?.email || "satria@pulseprotect.com"
 
   useEffect(() => {
     async function fetchUsers() {
@@ -95,13 +75,13 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
       setProcessingUser(patient.id)
       
       console.log('Starting consultation with patient:', patient.email)
-      console.log('Using doctor email:', currentUserEmail)
+      console.log('Using doctor email from auth context:', doctorEmail)
       
       // Check if a chat room already exists between this doctor and patient
       const { data: existingRooms, error: roomError } = await supabase
         .from('chat_rooms')
         .select('id')
-        .eq('doctor_email', currentUserEmail)
+        .eq('doctor_email', doctorEmail)
         .eq('patient_email', patient.email)
         .eq('status', 'active')
       
@@ -122,7 +102,7 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
           const { data: newRooms, error: createError } = await supabase
             .from('chat_rooms')
             .insert({
-              doctor_email: currentUserEmail, // Use current user's email
+              doctor_email: doctorEmail, // Use authenticated user's email
               patient_email: patient.email,
               status: 'active'
             })
@@ -160,7 +140,7 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
         full_name: patient.nama_lengkap, // Map fields for consistency
         condition: "Konsultasi umum", // Default condition
         chatRoomId,
-        doctorEmail: currentUserEmail // Pass the current user's email
+        doctorEmail // Pass the authenticated user's email
       })
       
       setActiveSection("consultation-room")

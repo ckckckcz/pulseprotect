@@ -39,8 +39,11 @@ class HttpClient {
 
     // Add auth header if not skipped and user is authenticated
     if (!skipAuth && jwtService.isAuthenticated()) {
-      const authHeaders = jwtService.getAuthHeader();
-      Object.assign(headers, authHeaders);
+      const authHeader = jwtService.getAuthHeader();
+      // Only add Authorization header if it has a value
+      if (authHeader.Authorization) {
+        headers.Authorization = authHeader.Authorization;
+      }
     }
 
     const requestOptions: RequestInit = {
@@ -60,10 +63,13 @@ class HttpClient {
         const newToken = await jwtService.refreshAccessToken();
         if (newToken) {
           // Retry request with new token
-          const retryHeaders = {
-            ...headers,
-            ...jwtService.getAuthHeader(),
-          };
+          const newAuthHeader = jwtService.getAuthHeader();
+          const retryHeaders = { ...headers };
+          
+          // Only add the Authorization header if it has a value
+          if (newAuthHeader.Authorization) {
+            retryHeaders.Authorization = newAuthHeader.Authorization;
+          }
           
           const retryResponse = await fetch(url, {
             ...requestOptions,

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, Info, RefreshCw, Sun, Moon, MessageCircle, Bolt, LogOut, Globe2, Languages } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useAuth } from "@/context/auth-context"
+import { useAuth, UserData } from "@/context/auth-context"
 import { useRouter, usePathname } from 'next/navigation';
 import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -31,7 +31,7 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 // Define a type for the user with status
-type UserWithStatus = {
+type UserWithStatus = UserData & {
   id?: string | number
   nama_lengkap?: string
   email?: string
@@ -160,14 +160,14 @@ export default function UserProfile() {
       setDisplayName(user.nama_lengkap || "")
       
       // Parse phone number if exists
-      if (user.nomor_telepon) {
-        console.log("Original phone:", user.nomor_telepon);
+      if ((user as UserWithStatus).nomor_telepon) {
+        console.log("Original phone:", (user as UserWithStatus).nomor_telepon);
         
         // If countries not yet loaded, use the full number temporarily
         if (countries.length === 0) {
-          setPhoneNumber(user.nomor_telepon);
+          setPhoneNumber((user as UserWithStatus).nomor_telepon || "");
         } else {
-          const phoneWithoutCode = parsePhoneNumber(user.nomor_telepon);
+          const phoneWithoutCode = parsePhoneNumber((user as UserWithStatus).nomor_telepon || "");
           console.log("Parsed phone:", phoneWithoutCode);
           
           // Use the national number part
@@ -247,7 +247,7 @@ export default function UserProfile() {
         ? `${selectedCountry.dial_code}${phoneNumber.replace(/^0+/, '')}`
         : phoneNumber;
         
-      const userPhone = user.nomor_telepon || '';
+      const userPhone = (user as UserWithStatus).nomor_telepon || '';
       
       // Compare normalized phone numbers (remove spaces, dashes, etc.)
       const normalizedFormPhone = formattedPhone.replace(/[\s-]/g, '');

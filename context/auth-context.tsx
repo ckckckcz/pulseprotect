@@ -7,13 +7,15 @@ import { supabase } from "@/lib/supabaseClient";
 import bcrypt from 'bcryptjs';
 import { getHomePathForRole } from "@/lib/role-utils";
 
-interface UserData {
+export interface UserData {
   id: number;
   email: string;
   nama_lengkap: string;
   role: string | null;
-  foto_profile?: string | null;  // Add this property
+  foto_profile?: string | null;
   profile?: any;
+  nomor_telepon?: string | null;
+  account_membership?: string | null; // Add this field to match the database schema
 }
 
 interface AuthContextType {
@@ -23,6 +25,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
   checkUserRole: (email: string) => Promise<string | null>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -246,6 +249,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Add refreshUser implementation
+  const refreshUser = async () => {
+    if (!user?.email) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user')
+        .select('*')
+        .eq('email', user.email)
+        .maybeSingle();
+      
+      if (error || !data) {
+        console.error("Error refreshing user data:", error);
+        return;
+      }
+      
+      // Get additional profile data based on role
+      if (data.role === 'dokter' || data.role === 'admin') {
+        try {
+          const table = data.role === 'dokter' ? 'dokter' : 'admin';
+          const { data: profileData } = await supabase
+            .from(table)
+            .select('*')
+            .eq('email', user.email)
+            .single();
+            
+          if (profileData) {
+            data.profile = profileData;
+          }
+        } catch (profileError) {
+          console.error(`Error fetching ${data.role} profile:`, profileError);
+        }
+      }
+      
+      // Remove sensitive data
+      const { kata_sandi, konfirmasi_kata_sandi, verification_token, ...safeUser } = data;
+      
+      // Save updated user data
+      saveUserSession(safeUser);
+      
+      // Update state
+      setUser(safeUser);
+    } catch (error) {
+      console.error("Error refreshing user:", error);
+    }
+  };
+
   const contextValue: AuthContextType = {
     user,
     loading,
@@ -253,6 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginWithGoogle,
     logout: handleLogout,
     checkUserRole,
+    refreshUser, // Add refreshUser to the context value
   };
 
   return (

@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Database } from "@/lib/supabase"
+import { useAuth } from "@/context/auth-context" // Add import for auth context
 
 interface Message {
   id: number | string
@@ -29,6 +30,10 @@ interface Message {
   time: string
   type: "text" | "image" | "file"
   fileName?: string
+}
+
+interface User{
+  nama_lengkap: string
 }
 
 interface ConsultationRoomProps {
@@ -43,15 +48,48 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
   const [isLoading, setIsLoading] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const supabase = createClientComponentClient<Database>()
+  const [users, setUsers] = useState<User[]>([])
+  
+  // Use the auth context to get the logged-in user
+  const { user: authUser } = useAuth()
+  
+  // Use the doctor email from the selected patient, auth context, or as a last resort, the default
+  const doctorEmail = selectedPatient?.doctorEmail || authUser?.email || "satria@pulseprotect.com"
 
-  // Use the doctor email from the selected patient or fall back to the authenticated user
-  const doctorEmail = selectedPatient?.doctorEmail || "satria@pulseprotect.com"
+  console.log("Using doctor email in consultation room:", doctorEmail)
+
+  useEffect(() => {
+    async function fetchUsers() {
+      setIsLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('user')
+          .select('*')
+          .eq('role', 'user')
+        
+        if (error) {
+          console.error('Error fetching users:', error)
+          return
+        }
+        
+        setUsers(data || [])
+      } catch (error) {
+        console.error('Error fetching users:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [supabase])
 
   // Update activeConsultation to use selectedPatient or default data
   const [activeConsultation, setActiveConsultation] = useState(() => {
     if (selectedPatient) {
       return {
-        patient: selectedPatient.full_name || selectedPatient.email,
+        patient: selectedPatient.nama_lengkap || selectedPatient.full_name || selectedPatient.email,
+        patientEmail: selectedPatient.email,
+        patientPhoto: selectedPatient.foto_profile,
         time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
         type: "Chat",
         complaint: selectedPatient.condition || "Konsultasi umum",
@@ -60,6 +98,8 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
     }
     return {
       patient: "Siti Nurhaliza",
+      patientEmail: "patient@example.com",
+      patientPhoto: null,
       time: "14:30",
       type: "Video Call",
       complaint: "Sakit kepala berkepanjangan",
@@ -233,7 +273,7 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
       const newMessage = {
         chat_room_id: activeConsultation.chatRoomId,
         sender_type: 'doctor' as const,
-        sender_email: doctorEmail,
+        sender_email: doctorEmail, // Use authenticated user's email
         content: message.trim(),
         message_type: 'text' as const
       }
@@ -277,8 +317,10 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
             <CardHeader className="border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarImage src={`/placeholder.svg?height=40&width=40&query=${activeConsultation.patient}`} />
+                  <Avatar className="border-2 border-teal-600">
+                    <AvatarImage 
+                      src={activeConsultation.patientPhoto || `/placeholder.svg?height=40&width=40&query=${activeConsultation.patient}`} 
+                    />
                     <AvatarFallback>
                       {activeConsultation.patient
                         .split(" ")
@@ -288,7 +330,9 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
                   </Avatar>
                   <div>
                     <h3 className="font-semibold">{activeConsultation.patient}</h3>
-                    <p className="text-sm text-muted-foreground">{activeConsultation.complaint}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {activeConsultation.patientEmail}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -373,9 +417,22 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
               <CardTitle>Informasi Pasien</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Nama Lengkap</label>
-                <p className="text-sm text-muted-foreground">{activeConsultation.patient}</p>
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar className="h-16 w-16 border-2 border-teal-600">
+                  <AvatarImage 
+                    src={activeConsultation.patientPhoto || `/placeholder.svg?height=60&width=60&query=${activeConsultation.patient}`}
+                  />
+                  <AvatarFallback className="text-lg">
+                    {activeConsultation.patient
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium text-lg">{activeConsultation.patient}</p>
+                  <p className="text-sm text-muted-foreground">{activeConsultation.patientEmail}</p>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Keluhan Utama</label>
