@@ -156,9 +156,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (jwtService.isAuthenticated()) {
         const userFromToken = jwtService.getUserFromToken();
         if (userFromToken) {
+          console.log("Refreshing user data from API...");
           const userData = await httpClient.get(`/api/auth/user/${userFromToken.userId}`);
           if (userData.success && userData.user) {
             setUser(userData.user);
+            console.log("User data refreshed successfully:", {
+              email: userData.user.email,
+              membership: userData.user.account_membership
+            });
           }
         }
       }

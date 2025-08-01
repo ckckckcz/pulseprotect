@@ -263,7 +263,7 @@ export default function PricingPage() {
 
       const packageDetails: PackageDetails = {
         packageId: `pkg_${packageType}`,
-        packageName: pricingPlans.find((p) => p.type === packageType)?.name || "",
+        packageName: packageType, // Send lowercase: "pro", "plus", "free" (not "Pro", "Plus", "Free")
         price: isYearly ? pricingPlans.find((p) => p.type === packageType)?.yearlyPrice || 0 : pricingPlans.find((p) => p.type === packageType)?.monthlyPrice || 0,
         period,
       };
@@ -322,19 +322,58 @@ export default function PricingPage() {
       
       try {
         await handleMidtransPayment(paymentResult.token, {
-          onSuccess: (result) => {
+          onSuccess: async (result) => {
             console.log("=== PAYMENT SUCCESS CALLBACK ===", result);
-            toast({
-              title: "Pembayaran Berhasil",
-              description: "Terima kasih, pembayaran Anda berhasil.",
-            });
-            setActiveMembershipType(packageType);
+            
+            // Manual check status untuk memastikan database terupdate
+            try {
+              console.log("Checking payment status manually...");
+              const statusResponse = await fetch('/api/payment/check-status', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ orderId: paymentResult.orderId })
+              });
+              
+              if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                console.log("Status check result:", statusData);
+                
+                if (statusData.status === 'success') {
+                  toast({
+                    title: "Pembayaran Berhasil",
+                    description: "Terima kasih, pembayaran Anda berhasil dan membership telah diperbarui.",
+                  });
+                  setActiveMembershipType(packageType);
+                } else {
+                  toast({
+                    title: "Pembayaran Dikonfirmasi",
+                    description: "Pembayaran sedang diproses, mohon tunggu beberapa saat.",
+                  });
+                }
+              } else {
+                console.error("Failed to check payment status");
+                toast({
+                  title: "Pembayaran Berhasil",
+                  description: "Pembayaran berhasil, membership akan diperbarui segera.",
+                });
+              }
+            } catch (statusError) {
+              console.error("Error checking payment status:", statusError);
+              toast({
+                title: "Pembayaran Berhasil",
+                description: "Pembayaran berhasil, membership akan diperbarui segera.",
+              });
+            }
+            
             setIsLoading(null);
-            // Refresh user data to get updated membership
+            
+            // Refresh user data setelah delay
             setTimeout(() => {
               console.log("Reloading page to refresh user data");
               window.location.reload();
-            }, 2000);
+            }, 3000);
           },
           onPending: (result) => {
             console.log("=== PAYMENT PENDING CALLBACK ===", result);

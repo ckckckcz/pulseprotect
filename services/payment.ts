@@ -90,18 +90,19 @@ export async function createAIPackagePayment(
   try {
     console.log("Creating payment with JWT authentication...");
 
-    // Create payment intent with JWT auth (but don't fail if this fails)
+    // Create payment intent with proper package_name
     try {
-      await httpClient.post("/api/subscriptions/create-intent", {
+      const intentResponse = await httpClient.post("/api/subscriptions/create-intent", {
         userId,
         email: customerInfo.email,
         packageId: packageDetails.packageId,
-        packageName: packageDetails.packageName,
+        packageName: packageDetails.packageName, // Make sure this is properly set
         period: packageDetails.period,
         amount: packageDetails.price,
         orderId
       });
-      console.log("Payment intent record created successfully");
+      
+      console.log("Payment intent record created successfully:", intentResponse);
     } catch (intentError) {
       console.warn("Failed to create payment intent (non-critical):", intentError);
       // Continue with payment process even if intent creation fails
