@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, Tag, X, Gift, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { motion, AnimatePresence } from "framer-motion";
 import Celebration from "@/components/widget/celebration-confetti";
 import { createAIPackagePayment, handleMidtransPayment, PackageDetails } from "@/services/payment";
+import { supabase } from "@/lib/supabase";
 
 type PlanType = "free" | "plus" | "pro";
 
@@ -73,6 +74,8 @@ export default function PricingPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeMembershipType, setActiveMembershipType] = useState<PlanType>("free");
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Promo code states
   const [promoCode, setPromoCode] = useState("");
@@ -84,6 +87,57 @@ export default function PricingPage() {
 
   const { toast } = useToast();
   const router = useRouter();
+
+  // Fetch current user on component mount
+  useEffect(() => {
+    async function getUserData() {
+      setIsAuthLoading(true);
+      
+      try {
+        // Get authenticated user session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Error fetching session:", sessionError);
+          setIsAuthLoading(false);
+          return;
+        }
+        
+        if (session?.user) {
+          // Get user details from the user table
+          const { data: userData, error: userError } = await supabase
+            .from('user')
+            .select('*')
+            .eq('email', session.user.email)
+            .single();
+            
+          if (userError) {
+            console.error("Error fetching user details:", userError);
+          } else if (userData) {
+            console.log("User data loaded:", userData);
+            setCurrentUser(userData);
+            setActiveMembershipType((userData.account_membership || 'free') as PlanType);
+          }
+        }
+      } catch (error) {
+        console.error("Error in auth process:", error);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    }
+    
+    getUserData();
+  }, []);
+
+  // Function to handle when user is not authenticated
+  const promptLogin = () => {
+    toast({
+      title: "Login Required",
+      description: "Please login to continue with your purchase.",
+      variant: "destructive",
+    });
+    router.push('/login?redirect=/pricing');
+  };
 
   // Function to validate and apply promo code
   const validatePromoCode = async () => {
@@ -164,30 +218,20 @@ export default function PricingPage() {
     "Dukungan prioritas 24/7",
   ];
 
-  // Mock payment handler for demo
+  // Updated payment handler to use authenticated user info
   const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
     e.preventDefault();
+    
+    // Check if user is authenticated
+    if (!currentUser || !currentUser.email) {
+      promptLogin();
+      return;
+    }
+    
     setIsLoading(packageType);
 
     try {
-      // Use real user info if available, or prompt for email
-      let email = "";
-      
-      // If currentUser doesn't exist or doesn't have an email, prompt the user
-      if (!currentUser?.email) {
-        email = prompt("Please enter your email for payment confirmation:") || "";
-        if (!email || !email.includes('@')) {
-          toast({
-            title: "Valid Email Required",
-            description: "Please provide a valid email address to continue with payment.",
-            variant: "destructive",
-          });
-          setIsLoading(null);
-          return;
-        }
-      }
-
-      const userId = currentUser?.id || "demo-user-id";
+      const userId = currentUser.id || "";
       const period: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
 
       const packageDetails: PackageDetails = {
@@ -197,22 +241,28 @@ export default function PricingPage() {
         period,
       };
 
-      // Promo logic
+      // Apply promo if available
       if (appliedPromo) {
         packageDetails.price = getDiscountedPrice(packageDetails.price);
       }
 
-      // Use the provided email or get from currentUser
+      // Use authenticated user information
       const customerInfo = {
-        firstName: currentUser?.firstName || email.split('@')[0] || "User", // Use part of email as name if no name
-        email: currentUser?.email || email,
-        phone: currentUser?.phone || "",
+        firstName: currentUser.nama_lengkap || "User",
+        email: currentUser.email,
+        phone: currentUser.nomor_telepon || "",
       };
 
-      // Buat payment token via API
+      console.log("Starting payment with user info:", {
+        userId,
+        customerName: customerInfo.firstName,
+        customerEmail: customerInfo.email
+      });
+
+      // Create payment token via API
       const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
 
-      // Tampilkan Midtrans Snap
+      // Show Midtrans Snap payment UI
       await handleMidtransPayment(paymentResult.token, {
         onSuccess: (result) => {
           toast({
@@ -221,6 +271,8 @@ export default function PricingPage() {
           });
           setActiveMembershipType(packageType);
           setIsLoading(null);
+          // Refresh user data to get updated membership
+          setTimeout(() => window.location.reload(), 2000);
         },
         onPending: (result) => {
           toast({
@@ -325,8 +377,12 @@ export default function PricingPage() {
                   ))}
                 </ul>
               </div>
-              <Button className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50" onClick={(e) => handlePayment(e, "free")} disabled={isLoading !== null || activeMembershipType === "free"}>
-                {activeMembershipType === "free" ? "Membership Aktif" : "Mulai Gratis"}
+              <Button 
+                className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50" 
+                onClick={(e) => handlePayment(e, "free")} 
+                disabled={isAuthLoading || isLoading !== null || activeMembershipType === "free"}
+              >
+                {isAuthLoading ? "Loading..." : activeMembershipType === "free" ? "Membership Aktif" : "Mulai Gratis"}
               </Button>
             </motion.div>
 
@@ -375,8 +431,19 @@ export default function PricingPage() {
                   ))}
                 </ul>
               </div>
-              <Button className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl" onClick={(e) => handlePayment(e, "plus")} disabled={isLoading !== null}>
-                {isLoading === "plus" ? "Memproses..." : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`}
+              <Button 
+                className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl" 
+                onClick={(e) => handlePayment(e, "plus")} 
+                disabled={isAuthLoading || isLoading !== null || activeMembershipType === "plus"}
+              >
+                {isAuthLoading 
+                  ? "Loading..." 
+                  : isLoading === "plus" 
+                    ? "Memproses..." 
+                    : activeMembershipType === "plus" 
+                      ? "Membership Aktif" 
+                      : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`
+                }
               </Button>
             </motion.div>
 
@@ -425,8 +492,19 @@ export default function PricingPage() {
                   ))}
                 </ul>
               </div>
-              <Button className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50" onClick={(e) => handlePayment(e, "pro")} disabled={isLoading !== null}>
-                {isLoading === "pro" ? "Memproses..." : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`}
+              <Button 
+                className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50" 
+                onClick={(e) => handlePayment(e, "pro")} 
+                disabled={isAuthLoading || isLoading !== null || activeMembershipType === "pro"}
+              >
+                {isAuthLoading 
+                  ? "Loading..." 
+                  : isLoading === "pro" 
+                    ? "Memproses..." 
+                    : activeMembershipType === "pro" 
+                      ? "Membership Aktif" 
+                      : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`
+                }
               </Button>
             </motion.div>
           </motion.div>

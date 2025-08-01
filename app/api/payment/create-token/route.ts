@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import midtransClient from 'midtrans-client';
 import { corsHeaders, corsResponse } from '@/lib/cors';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
@@ -27,7 +28,6 @@ export async function POST(request: Request) {
     }
     
     if (!serverKey) {
-      console.error('MIDTRANS_SERVER_KEY is missing');
       return corsResponse(
         { error: 'Midtrans server key not configured' },
         { status: 500 }
@@ -119,14 +119,33 @@ export async function POST(request: Request) {
       phone: '',
     };
 
-    // Make sure we're using email as the customer name if first_name is empty or "Demo"
+    // Make sure we're using proper customer name, not "Demo" 
     if (!customerDetails.first_name || customerDetails.first_name === 'Demo') {
       if (customerDetails.email && customerDetails.email !== 'customer@example.com') {
-        customerDetails.first_name = customerDetails.email.split('@')[0];
+        // Try to get user's full name from database if available
+        try {
+          const { data: userData } = await supabase
+            .from('user')
+            .select('nama_lengkap')
+            .eq('email', customerDetails.email)
+            .single();
+          
+          if (userData && userData.nama_lengkap) {
+            customerDetails.first_name = userData.nama_lengkap;
+          } else {
+            // Fallback to using part of email
+            customerDetails.first_name = customerDetails.email.split('@')[0];
+          }
+        } catch (dbError) {
+          console.warn('Failed to fetch user name from database:', dbError);
+          customerDetails.first_name = customerDetails.email.split('@')[0];
+        }
       } else {
         customerDetails.first_name = 'User';
       }
     }
+
+    console.log("Using customer name:", customerDetails.first_name);
 
     // Prepare transaction parameters with validation
     const transactionParams = {
@@ -139,18 +158,41 @@ export async function POST(request: Request) {
       // Include custom fields from request if available
       custom_field1: body.custom_field1 || '',
       custom_field2: body.custom_field2 || customerDetails.email || '',
+      custom_field3: body.custom_field3 || '',
       // Include additional Midtrans parameters
       credit_card: {
         secure: true
       },
       callbacks: {
-        finish: process.env.NEXT_PUBLIC_APP_URL + '/payment/success',
-        error: process.env.NEXT_PUBLIC_APP_URL + '/payment/error',
-        pending: process.env.NEXT_PUBLIC_APP_URL + '/payment/pending'
+        finish: process.env.NEXT_PUBLIC_APP_URL + '/payment/success?orderId=' + body.transaction_details.order_id,
+        error: process.env.NEXT_PUBLIC_APP_URL + '/payment/error?orderId=' + body.transaction_details.order_id,
+        pending: process.env.NEXT_PUBLIC_APP_URL + '/payment/pending?orderId=' + body.transaction_details.order_id
       }
     };
 
     console.log('Final transaction params:', JSON.stringify(transactionParams, null, 2));
+
+    // Record payment intent in database (backup)
+    try {
+      if (customerDetails.email && customerDetails.email !== 'customer@example.com') {
+        await supabase
+          .from('payment_intent')
+          .upsert({
+            email: customerDetails.email,
+            order_id: transactionParams.transaction_details.order_id,
+            package_id: body.item_details?.[0]?.id || 'unknown',
+            amount: transactionParams.transaction_details.gross_amount,
+            period: body.custom_field1 || 'monthly',
+            status: 'pending',
+            created_at: new Date().toISOString()
+          }, {
+            onConflict: 'order_id'
+          });
+      }
+    } catch (dbError) {
+      console.warn('Failed to record payment intent in database:', dbError);
+      // Continue with payment process
+    }
 
     // Create transaction with detailed error handling
     let transaction;

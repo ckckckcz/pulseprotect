@@ -5,7 +5,7 @@ import { corsResponse, corsHeaders } from '@/lib/cors';
 export async function POST(request: Request) {
   try {
     const notification = await request.json();
-    console.log('Received Midtrans notification:', notification);
+    console.log('Received Midtrans notification:', JSON.stringify(notification, null, 2));
     
     const orderId = notification.order_id;
     const transactionStatus = notification.transaction_status;
@@ -28,71 +28,132 @@ export async function POST(request: Request) {
     
     console.log(`Processing order ${orderId} with status: ${status}`);
     
-    // Try to get user email from payment_intent first
-    let userEmail;
-    const { data: intentData } = await supabase
-      .from("payment_intent")
-      .select("email, package_id, period, amount")
-      .eq("order_id", orderId)
-      .single();
+    // Get customer details from the notification
+    const customerDetails = notification.customer_details || {};
+    const paymentType = notification.payment_type || 'unknown';
+    const grossAmount = notification.gross_amount || 0;
     
-    if (intentData) {
-      userEmail = intentData.email;
-      console.log(`Found email from payment intent: ${userEmail}`);
+    // Try to get user email from different sources
+    let userEmail = customerDetails.email || 
+                    notification.custom_field2 || 
+                    '';
+    
+    // If email not found in notification, check payment_intent table
+    if (!userEmail) {
+      const { data: intentData } = await supabase
+        .from("payment_intent")
+        .select("email, package_id, period, amount")
+        .eq("order_id", orderId)
+        .single();
       
-      // If payment is successful, record it
-      if (status === 'success') {
-        // Create payment record using the stored email
-        const { error: paymentError } = await supabase
-          .from("payment")
-          .insert({
-            email: userEmail,
-            membership_type: intentData.package_id.replace('pkg_', ''),
-            order_id: orderId,
-            transaction_type: "purchase",
-            metode_pembayaran: notification.payment_type || "unknown",
-            harga: intentData.amount,
-            status: "success",
-          });
-          
-        if (paymentError) {
-          console.error("Error creating payment record:", paymentError);
-        } else {
-          console.log("Payment record created successfully");
-        }
-        
-        // Update payment intent status
-        await supabase
-          .from("payment_intent")
-          .update({ status: "completed" })
-          .eq("order_id", orderId);
+      if (intentData?.email) {
+        userEmail = intentData.email;
+        console.log(`Found email from payment intent: ${userEmail}`);
       }
     }
     
-    // Update subscription status if it exists
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({
-        status: status,
-        updated_at: new Date().toISOString(),
-        payment_data: notification
-      })
-      .eq('order_id', orderId);
-    
-    if (error) {
-      console.error('Error updating subscription:', error);
-    }
-    
-    // If payment successful, update user subscription
+    // If payment is successful, record it in the payment table
     if (status === 'success') {
-      await activateUserSubscription(orderId, userEmail);
+      if (userEmail) {
+        // Get package info from item_details or payment_intent
+        let packageId = '';
+        let amount = grossAmount;
+        
+        if (notification.item_details && notification.item_details.length > 0) {
+          packageId = notification.item_details[0].id || '';
+        } else {
+          // Try to get from payment_intent
+          const { data: intentData } = await supabase
+            .from("payment_intent")
+            .select("package_id, amount")
+            .eq("order_id", orderId)
+            .single();
+          
+          if (intentData) {
+            packageId = intentData.package_id;
+            amount = intentData.amount;
+          }
+        }
+        
+        if (packageId) {
+          const membershipType = packageId.replace('pkg_', '');
+          
+          // Create payment record in database
+          const { error: paymentError } = await supabase
+            .from("payment")
+            .insert({
+              email: userEmail,
+              membership_type: membershipType,
+              order_id: orderId,
+              transaction_type: "purchase",
+              metode_pembayaran: paymentType,
+              harga: amount,
+              status: "success",
+              created_at: new Date().toISOString()
+            });
+            
+          if (paymentError) {
+            console.error("Error creating payment record:", paymentError);
+          } else {
+            console.log("Payment record created successfully");
+          }
+          
+          // Update user membership if email is found
+          if (userEmail) {
+            const { data: userData, error: userError } = await supabase
+              .from("user")
+              .select("id")
+              .eq("email", userEmail)
+              .single();
+            
+            if (userError) {
+              console.error("Error fetching user by email:", userError);
+            } else if (userData) {
+              console.log(`Updating membership for user ${userData.id} to ${membershipType}`);
+              
+              const { error: updateError } = await supabase
+                .from("user")
+                .update({ account_membership: membershipType })
+                .eq("id", userData.id);
+                
+              if (updateError) {
+                console.error("Error updating user membership:", updateError);
+              } else {
+                console.log("User membership updated successfully");
+              }
+            }
+          }
+        }
+      } else {
+        console.error("Cannot record payment: No user email found in notification or payment_intent");
+      }
     }
     
-    return corsResponse({ success: true, status });
-  } catch (error) {
+    // Update payment_intent status
+    try {
+      await supabase
+        .from("payment_intent")
+        .update({
+          status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq("order_id", orderId);
+    } catch (error) {
+      console.warn("Failed to update payment intent status:", error);
+    }
+    
+    return corsResponse({ 
+      success: true, 
+      status,
+      message: `Payment ${status} for order ${orderId}` 
+    });
+  } catch (error: any) {
     console.error('Error processing notification:', error);
     return corsResponse(
-      { error: 'Failed to process notification' },
+      { 
+        error: 'Failed to process notification',
+        details: error.message 
+      },
       { status: 500 }
     );
   }
@@ -104,101 +165,5 @@ export async function OPTIONS() {
     status: 200,
     headers: corsHeaders
   });
-}
-
-async function activateUserSubscription(orderId: string, email?: string) {
-  try {
-    console.log('Activating subscription for order:', orderId);
-    
-    // First try to get data from subscriptions table
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('user_id, package_id, period, created_at')
-      .eq('order_id', orderId)
-      .single();
-    
-    // If no subscription record, try to get from payment_intent
-    if (!subscription) {
-      console.log('No subscription found, checking payment_intent');
-      const { data: intentData } = await supabase
-        .from("payment_intent")
-        .select("email, package_id, period")
-        .eq("order_id", orderId)
-        .single();
-      
-      if (intentData) {
-        console.log('Found payment intent data:', intentData);
-        
-        // Try to find user by email
-        if (intentData.email || email) {
-          const userEmail = intentData.email || email;
-          const { data: userData } = await supabase
-            .from("user")
-            .select("id")
-            .eq("email", userEmail)
-            .single();
-          
-          if (userData) {
-            // Update user's membership
-            const { error: userUpdateError } = await supabase
-              .from("user")
-              .update({
-                account_membership: intentData.package_id.replace('pkg_', ''),
-              })
-              .eq("id", userData.id);
-            
-            if (userUpdateError) {
-              console.error('Error updating user membership:', userUpdateError);
-            } else {
-              console.log('Updated user membership successfully for user:', userData.id);
-            }
-          }
-        }
-      }
-      return;
-    }
-    
-    const startDate = new Date(subscription.created_at);
-    const expiryDate = new Date(startDate);
-    
-    if (subscription.period === 'monthly') {
-      expiryDate.setMonth(expiryDate.getMonth() + 1);
-    } else if (subscription.period === 'yearly') {
-      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-    }
-    
-    // Update user's account_membership
-    const { error: userUpdateError } = await supabase
-      .from("user")
-      .update({
-        account_membership: subscription.package_id,
-      })
-      .eq("id", subscription.user_id);
-    
-    if (userUpdateError) {
-      console.error('Error updating user membership:', userUpdateError);
-    }
-    
-    // Create or update user subscription record
-    const { error: subscriptionError } = await supabase
-      .from('user_subscriptions')
-      .upsert({
-        user_id: subscription.user_id,
-        package_id: subscription.package_id,
-        is_active: true,
-        start_date: startDate.toISOString(),
-        expiry_date: expiryDate.toISOString(),
-        updated_at: new Date().toISOString()
-      });
-    
-    if (subscriptionError) {
-      console.error('Error creating user subscription:', subscriptionError);
-    } else {
-      console.log('User subscription activated successfully for user:', subscription.user_id);
-    }
-    
-  } catch (error) {
-    console.error('Error activating subscription:', error);
-  }
 }
 

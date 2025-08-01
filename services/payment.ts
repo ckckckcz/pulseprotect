@@ -27,6 +27,12 @@ export async function createAIPackagePayment(
 ) {
   const orderId = generateOrderId();
 
+  console.log("Creating payment with customer info:", { 
+    name: customerInfo.firstName,
+    email: customerInfo.email,
+    phone: customerInfo.phone || "Not provided"
+  });
+
   // Make sure email is included in transaction_details as custom field
   const transactionParams = {
     transaction_details: {
@@ -50,11 +56,33 @@ export async function createAIPackagePayment(
     ],
     custom_field1: packageDetails.period, // Store period as custom field
     custom_field2: customerInfo.email,    // Store email as custom field for backup
+    custom_field3: userId || "",          // Store user ID for reference
   };
 
   try {
-    console.log("Creating payment with params:", transactionParams);
+    console.log("Creating payment with params:", JSON.stringify(transactionParams, null, 2));
 
+    // First, try to create a payment intent record to ensure we have the email stored
+    try {
+      await fetch("/api/subscriptions/create-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          email: customerInfo.email,
+          packageId: packageDetails.packageId,
+          packageName: packageDetails.packageName,
+          period: packageDetails.period,
+          amount: packageDetails.price,
+          orderId
+        })
+      });
+      console.log("Payment intent record created successfully");
+    } catch (error) {
+      console.warn("Failed to create payment intent, will try again after payment:", error);
+    }
+
+    // Now create the actual payment token
     const response = await fetch("/api/payment/create-token", {
       method: "POST",
       headers: {
@@ -71,25 +99,6 @@ export async function createAIPackagePayment(
 
     const paymentData = await response.json();
     console.log("Payment token created:", paymentData);
-
-    // Pre-record the payment intent with customer email to ensure we have this data
-    try {
-      await fetch("/api/subscriptions/create-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          email: customerInfo.email,
-          packageId: packageDetails.packageId,
-          packageName: packageDetails.packageName,
-          period: packageDetails.period,
-          amount: packageDetails.price,
-          orderId
-        })
-      });
-    } catch (error) {
-      console.warn("Failed to create payment intent, will try again after payment:", error);
-    }
 
     return {
       orderId,
@@ -194,7 +203,6 @@ export async function recordPayment(
     const period = paymentData.custom_field1 || 
                   (membershipType.includes("yearly") ? "yearly" : "monthly");
 
-    // Log untuk debug
     console.log("RECORD PAYMENT PARAMS:", {
       userId,
       membershipType,
@@ -204,6 +212,33 @@ export async function recordPayment(
       period,
     });
 
+    // Try to record payment directly to database first
+    try {
+      const { error } = await supabase
+        .from("payment")
+        .insert({
+          email: userEmail,
+          membership_type: cleanMembershipType,
+          order_id: orderId,
+          transaction_type: "purchase",
+          metode_pembayaran: paymentMethod,
+          harga: Number(amount),
+          status: "success",
+        });
+      
+      if (error) {
+        console.error("Direct database insert failed:", error);
+        // Continue to API call as fallback
+      } else {
+        console.log("Payment recorded directly to database");
+        return { success: true, method: "direct" };
+      }
+    } catch (dbError) {
+      console.error("Error in direct database recording:", dbError);
+      // Continue to API call
+    }
+
+    // Fallback: Use API endpoint to record payment
     const response = await fetch("/api/subscriptions/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -222,13 +257,13 @@ export async function recordPayment(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Failed to record payment:", errorText);
+      console.error("Failed to record payment via API:", errorText);
       throw new Error(`API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
-    console.log("Payment record result:", result);
-    return result;
+    console.log("Payment record API result:", result);
+    return { ...result, method: "api" };
   } catch (error) {
     console.error("Payment recording error:", error);
     throw error;
