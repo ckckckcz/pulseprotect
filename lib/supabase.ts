@@ -229,6 +229,64 @@ export type Database = {
           updated_at?: string | null
         }
       }
+      chat_rooms: {
+        Row: {
+          id: string  // UUID is represented as string in TypeScript
+          created_at: string
+          doctor_email: string
+          patient_email: string
+          status: 'active' | 'finished'
+        }
+        Insert: {
+          id?: string  // Optional for insert since it has a default
+          created_at?: string  // Optional since it has a default NOW()
+          doctor_email: string
+          patient_email: string
+          status?: 'active' | 'finished'  // Optional since it has a default 'active'
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          doctor_email?: string
+          patient_email?: string
+          status?: 'active' | 'finished'
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          chat_room_id: string
+          sender_type: 'doctor' | 'patient'
+          sender_email: string
+          content: string
+          message_type: 'text' | 'image' | 'file'
+          file_url: string | null
+          file_name: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          chat_room_id: string
+          sender_type: 'doctor' | 'patient'
+          sender_email: string
+          content: string
+          message_type?: 'text' | 'image' | 'file'
+          file_url?: string | null
+          file_name?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          chat_room_id?: string
+          sender_type?: 'doctor' | 'patient'
+          sender_email?: string
+          content?: string
+          message_type?: 'text' | 'image' | 'file'
+          file_url?: string | null
+          file_name?: string | null
+          created_at?: string
+        }
+      }
     }
   }
 }

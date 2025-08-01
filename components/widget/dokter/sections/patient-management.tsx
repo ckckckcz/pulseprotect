@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,23 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search, Plus, Eye, Edit, Calendar, Phone, Mail, MapPin, MessageSquare } from "lucide-react"
+import { Search, Plus, Calendar, Phone, Mail, MapPin, MessageSquare, Loader2 } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { Database } from "@/lib/supabase"
+
+interface User {
+  id: string
+  email: string
+  nama_lengkap?: string
+  nomor_telepon?: string
+  created_at: string
+  role: string
+  foto_profile?: string
+  gender?: string
+  age?: number
+  condition?: string
+  last_visit?: string
+}
 
 interface PatientManagementProps {
   setSelectedPatient: (patient: any) => void
@@ -17,75 +33,168 @@ interface PatientManagementProps {
 
 export function PatientManagement({ setSelectedPatient, setActiveSection }: PatientManagementProps) {
   const [searchTerm, setSearchTerm] = useState("")
+  const [users, setUsers] = useState<User[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [processingUser, setProcessingUser] = useState<string | null>(null)
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("satria@pulseprotect.com") // Default to current user
+  const supabase = createClientComponentClient<Database>()
 
-  // Add handleStartConsultation function
-  const handleStartConsultation = (patient: any) => {
-    setSelectedPatient(patient)
-    setActiveSection("consultation-room")
+  useEffect(() => {
+    // Get the authenticated user's email
+    async function getCurrentUser() {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting session:', error)
+          return
+        }
+        
+        if (session?.user?.email) {
+          console.log('Using authenticated user email:', session.user.email)
+          setCurrentUserEmail(session.user.email)
+        } else {
+          console.log('No authenticated user found, using default:', currentUserEmail)
+          // Keep using the default email we set in state
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error)
+      }
+    }
+    
+    getCurrentUser()
+  }, [supabase, currentUserEmail])
+
+  useEffect(() => {
+    async function fetchUsers() {
+      setIsLoading(true)
+      try {
+        const { data, error } = await supabase
+          .from('user')
+          .select('*')
+          .eq('role', 'user')
+        
+        if (error) {
+          console.error('Error fetching users:', error)
+          return
+        }
+        
+        setUsers(data || [])
+      } catch (error) {
+        console.error('Error fetching users:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [supabase])
+
+  const handleStartConsultation = async (patient: User) => {
+    try {
+      setProcessingUser(patient.id)
+      
+      console.log('Starting consultation with patient:', patient.email)
+      console.log('Using doctor email:', currentUserEmail)
+      
+      // Check if a chat room already exists between this doctor and patient
+      const { data: existingRooms, error: roomError } = await supabase
+        .from('chat_rooms')
+        .select('id')
+        .eq('doctor_email', currentUserEmail)
+        .eq('patient_email', patient.email)
+        .eq('status', 'active')
+      
+      if (roomError) {
+        console.error('Error checking for existing chat room:', roomError)
+        return
+      }
+      
+      console.log('Existing rooms:', existingRooms)
+      
+      let chatRoomId = existingRooms && existingRooms.length > 0 ? existingRooms[0].id : null
+      
+      // If no chat room exists, create a new one
+      if (!chatRoomId) {
+        console.log('Creating new chat room...')
+        
+        try {
+          const { data: newRooms, error: createError } = await supabase
+            .from('chat_rooms')
+            .insert({
+              doctor_email: currentUserEmail, // Use current user's email
+              patient_email: patient.email,
+              status: 'active'
+            })
+            .select('id')
+          
+          console.log('Insert response:', { newRooms, createError })
+          
+          if (createError) {
+            console.error('Error creating new chat room:', createError)
+            return
+          }
+          
+          if (!newRooms || newRooms.length === 0) {
+            console.error('No room created despite no error')
+            return
+          }
+          
+          chatRoomId = newRooms[0].id
+        } catch (insertError) {
+          console.error('Exception during room creation:', insertError)
+          return
+        }
+      }
+      
+      console.log('Using chat room ID:', chatRoomId)
+      
+      if (!chatRoomId) {
+        console.error('Failed to get a valid chat room ID')
+        return
+      }
+      
+      // Set the selected patient with the chat room ID and doctor email
+      setSelectedPatient({
+        ...patient,
+        full_name: patient.nama_lengkap, // Map fields for consistency
+        condition: "Konsultasi umum", // Default condition
+        chatRoomId,
+        doctorEmail: currentUserEmail // Pass the current user's email
+      })
+      
+      setActiveSection("consultation-room")
+    } catch (error) {
+      console.error('Error handling chat initiation:', error)
+    } finally {
+      setProcessingUser(null)
+    }
   }
 
-  const patients = [
-    {
-      id: 1,
-      name: "Siti Nurhaliza",
-      age: 28,
-      gender: "Perempuan",
-      phone: "081234567890",
-      email: "siti.nurhaliza@email.com",
-      lastVisit: "2024-01-15",
-      status: "active",
-      condition: "Hipertensi",
-    },
-    {
-      id: 2,
-      name: "Budi Santoso",
-      age: 45,
-      gender: "Laki-laki",
-      phone: "081234567891",
-      lastVisit: "2024-01-10",
-      status: "active",
-      condition: "Diabetes",
-    },
-    {
-      id: 3,
-      name: "Maria Gonzalez",
-      age: 32,
-      gender: "Perempuan",
-      phone: "081234567892",
-      email: "maria.gonzalez@email.com",
-      lastVisit: "2024-01-08",
-      status: "inactive",
-      condition: "Kehamilan",
-    },
-    {
-      id: 4,
-      name: "Ahmad Rizki",
-      age: 38,
-      gender: "Laki-laki",
-      phone: "081234567893",
-      email: "ahmad.rizki@email.com",
-      lastVisit: "2024-01-12",
-      status: "active",
-      condition: "Asma",
-    },
-  ]
-
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.condition.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredUsers = users.filter(
+    (user) =>
+      (user.nama_lengkap?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (user.condition?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   )
 
-  const getStatusColor = (status: string) => {
-    return status === "active" ? "default" : "secondary"
+  const getStatusColor = (user: User): "default" | "secondary" | "destructive" | "outline" => {
+    // You can define your own status logic here, for example based on last activity
+    return "default"
   }
 
-  const getStatusText = (status: string) => {
-    return status === "active" ? "Aktif" : "Tidak Aktif"
+  const getStatusText = (user: User) => {
+    // You can define your own status logic here
+    return "Aktif"
+  }
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A"
+    return new Date(dateString).toLocaleDateString("id-ID")
   }
 
   return (
-    <div className="space-y-6 ">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Manajemen Pasien</h2>
@@ -132,78 +241,98 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-gray-200 hover:bg-gray-50">
-                <TableHead>Pasien</TableHead>
-                <TableHead>Kontak</TableHead>
-                <TableHead>Kondisi</TableHead>
-                <TableHead>Kunjungan Terakhir</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPatients.map((patient) => (
-                <TableRow key={patient.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={`/placeholder.svg?height=32&width=32&query=${patient.name}`} />
-                        <AvatarFallback>
-                          {patient.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{patient.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {patient.age} tahun, {patient.gender}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1 text-sm">
-                        <Phone className="h-3 w-3" />
-                        {patient.phone}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Mail className="h-3 w-3" />
-                        {patient.email}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="text-black">{patient.condition}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(patient.lastVisit).toLocaleDateString("id-ID")}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusColor(patient.status)}>{getStatusText(patient.status)}</Badge>
-                  </TableCell>
-                  <TableCell>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleStartConsultation(patient)}
-                        className="gap-1 hover:bg-teal-700 rounded-xl hover:text-white"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Chat
-                      </Button>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading data pasien...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-gray-200 hover:bg-gray-50">
+                  <TableHead>Pasien</TableHead>
+                  <TableHead>Kontak</TableHead>
+                  <TableHead>Terdaftar</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-4">
+                      {searchTerm ? "Tidak ada pasien yang sesuai dengan pencarian" : "Belum ada data pasien"}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id} className="border-b border-gray-200 hover:bg-gray-50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="border-2 border-teal-600">
+                            <AvatarImage src={user.foto_profile || `/placeholder.svg?height=32&width=32&query=${user.nama_lengkap || user.email}`} />
+                            <AvatarFallback>
+                              {user.nama_lengkap
+                                ? user.nama_lengkap
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                : user.email?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.nama_lengkap || user.email}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {user.age ? `${user.age} tahun, ` : ""}{user.gender || ""}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {user.nomor_telepon && (
+                            <div className="flex items-center gap-1 text-sm">
+                              <Phone className="h-3 w-3" />
+                              {user.nomor_telepon}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1 text-sm">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(user.created_at)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusColor(user)}>{getStatusText(user)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleStartConsultation(user)}
+                          disabled={processingUser === user.id}
+                          className="gap-1 hover:bg-teal-700 rounded-xl hover:text-white"
+                        >
+                          {processingUser === user.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MessageSquare className="h-4 w-4" />
+                          )}
+                          Chat
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
