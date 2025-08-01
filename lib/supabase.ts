@@ -153,6 +153,82 @@ export type Database = {
           email?: string | null
         }
       }
+      dokter: {
+        Row: {
+          id: number
+          email: string
+          spesialis: string
+          lokasi: string | null
+          lokasi_rumah_sakit: string | null
+          pengalaman: string | null
+          harga_konsultasi: number | null
+          pendidikan: any[] | null  // JSON array of education entries
+          rating: number | null
+          jumlah_ulasan: number | null
+          bahasa: string[] | null  // JSON array of languages
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          email: string
+          spesialis: string
+          lokasi?: string | null
+          lokasi_rumah_sakit?: string | null
+          pengalaman?: string | null
+          harga_konsultasi?: number | null
+          pendidikan?: any[] | null
+          rating?: number | null
+          jumlah_ulasan?: number | null
+          bahasa?: string[] | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          email?: string
+          spesialis?: string
+          lokasi?: string | null
+          lokasi_rumah_sakit?: string | null
+          pengalaman?: string | null
+          harga_konsultasi?: number | null
+          pendidikan?: any[] | null
+          rating?: number | null
+          jumlah_ulasan?: number | null
+          bahasa?: string[] | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      admin: {
+        Row: {
+          id: number
+          email: string
+          department: string | null
+          access_level: string | null
+          last_login: string | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          email: string
+          department?: string | null
+          access_level?: string | null
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          email?: string
+          department?: string | null
+          access_level?: string | null
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
     }
   }
 }

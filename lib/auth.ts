@@ -121,6 +121,26 @@ export const authService = {
       }
 
       console.log("Login successful for:", email);
+      
+      // Get additional profile data based on role
+      if (userData.role === 'dokter' || userData.role === 'admin') {
+        try {
+          const table = userData.role === 'dokter' ? 'dokter' : 'admin';
+          const { data: profileData, error: profileError } = await supabase
+            .from(table)
+            .select('*')
+            .eq('email', email)
+            .single();
+            
+          if (!profileError && profileData) {
+            // Add profile data to user data
+            userData.profile = profileData;
+          }
+        } catch (profileError) {
+          console.error(`Error fetching ${userData.role} profile:`, profileError);
+          // Continue even if profile fetch fails - user can still log in
+        }
+      }
 
       // Return user data without sensitive fields
       const { 

@@ -1,39 +1,75 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getHomePathForRole } from '@/lib/role-utils'
+
+// Define protected routes and their allowed roles
+const protectedRoutes = [
+  {
+    path: '/dokter',
+    roles: ['dokter']
+  },
+  {
+    path: '/admin',
+    roles: ['admin']
+  },
+  {
+    path: '/dashboard',
+    roles: ['user', 'dokter', 'admin'] // All authenticated users can access dashboard
+  }
+]
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Define protected routes - REMOVE dashboard protection for now
-  const protectedRoutes: string[] = [] // Empty for now
-  const authRoutes = ['/login', '/register']
-
-  // Check if the current path is protected
+  const userSession = request.cookies.get('user-session')
+  const path = request.nextUrl.pathname
+  
+  // Check if path requires authentication
   const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
+    path.startsWith(route.path)
   )
-
-  // Check if the current path is an auth route
-  const isAuthRoute = authRoutes.some(route => 
-    pathname.startsWith(route)
-  )
-
-  // Get session data from request headers (if available)
-  const userSession = request.cookies.get('user-session')?.value
-
-  if (isProtectedRoute && !userSession) {
-    // Redirect to login if accessing protected route without session
+  
+  // If this is not a protected route, allow the request
+  if (!isProtectedRoute) {
+    return NextResponse.next()
+  }
+  
+  // If no session exists, redirect to login
+  if (!userSession) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  if (isAuthRoute && userSession) {
-    // Redirect to dashboard if accessing auth routes while logged in
-    return NextResponse.redirect(new URL('/', request.url)) // Changed to home page
+  
+  try {
+    // Parse the session cookie
+    const session = JSON.parse(userSession.value)
+    
+    // Check if session is expired
+    const now = new Date()
+    const expires = new Date(session.expires)
+    
+    if (now > expires) {
+      // Session expired, redirect to login
+      const response = NextResponse.redirect(new URL('/login', request.url))
+      response.cookies.delete('user-session')
+      return response
+    }
+    
+    // Check if user has permission for this route
+    const routeConfig = protectedRoutes.find(route => path.startsWith(route.path))
+    if (routeConfig && !routeConfig.roles.includes(session.role)) {
+      // User doesn't have permission, redirect to their appropriate homepage
+      const homePath = getHomePathForRole(session.role)
+      return NextResponse.redirect(new URL(homePath, request.url))
+    }
+    
+    // User has permission, allow the request
+    return NextResponse.next()
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // If there's an error parsing the cookie, redirect to login
+    return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  return NextResponse.next()
 }
 
+// Specify which paths this middleware will run for
 export const config = {
-  matcher: ['/login', '/register'] // Removed dashboard from matcher
+  matcher: ['/dokter/:path*', '/admin/:path*', '/dashboard/:path*']
 }

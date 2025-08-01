@@ -3,6 +3,7 @@
 import Cookies from 'js-cookie';
 import { supabase } from './supabase';
 import { useState, useEffect } from 'react';
+import bcrypt from 'bcryptjs';
 
 // Session duration in seconds (2 hours)
 const SESSION_DURATION = 2 * 60 * 60; 
@@ -14,6 +15,7 @@ export interface UserSession {
   role: string | null;
   sessionExpires: number;
   lastActivity: number;
+  profile?: any; // For storing doctor or admin specific data
 }
 
 // Function to login with email and password
@@ -22,10 +24,10 @@ export async function loginWithCredentials(email: string, password: string) {
     console.log("Attempting login with:", email);
     
     const { data: user, error } = await supabase
-      .from('user')  // Use 'user' instead of '"user"' with double quotes
-      .select('id, email, nama_lengkap, role, kata_sandi, status, verifikasi_email')
+      .from('user')
+      .select('*') // Select all fields to get the hashed password
       .eq('email', email.toLowerCase().trim())
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Supabase error:', error);
@@ -38,16 +40,27 @@ export async function loginWithCredentials(email: string, password: string) {
     }
 
     // Check email verification status
-    if (!user.verifikasi_email) {
+    if (user.verifikasi_email === false) {
       return { 
         success: false, 
         message: 'Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.' 
       };
     }
 
-    // For this implementation, we're assuming password is already hashed in the DB
-    // In a real implementation, you should use bcrypt to compare passwords
-    if (user.kata_sandi !== password) {
+    // Use bcrypt to compare the provided password with the stored hash
+    let isValidPassword = false;
+    try {
+      if (!user.kata_sandi) {
+        throw new Error("User has no password hash stored");
+      }
+      isValidPassword = await bcrypt.compare(password, user.kata_sandi);
+    } catch (error) {
+      console.error("Password comparison error:", error);
+      return { success: false, message: 'Error validasi kredensial' };
+    }
+
+    if (!isValidPassword) {
+      console.log("Invalid password for:", email);
       return { success: false, message: 'Email atau kata sandi salah' };
     }
 
@@ -55,17 +68,33 @@ export async function loginWithCredentials(email: string, password: string) {
       return { success: false, message: 'Akun tidak aktif' };
     }
 
+    // Get additional profile data if user is doctor or admin
+    let profileData = null;
+    if (user.role === 'dokter' || user.role === 'admin') {
+      const table = user.role === 'dokter' ? 'dokter' : 'admin';
+      const { data: profile } = await supabase
+        .from(table)
+        .select('*')
+        .eq('email', email)
+        .single();
+        
+      if (profile) {
+        profileData = profile;
+      }
+    }
+
     const now = Date.now();
     const sessionId = `session_${user.id}_${now}`;
     const sessionExpiry = now + (SESSION_DURATION * 1000);
     
-    const sessionData: UserSession = {
+    const sessionData = {
       id: user.id,
       email: user.email || '',
       nama_lengkap: user.nama_lengkap,
       role: user.role,
       sessionExpires: sessionExpiry,
-      lastActivity: now
+      lastActivity: now,
+      profile: profileData
     };
 
     if (typeof window !== 'undefined') {

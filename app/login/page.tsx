@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
+import { getHomePathForRole } from "@/lib/role-utils"
 
 // Extract the form component that uses useSearchParams
 function LoginForm() {
@@ -20,7 +21,15 @@ function LoginForm() {
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const router = useRouter()
-  const { login, loginWithGoogle, loading: isLoading } = useAuth()
+  const { login, loginWithGoogle, loading: isLoading, user, checkUserRole } = useAuth()
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      const homePath = getHomePathForRole(user.role as any);
+      router.push(homePath);
+    }
+  }, [user, router]);
 
   // Handle email from URL params and check for reset=success
   useEffect(() => {
@@ -49,14 +58,26 @@ function LoginForm() {
     try {
       console.log(`Attempting login with email: ${email}`)
       
+      // First check if this email exists and what role they have
+      const userRole = await checkUserRole(email.trim());
+      console.log(`Checked user role for ${email}: ${userRole || 'unknown'}`);
+      
       // Use safe error handling with the login function
       const loginResult = await login(email.trim(), password)
       
       if (loginResult && loginResult.error) {
         console.error('Login returned error:', loginResult.message)
         setError(loginResult.message || "Terjadi kesalahan saat login. Silakan coba lagi.")
+        return;
       }
-      // No else needed - auth context will handle redirect automatically
+      
+      // If login is successful and we have the user data, redirect based on role
+      if (loginResult && loginResult.user) {
+        const role = loginResult.user.role || 'user';
+        const homePath = getHomePathForRole(role);
+        console.log(`Login successful. Redirecting to ${homePath} for role ${role}`);
+        router.push(homePath);
+      }
       
     } catch (error: any) {
       console.error('Unhandled login error:', error)
@@ -373,3 +394,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

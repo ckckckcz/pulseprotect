@@ -1,186 +1,261 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { jwtService } from '@/lib/jwt-service';
-import { httpClient } from '@/lib/http-client';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import { supabase } from "@/lib/supabaseClient";
+import bcrypt from 'bcryptjs';
+import { getHomePathForRole } from "@/lib/role-utils";
 
-interface User {
+interface UserData {
   id: number;
   email: string;
   nama_lengkap: string;
-  nomor_telepon?: string;
-  role?: string;
-  account_membership?: string;
-  foto_profile?: string;
-  created_at?: string;
-  verifikasi_email?: boolean;
+  role: string | null;
+  profile?: any;
 }
 
 interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<{ error?: boolean; message?: string }>,
-  loginWithGoogle: () => Promise<void>,
-  logout: () => void,
-  loading: boolean,
-  refreshUser: () => Promise<void>
+  user: UserData | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<any>;
+  loginWithGoogle: () => Promise<void>;
+  logout: () => void;
+  checkUserRole: (email: string) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Initialize auth state
   useEffect(() => {
-    initializeAuth();
-  }, []);
-
-  const initializeAuth = async () => {
-    try {
-      console.log("Initializing auth with JWT...");
-      
-      if (jwtService.isAuthenticated()) {
-        const userFromToken = jwtService.getUserFromToken();
-        if (userFromToken) {
-          // Fetch full user data from API
+    // Check for existing session
+    const checkSession = async () => {
+      try {
+        // Try to get from cookie first
+        const sessionCookie = Cookies.get('user-session');
+        
+        if (sessionCookie) {
           try {
-            const userData = await httpClient.get(`/api/auth/user/${userFromToken.userId}`);
-            if (userData.success && userData.user) {
-              setUser(userData.user);
-              console.log("User authenticated via JWT:", userData.user.email);
+            const sessionData = JSON.parse(sessionCookie);
+            const expiry = new Date(sessionData.expires).getTime();
+            
+            if (expiry > Date.now()) {
+              // Get more user data from localStorage if available
+              const storedUserJson = localStorage.getItem('user');
+              if (storedUserJson) {
+                setUser(JSON.parse(storedUserJson));
+              } else {
+                // Set basic user data from cookie
+                setUser({
+                  id: sessionData.userId,
+                  email: sessionData.email,
+                  nama_lengkap: sessionData.nama_lengkap,
+                  role: sessionData.role,
+                });
+              }
             } else {
-              console.error("Failed to get user data:", userData);
-              jwtService.clearTokens();
+              // Session expired
+              handleLogout();
             }
-          } catch (error) {
-            console.error("Failed to fetch user data:", error);
-            // Token might be invalid, clear it
-            jwtService.clearTokens();
+          } catch (e) {
+            console.error("Error parsing session cookie:", e);
           }
         }
+        
+      } catch (error) {
+        console.error("Session check error:", error);
+      } finally {
+        setLoading(false);
       }
+    };
+    
+    checkSession();
+  }, [router]);
+
+  // Check user role based on email
+  const checkUserRole = async (email: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('user')
+        .select('role')
+        .eq('email', email.toLowerCase().trim())
+        .single();
+      
+      if (error || !data) {
+        console.error("Error checking user role:", error);
+        return null;
+      }
+      
+      console.log(`User ${email} has role: ${data.role}`);
+      return data.role;
     } catch (error) {
-      console.error("Auth initialization error:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error in checkUserRole:", error);
+      return null;
     }
   };
 
   const login = async (email: string, password: string) => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      console.log("Attempting JWT login for:", email);
-
-      // Make login request without auth (skipAuth: true)
-      const response = await httpClient.post('/api/auth/login', 
-        { email, password },
-        { skipAuth: true }
-      );
-
-      if (response.success && response.accessToken) {
-        // Store JWT tokens
-        jwtService.setTokens(response.accessToken, response.refreshToken);
-        
-        // Set user data
-        setUser(response.user);
-        
-        console.log("JWT login successful for user:", response.user.email);
-        
-        // Handle redirect after successful login - but don't redirect if on /pricing
-        setTimeout(() => {
-          const currentPath = window.location.pathname;
-          const urlParams = new URLSearchParams(window.location.search);
-          const redirectUrl = urlParams.get('redirect');
-          
-          // If we're already on the pricing page or going to pricing, don't redirect
-          if (currentPath === '/pricing' || redirectUrl === '/pricing') {
-            console.log("User is on pricing page, staying here");
-            // Just reload to refresh the auth state
-            window.location.reload();
-          } else if (redirectUrl && redirectUrl !== currentPath) {
-            console.log("Redirecting to:", redirectUrl);
-            router.push(redirectUrl);
-          } else if (currentPath === '/login') {
-            console.log("Redirecting to home page");
-            router.push('/');
-          }
-          // If none of the above, stay on current page (like /pricing)
-        }, 100);
-        
-        return { error: false };
-      } else {
+      console.log("Login attempt for:", email);
+      
+      const { data, error } = await supabase
+        .from('user')
+        .select('*')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle();
+      
+      if (error || !data) {
+        console.error("User query error:", error);
+        setLoading(false);
+        return { error: true, message: "Email atau password salah" };
+      }
+      
+      // Check if verified
+      if (data.verifikasi_email === false) {
+        setLoading(false);
         return { 
           error: true, 
-          message: response.message || "Login failed" 
+          message: "Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi."
         };
       }
+      
+      // Check password
+      let isValidPassword = false;
+      try {
+        if (!data.kata_sandi) {
+          throw new Error("User has no password hash stored");
+        }
+        isValidPassword = await bcrypt.compare(password, data.kata_sandi);
+      } catch (bcryptError) {
+        console.error("Password comparison error:", bcryptError);
+        setLoading(false);
+        return { error: true, message: "Error validasi kredensial" };
+      }
+      
+      if (!isValidPassword) {
+        setLoading(false);
+        return { error: true, message: "Email atau password salah" };
+      }
+      
+      // Get additional profile data based on role
+      if (data.role === 'dokter' || data.role === 'admin') {
+        try {
+          const table = data.role === 'dokter' ? 'dokter' : 'admin';
+          const { data: profileData } = await supabase
+            .from(table)
+            .select('*')
+            .eq('email', email)
+            .single();
+            
+          if (profileData) {
+            data.profile = profileData;
+          }
+        } catch (profileError) {
+          console.error(`Error fetching ${data.role} profile:`, profileError);
+        }
+      }
+      
+      // Remove sensitive data
+      const { kata_sandi, konfirmasi_kata_sandi, verification_token, ...safeUser } = data;
+      
+      // Save user data
+      saveUserSession(safeUser);
+      
+      // Update state
+      setUser(safeUser);
+      setLoading(false);
+      
+      return { user: safeUser };
+      
     } catch (error: any) {
       console.error("Login error:", error);
-      return { 
-        error: true, 
-        message: error.message || "Terjadi kesalahan saat login" 
-      };
-    } finally {
       setLoading(false);
+      return { error: true, message: error.message || "Terjadi kesalahan saat login" };
     }
   };
 
   const loginWithGoogle = async () => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      // Implement Google OAuth with JWT
-      // This would typically involve redirecting to Google OAuth
-      // and handling the callback to get JWT tokens
-      console.log("Google login with JWT not implemented yet");
-      throw new Error("Google login not implemented yet");
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) throw error;
+      
     } catch (error: any) {
       console.error("Google login error:", error);
-      throw new Error(error.message || "Terjadi kesalahan saat login dengan Google");
-    } finally {
       setLoading(false);
+      throw error;
     }
   };
 
-  const logout = () => {
-    console.log("Logging out and clearing JWT tokens");
-    jwtService.clearTokens();
-    setUser(null);
-    router.push('/login');
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      // Clear cookies
+      Cookies.remove('user-session', { path: '/' });
+      
+      // Clear localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('userSession');
+      localStorage.removeItem('sessionExpiry');
+      
+      // Clear state
+      setUser(null);
+      
+      // Redirect to login page
+      router.push('/login');
+    }
   };
 
-  const refreshUser = async () => {
+  const saveUserSession = (userData: any) => {
+    if (typeof window === 'undefined') return;
+    
     try {
-      if (jwtService.isAuthenticated()) {
-        const userFromToken = jwtService.getUserFromToken();
-        if (userFromToken) {
-          console.log("Refreshing user data from API...");
-          const userData = await httpClient.get(`/api/auth/user/${userFromToken.userId}`);
-          if (userData.success && userData.user) {
-            setUser(userData.user);
-            console.log("User data refreshed successfully:", {
-              email: userData.user.email,
-              membership: userData.user.account_membership
-            });
-          }
-        }
-      }
+      // Save to localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Save to cookies
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 7); // 7 days
+      
+      Cookies.set('user-session', JSON.stringify({
+        userId: userData.id,
+        email: userData.email || '',
+        nama_lengkap: userData.nama_lengkap || '',
+        role: userData.role || 'user',
+        expires: expiryDate.toISOString()
+      }), { 
+        expires: 7,
+        path: '/',
+        sameSite: 'lax'
+      });
     } catch (error) {
-      console.error("Failed to refresh user:", error);
+      console.error("Error saving user session:", error);
     }
+  };
+
+  const contextValue: AuthContextType = {
+    user,
+    loading,
+    login,
+    loginWithGoogle,
+    logout: handleLogout,
+    checkUserRole,
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      login,
-      loginWithGoogle,
-      logout,
-      loading,
-      refreshUser
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
