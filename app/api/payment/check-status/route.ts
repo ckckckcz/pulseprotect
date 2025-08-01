@@ -112,6 +112,15 @@ export async function POST(request: Request) {
       } else {
         console.log("Payment record already exists for order:", orderId);
       }
+
+      // Verify user membership was updated by trigger
+      const { data: updatedUser } = await supabase
+        .from("user")
+        .select("email, account_membership")
+        .eq("email", paymentIntentData.email)
+        .single();
+        
+      console.log("User membership after trigger:", updatedUser);
     }
 
     return corsResponse({ 

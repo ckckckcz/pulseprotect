@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import jwt from 'jsonwebtoken';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: Request, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const userId = params.id;
+    // Await the params since it's now a Promise in newer Next.js versions
+    const { id: userId } = await params;
     
     // Get authorization header
     const authHeader = request.headers.get('authorization');

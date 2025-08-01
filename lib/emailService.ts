@@ -40,7 +40,7 @@ export const emailService = {
     }
 
     // Use environment variable for app URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mechaminds-17.vercel.app";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pulseprotect.vercel.app";
     const verificationUrl = `${baseUrl}/auth/verify-email?token=${verificationToken}`;
 
     const mailOptions = {
@@ -121,7 +121,7 @@ export const emailService = {
     }
 
     // Use environment variable for app URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mechaminds-17.vercel.app";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pulseprotect.vercel.app";
     const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`;
 
     const mailOptions = {
