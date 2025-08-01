@@ -189,4 +189,75 @@ export class JWTService {
   }
 }
 
-export const jwtService = JWTService.getInstance();
+// Export a simplified JWT service with necessary methods
+export const jwtService = {
+  setTokens: (accessToken: string, refreshToken: string) => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+  },
+  
+  getToken: () => {
+    return localStorage.getItem('accessToken');
+  },
+  
+  // Add decodeToken method
+  decodeToken: (token: string) => {
+    try {
+      return jwtDecode<JWTPayload>(token);
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  },
+  
+  // Add isAuthenticated method
+  isAuthenticated: () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return false;
+    
+    try {
+      const decoded = jwtDecode<JWTPayload>(token);
+      const currentTime = Date.now() / 1000;
+      return decoded.exp > currentTime;
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      return false;
+    }
+  },
+  
+  // Add getUserFromToken method
+  getUserFromToken: () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+    
+    try {
+      return jwtDecode<JWTPayload>(token);
+    } catch (error) {
+      console.error('Error getting user from token:', error);
+      return null;
+    }
+  },
+  
+  // Add clearTokens method
+  clearTokens: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  },
+  
+  // Add verifyToken method for server-side verification
+  verifyToken: (token: string) => {
+    try {
+      const decoded = jwtDecode<JWTPayload>(token);
+      const currentTime = Date.now() / 1000;
+      
+      if (decoded.exp <= currentTime) {
+        throw new Error('Token expired');
+      }
+      
+      return decoded;
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      throw error;
+    }
+  }
+};

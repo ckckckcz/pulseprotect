@@ -1,6 +1,6 @@
 "use client"
 
-  import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, Info, RefreshCw, Sun, Moon, MessageCircle, Bolt, LogOut, Globe2, Languages } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from "next/link"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { authService } from "@/lib/auth"
+import { jwtService } from "@/lib/jwt-service" // Add this import for jwtService
 import { toast } from "sonner"
 import Navbar from "@/components/widget/navbar"
 import {
@@ -50,17 +51,18 @@ type Country = {
   code: string
 }
 
-// Add new type definitions for payment
-type Payment = {
-  id_payment: number;
+// Add new type definitions for payment intent
+type PaymentIntent = {
+  id: number;
   email: string;
-  membership_type: string;
   order_id: string;
-  transaction_type: string;
-  metode_pembayaran: string;
-  harga: number;
+  package_id: string;
+  package_name: string;
+  period: 'monthly' | 'yearly';
+  amount: number;
   status: string;
   created_at: string;
+  updated_at: string | null;
 }
 
 export default function UserProfile() {
@@ -86,7 +88,7 @@ export default function UserProfile() {
   const [formChanged, setFormChanged] = useState(false)
   
   // Add state for payments
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<PaymentIntent[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
   
   // Avatar state
@@ -370,23 +372,47 @@ export default function UserProfile() {
     }
   };
 
-  // Add function to fetch user payments
+  // Add function to fetch user payments with JWT auth
   const fetchUserPayments = async () => {
     if (!user?.email) return;
     
     setLoadingPayments(true);
     try {
-      const response = await fetch(`/api/payments/user-transactions?email=${encodeURIComponent(user.email)}`);
+      // Get JWT token if available
+      const token = jwtService.getToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      // Use JWT auth if available, otherwise fall back to query parameter
+      const endpoint = token
+        ? `/api/payments/user-intents`
+        : `/api/payments/user-intents?email=${encodeURIComponent(user.email)}`;
+        
+      const response = await fetch(endpoint, { headers });
       
       if (!response.ok) {
         throw new Error('Failed to fetch payment data');
       }
       
       const result = await response.json();
-      setPayments(result.data || []);
+      
+      // Process and set payments data
+      if (result.data && Array.isArray(result.data)) {
+        setPayments(result.data);
+        console.log(`Loaded ${result.data.length} payment records from payment_intent table`);
+      } else {
+        console.warn('Unexpected payment data format:', result);
+        setPayments([]);
+      }
     } catch (error) {
       console.error('Error fetching payment data:', error);
       toast.error('Gagal memuat data transaksi');
+      setPayments([]);
     } finally {
       setLoadingPayments(false);
     }
@@ -492,7 +518,7 @@ export default function UserProfile() {
   // Ambil membership_type dari transaksi terakhir yang sukses
   const latestMembershipType = payments
     .filter((p) => p.status === "success")
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.membership_type;
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.package_name;
 
   const handleChangeLanguage = (lang: 'id' | 'en') => {
     // Ganti prefix di URL
@@ -501,6 +527,40 @@ export default function UserProfile() {
     const newPath = segments.join('/') || '/';
     router.push(newPath);
   };
+
+  // Add state for payment filtering
+  const [paymentFilter, setPaymentFilter] = useState<string>('all');
+
+  // Add filtered payments logic
+  const filteredPayments = useMemo(() => {
+    if (paymentFilter === 'all') {
+      return payments;
+    }
+    return payments.filter(payment => payment.status === paymentFilter);
+  }, [payments, paymentFilter]);
+
+  function getStatusBadge(status: string): React.ReactNode {
+    const colorClass = getStatusColor(status);
+    let label = "";
+    switch (status.toLowerCase()) {
+      case "success":
+        label = "Berhasil";
+        break;
+      case "pending":
+        label = "Menunggu";
+        break;
+      case "failed":
+        label = "Gagal";
+        break;
+      default:
+        label = status.charAt(0).toUpperCase() + status.slice(1);
+    }
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${colorClass}`}>
+        {label}
+      </span>
+    );
+  }
 
   return (
     <>
@@ -795,19 +855,42 @@ export default function UserProfile() {
                 <div className="space-y-6">
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
                     <h2 className="text-2xl font-semibold mb-2">Transaksi</h2>
-                    <p className="text-gray-400 text-sm mb-6">Riwayat transaksi pembayaran paket AI Anda.</p>
+                    <p className="text-gray-400 text-sm mb-6">Riwayat transaksi pembayaran paket AI Anda dari tabel payment_intent.</p>
+                    
+                    {/* Add filtering options above the payment table */}
+                    <div className="flex flex-wrap items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-gray-900">Riwayat Transaksi</h3>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">Filter:</span>
+                        <Select value={paymentFilter} onValueChange={(value) => setPaymentFilter(value)}>
+                          <SelectTrigger className="w-[140px] bg-white border-gray-200 text-sm rounded-xl">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Semua</SelectItem>
+                            <SelectItem value="success">Berhasil</SelectItem>
+                            <SelectItem value="pending">Menunggu</SelectItem>
+                            <SelectItem value="failed">Gagal</SelectItem>
+                            <SelectItem value="challenge">Perlu Verifikasi</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     
                     {loadingPayments ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
                       </div>
-                    ) : payments.length > 0 ? (
+                    ) : filteredPayments.length > 0 ? (
                       <div className="overflow-x-auto rounded-xl border border-gray-200">
                         <table className="min-w-full divide-y divide-gray-200 overflow-hidden">
                           <thead className="bg-gray-100">
                             <tr>
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ID Transaksi
+                                ID
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Order ID
                               </th>
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Tanggal
@@ -816,7 +899,7 @@ export default function UserProfile() {
                                 Paket
                               </th>
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Metode Pembayaran
+                                Periode
                               </th>
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Jumlah
@@ -824,32 +907,37 @@ export default function UserProfile() {
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                               </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Terakhir Diupdate
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {payments.map((payment) => (
-                              <tr key={payment.id_payment} className="hover:bg-gray-50">
+                            {filteredPayments.map((payment) => (
+                              <tr key={payment.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {payment.order_id}
+                                  {payment.id}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  <span className="font-mono">{payment.order_id}</span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   {format(new Date(payment.created_at), 'dd MMM yyyy, HH:mm', { locale: id })}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
-                                  {payment.membership_type}
+                                  {payment.package_name}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                                  {payment.metode_pembayaran.replace(/_/g, ' ')}
+                                  {payment.period === 'monthly' ? 'Bulanan' : 'Tahunan'}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                                  {formatCurrency(payment.harga)}
+                                  {formatCurrency(payment.amount)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(payment.status)}`}>
-                                    {payment.status === 'success' ? 'Berhasil' : 
-                                     payment.status === 'pending' ? 'Menunggu' :
-                                     payment.status === 'failed' ? 'Gagal' : payment.status}
-                                  </span>
+                                  {getStatusBadge(payment.status)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {payment.updated_at ? format(new Date(payment.updated_at), 'dd MMM yyyy, HH:mm', { locale: id }) : '-'}
                                 </td>
                               </tr>
                             ))}
@@ -861,7 +949,7 @@ export default function UserProfile() {
                         <CreditCard className="mx-auto h-12 w-12 text-gray-400" />
                         <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak Ada Transaksi</h3>
                         <p className="mt-1 text-sm text-gray-500">
-                          Anda belum memiliki transaksi pembayaran apa pun.
+                          Anda belum memiliki transaksi pembayaran apa pun di tabel payment_intent.
                         </p>
                         <div className="mt-6">
                           <Link href="/pricing">
