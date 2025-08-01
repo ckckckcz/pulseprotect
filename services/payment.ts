@@ -1,6 +1,8 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
+import { httpClient } from "@/lib/http-client";
+import { jwtService } from "@/lib/jwt-service";
 
 export interface PackageDetails {
   packageId: string;
@@ -33,7 +35,33 @@ export async function createAIPackagePayment(
     phone: customerInfo.phone || "Not provided"
   });
 
-  // Make sure email is included in transaction_details as custom field
+  // Validate JWT authentication before proceeding
+  if (!jwtService.isAuthenticated()) {
+    console.error("JWT authentication failed in payment service");
+    throw new Error("Authentication required for payment processing");
+  }
+
+  // Get user info from JWT token for additional validation
+  const userFromToken = jwtService.getUserFromToken();
+  console.log("JWT user validation:", {
+    tokenValid: !!userFromToken,
+    tokenEmail: userFromToken?.email,
+    customerEmail: customerInfo.email,
+    emailMatch: userFromToken?.email === customerInfo.email
+  });
+
+  if (!userFromToken) {
+    console.error("No user found in JWT token");
+    throw new Error("Invalid authentication token");
+  }
+
+  if (userFromToken.email !== customerInfo.email) {
+    console.warn('Token email mismatch:', {
+      tokenEmail: userFromToken.email,
+      customerEmail: customerInfo.email
+    });
+  }
+
   const transactionParams = {
     transaction_details: {
       order_id: orderId,
@@ -54,59 +82,78 @@ export async function createAIPackagePayment(
         category: "AI Model",
       },
     ],
-    custom_field1: packageDetails.period, // Store period as custom field
-    custom_field2: customerInfo.email,    // Store email as custom field for backup
-    custom_field3: userId || "",          // Store user ID for reference
+    custom_field1: packageDetails.period,
+    custom_field2: customerInfo.email,
+    custom_field3: userId || "",
   };
 
   try {
-    console.log("Creating payment with params:", JSON.stringify(transactionParams, null, 2));
+    console.log("Creating payment with JWT authentication...");
 
-    // First, try to create a payment intent record to ensure we have the email stored
+    // Create payment intent with JWT auth (but don't fail if this fails)
     try {
-      await fetch("/api/subscriptions/create-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          email: customerInfo.email,
-          packageId: packageDetails.packageId,
-          packageName: packageDetails.packageName,
-          period: packageDetails.period,
-          amount: packageDetails.price,
-          orderId
-        })
+      await httpClient.post("/api/subscriptions/create-intent", {
+        userId,
+        email: customerInfo.email,
+        packageId: packageDetails.packageId,
+        packageName: packageDetails.packageName,
+        period: packageDetails.period,
+        amount: packageDetails.price,
+        orderId
       });
       console.log("Payment intent record created successfully");
-    } catch (error) {
-      console.warn("Failed to create payment intent, will try again after payment:", error);
+    } catch (intentError) {
+      console.warn("Failed to create payment intent (non-critical):", intentError);
+      // Continue with payment process even if intent creation fails
     }
 
-    // Now create the actual payment token
-    const response = await fetch("/api/payment/create-token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(transactionParams),
-    });
+    // Create payment token with JWT auth
+    console.log("Requesting payment token from API...");
+    
+    try {
+      const paymentData = await httpClient.post("/api/payment/create-token", transactionParams);
+      console.log("Payment token created with JWT auth:", {
+        hasToken: !!paymentData.token,
+        hasRedirectUrl: !!paymentData.redirectUrl,
+        success: paymentData.success
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Payment API error:", errorText);
-      throw new Error(`Payment API error: ${response.status}`);
+      if (!paymentData.token) {
+        throw new Error("No payment token received from API");
+      }
+
+      return {
+        orderId,
+        token: paymentData.token,
+        redirectUrl: paymentData.redirectUrl,
+      };
+    } catch (apiError: any) {
+      console.error("Payment API error:", apiError);
+      console.error("API error details:", {
+        message: apiError.message,
+        status: apiError.status,
+        stack: apiError.stack
+      });
+      throw new Error(`Payment API error: ${apiError.message}`);
     }
-
-    const paymentData = await response.json();
-    console.log("Payment token created:", paymentData);
-
-    return {
-      orderId,
-      token: paymentData.token,
-      redirectUrl: paymentData.redirectUrl,
-    };
+    
   } catch (error) {
     console.error("Payment creation failed:", error);
+    
+    // If JWT auth fails, redirect to login
+    if (error instanceof Error && (
+        error.message.includes('Authentication') || 
+        error.message.includes('401') ||
+        error.message.includes('Unauthorized')
+      )) {
+      console.log("Authentication error detected, clearing tokens");
+      jwtService.clearTokens();
+      
+      if (typeof window !== 'undefined') {
+        window.location.href = `/login?redirect=${encodeURIComponent('/pricing')}`;
+      }
+    }
+    
     throw error;
   }
 }
@@ -121,60 +168,178 @@ export async function handleMidtransPayment(
   }
 ) {
   try {
+    console.log("=== MIDTRANS PAYMENT HANDLER START ===");
+    console.log("Token received:", token);
+    console.log("Callbacks provided:", {
+      onSuccess: !!callbacks.onSuccess,
+      onPending: !!callbacks.onPending,
+      onError: !!callbacks.onError,
+      onClose: !!callbacks.onClose,
+    });
+
     console.log("Loading Midtrans script...");
     await loadMidtransScript();
+    console.log("Midtrans script loaded successfully");
 
-    console.log("Opening Midtrans Snap with token:", token);
+    console.log("Checking window.snap availability...");
+    console.log("window object exists:", typeof window !== "undefined");
+    console.log("window.snap exists:", !!window.snap);
+    console.log("window.snap type:", typeof window.snap);
 
     if (window.snap) {
-      window.snap.pay(token, {
-        onSuccess: callbacks.onSuccess,
-        onPending: callbacks.onPending,
-        onError: callbacks.onError,
-        onClose: callbacks.onClose,
-      });
+      console.log("window.snap.pay exists:", typeof window.snap.pay === 'function');
+      console.log("Opening Midtrans Snap with token:", token);
+      
+      try {
+        window.snap.pay(token, {
+          onSuccess: (result: any) => {
+            console.log("=== PAYMENT SUCCESS ===", result);
+            callbacks.onSuccess?.(result);
+          },
+          onPending: (result: any) => {
+            console.log("=== PAYMENT PENDING ===", result);
+            callbacks.onPending?.(result);
+          },
+          onError: (result: any) => {
+            console.error("=== PAYMENT ERROR ===", result);
+            callbacks.onError?.(result);
+          },
+          onClose: () => {
+            console.log("=== PAYMENT CLOSED ===");
+            callbacks.onClose?.();
+          },
+        });
+        console.log("Snap.pay() called successfully");
+      } catch (snapPayError) {
+        console.error("Error calling snap.pay():", snapPayError);
+        throw snapPayError;
+      }
     } else {
-      throw new Error("Midtrans Snap not loaded");
+      console.error("window.snap is not available after script loading");
+      console.log("Available window properties:", Object.keys(window).filter(key => key.includes('snap') || key.includes('Snap') || key.includes('midtrans')));
+      throw new Error("Midtrans Snap not loaded properly");
     }
 
     return true;
   } catch (error) {
-    console.error("Error handling Midtrans payment:", error);
+    console.error("=== MIDTRANS PAYMENT HANDLER ERROR ===");
+    console.error("Error details:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack available');
     throw error;
   }
 }
 
 function loadMidtransScript(): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (typeof window !== "undefined" && window.snap) {
+    console.log("=== LOADING MIDTRANS SCRIPT ===");
+    
+    if (typeof window === "undefined") {
+      console.error("Window is undefined - cannot load script");
+      reject(new Error("Window not defined - script loading must be done client-side"));
+      return;
+    }
+
+    // Check if script is already loaded
+    if (window.snap) {
       console.log("Midtrans Snap already loaded");
       resolve();
       return;
     }
 
-    if (typeof window !== "undefined") {
-      const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
-      const snapUrl = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || "https://app.sandbox.midtrans.com/snap/snap.js";
-
-      console.log("Loading Midtrans script...");
-      console.log("Using snap URL:", snapUrl);
-      console.log("Client key:", clientKey ? `${clientKey.substring(0, 10)}...` : "Missing");
-
-      const script = document.createElement("script");
-      script.src = snapUrl;
-      script.setAttribute("data-client-key", clientKey || "");
-      script.onload = () => {
-        console.log("Midtrans script loaded successfully");
-        resolve();
-      };
-      script.onerror = (error) => {
-        console.error("Error loading Midtrans script:", error);
-        reject(error);
-      };
-      document.body.appendChild(script);
-    } else {
-      reject(new Error("Window not defined - script loading must be done client-side"));
+    // Check if script tag already exists
+    const existingScript = document.querySelector('script[data-client-key]');
+    if (existingScript) {
+      console.log("Midtrans script tag already exists, waiting for load...");
+      
+      // Wait a bit and check again
+      setTimeout(() => {
+        if (window.snap) {
+          console.log("Midtrans Snap loaded from existing script");
+          resolve();
+        } else {
+          console.log("Existing script didn't load snap, removing and retrying...");
+          existingScript.remove();
+          loadMidtransScript().then(resolve).catch(reject);
+        }
+      }, 1000);
+      return;
     }
+
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
+    const snapUrl = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || "https://app.sandbox.midtrans.com/snap/snap.js";
+
+    console.log("Environment variables:");
+    console.log("- NEXT_PUBLIC_MIDTRANS_CLIENT_KEY:", clientKey ? `${clientKey.substring(0, 20)}...` : "Missing");
+    console.log("- NEXT_PUBLIC_MIDTRANS_SNAP_URL:", snapUrl);
+
+    if (!clientKey) {
+      console.error("Missing NEXT_PUBLIC_MIDTRANS_CLIENT_KEY");
+      reject(new Error("Missing Midtrans client key"));
+      return;
+    }
+
+    console.log("Creating script element...");
+    const script = document.createElement("script");
+    script.src = snapUrl;
+    script.setAttribute("data-client-key", clientKey);
+    script.type = "text/javascript";
+    
+    // Add additional attributes for debugging
+    script.id = "midtrans-snap-script";
+    
+    let loadTimeout: NodeJS.Timeout;
+    
+    script.onload = () => {
+      console.log("Script onload event fired");
+      clearTimeout(loadTimeout);
+      
+      // Give it a moment to initialize
+      setTimeout(() => {
+        console.log("Checking window.snap after script load...");
+        console.log("window.snap exists:", !!window.snap);
+        console.log("window.snap type:", typeof window.snap);
+        
+        if (window.snap) {
+          console.log("Midtrans Snap loaded and available");
+          resolve();
+        } else {
+          console.error("Script loaded but window.snap is still not available");
+          console.log("Checking for alternative snap objects...");
+          console.log("window.Snap:", typeof (window as any).Snap);
+          console.log("window.midtrans:", typeof (window as any).midtrans);
+          
+          // Try to find snap in alternative locations
+          if ((window as any).Snap) {
+            console.log("Found window.Snap, assigning to window.snap");
+            window.snap = (window as any).Snap;
+            resolve();
+          } else {
+            reject(new Error("Midtrans Snap object not found after script load"));
+          }
+        }
+      }, 500);
+    };
+    
+    script.onerror = (error) => {
+      console.error("Script onerror event fired:", error);
+      clearTimeout(loadTimeout);
+      console.error("Failed to load Midtrans script from:", snapUrl);
+      reject(new Error(`Failed to load Midtrans script: ${error}`));
+    };
+
+    // Set a timeout for script loading
+    loadTimeout = setTimeout(() => {
+      console.error("Script loading timeout after 10 seconds");
+      reject(new Error("Script loading timeout"));
+    }, 10000);
+
+    console.log("Appending script to document body...");
+    console.log("Document ready state:", document.readyState);
+    console.log("Script src:", script.src);
+    console.log("Script data-client-key:", script.getAttribute("data-client-key"));
+    
+    document.body.appendChild(script);
+    console.log("Script appended to body successfully");
   });
 }
 

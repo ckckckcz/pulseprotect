@@ -19,7 +19,6 @@ function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
-  const [returnUrl, setReturnUrl] = useState("")
   const router = useRouter()
   const { login, loginWithGoogle, loading: isLoading } = useAuth()
 
@@ -29,12 +28,6 @@ function LoginForm() {
     const emailParam = searchParams?.get('email')
     if (emailParam) {
       setEmail(emailParam)
-    }
-
-    // Store return URL if provided
-    const returnUrlParam = searchParams?.get('returnUrl')
-    if (returnUrlParam) {
-      setReturnUrl(returnUrlParam)
     }
 
     // Show success message if coming from password reset
@@ -61,13 +54,9 @@ function LoginForm() {
       
       if (loginResult && loginResult.error) {
         console.error('Login returned error:', loginResult.message)
-        setError(loginResult.message)
-      } else if (returnUrl) {
-        // Only manually redirect if we have a specific returnUrl
-        // Otherwise, the auth context will handle default redirect to home
-        router.push(returnUrl)
+        setError(loginResult.message || "Terjadi kesalahan saat login. Silakan coba lagi.")
       }
-      // No else needed - auth context will handle default redirect to home
+      // No else needed - auth context will handle redirect automatically
       
     } catch (error: any) {
       console.error('Unhandled login error:', error)

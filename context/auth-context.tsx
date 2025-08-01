@@ -1,226 +1,190 @@
-"use client"
+"use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { authService } from '@/lib/auth'
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { jwtService } from '@/lib/jwt-service';
+import { httpClient } from '@/lib/http-client';
 
 interface User {
-  id: number
-  email: string
-  nama_lengkap: string
-  nomor_telepon?: string
-  verifikasi_email: boolean
-  status: string
-  dibuat_pada: string
-  role?: string  // Add role property to the User interface
-  account_membership?: string // Also add account_membership for subscription info
-  foto_profile?: string // Add profile photo URL
+  id: number;
+  email: string;
+  nama_lengkap: string;
+  nomor_telepon?: string;
+  role?: string;
+  account_membership?: string;
+  foto_profile?: string;
+  created_at?: string;
+  verifikasi_email?: boolean;
 }
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<{ error: boolean; message: string } | undefined>
-  loginWithGoogle: () => Promise<void>
-  logout: () => void
-  updateUser: (data: { nama_lengkap?: string, nomor_telepon?: string, foto_profile?: string }) => Promise<void> // tambahkan foto_profile di sini
-  refreshSession: () => void
-  refreshUser: () => Promise<void> // Add refreshUser method
+  user: User | null;
+  login: (email: string, password: string) => Promise<{ error?: boolean; message?: string }>,
+  loginWithGoogle: () => Promise<void>,
+  logout: () => void,
+  loading: boolean,
+  refreshUser: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  // Initialize session on mount
+  // Initialize auth state
   useEffect(() => {
-    initializeSession()
-  }, [])
+    initializeAuth();
+  }, []);
 
-  // Auto-refresh session every 30 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (user && authService.isSessionValid()) {
-        authService.extendSession()
-        refreshSession()
-      }
-    }, 30 * 60 * 1000) // 30 minutes
-
-    return () => clearInterval(interval)
-  }, [user])
-
-  const initializeSession = async () => {
+  const initializeAuth = async () => {
     try {
-      setLoading(true)
-      const currentUser = await authService.getCurrentUser()
-      if (currentUser && authService.isSessionValid()) {
-        // Ensure account_membership is set to 'free' if it doesn't exist
-        if (currentUser && !currentUser.account_membership) {
-          currentUser.account_membership = 'free';
+      console.log("Initializing auth with JWT...");
+      
+      if (jwtService.isAuthenticated()) {
+        const userFromToken = jwtService.getUserFromToken();
+        if (userFromToken) {
+          // Fetch full user data from API
+          try {
+            const userData = await httpClient.get(`/api/auth/user/${userFromToken.userId}`);
+            if (userData.success && userData.user) {
+              setUser(userData.user);
+              console.log("User authenticated via JWT:", userData.user.email);
+            } else {
+              console.error("Failed to get user data:", userData);
+              jwtService.clearTokens();
+            }
+          } catch (error) {
+            console.error("Failed to fetch user data:", error);
+            // Token might be invalid, clear it
+            jwtService.clearTokens();
+          }
         }
-        setUser(currentUser)
-        console.log('Session restored:', currentUser.email, 'Membership:', currentUser.account_membership)
-      } else if (currentUser) {
-        // Session expired, clear it
-        authService.logout()
-        setUser(null)
-        console.log('Session expired, cleared')
       }
     } catch (error) {
-      console.error('Error initializing session:', error)
-      setUser(null)
+      console.error("Auth initialization error:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const login = async (email: string, password: string) => {
-    setLoading(true)
     try {
-      // Add defensive programming
-      if (!email || !password) {
-        setLoading(false)
-        return {
-          error: true,
-          message: "Email dan password wajib diisi"
-        }
-      }
-      
-      console.log('Starting login process for:', email);
-      
-      // Use try-catch explicitly to catch any errors from authService
-      let userData;
-      try {
-        userData = await authService.login({ email, password });
-      } catch (loginError: any) {
-        console.error('Auth service login error:', loginError);
-        setLoading(false);
-        return {
-          error: true,
-          message: loginError.message || "Terjadi kesalahan saat login"
+      setLoading(true);
+      console.log("Attempting JWT login for:", email);
+
+      // Make login request without auth (skipAuth: true)
+      const response = await httpClient.post('/api/auth/login', 
+        { email, password },
+        { skipAuth: true }
+      );
+
+      if (response.success && response.accessToken) {
+        // Store JWT tokens
+        jwtService.setTokens(response.accessToken, response.refreshToken);
+        
+        // Set user data
+        setUser(response.user);
+        
+        console.log("JWT login successful for user:", response.user.email);
+        
+        // Handle redirect after successful login - but don't redirect if on /pricing
+        setTimeout(() => {
+          const currentPath = window.location.pathname;
+          const urlParams = new URLSearchParams(window.location.search);
+          const redirectUrl = urlParams.get('redirect');
+          
+          // If we're already on the pricing page or going to pricing, don't redirect
+          if (currentPath === '/pricing' || redirectUrl === '/pricing') {
+            console.log("User is on pricing page, staying here");
+            // Just reload to refresh the auth state
+            window.location.reload();
+          } else if (redirectUrl && redirectUrl !== currentPath) {
+            console.log("Redirecting to:", redirectUrl);
+            router.push(redirectUrl);
+          } else if (currentPath === '/login') {
+            console.log("Redirecting to home page");
+            router.push('/');
+          }
+          // If none of the above, stay on current page (like /pricing)
+        }, 100);
+        
+        return { error: false };
+      } else {
+        return { 
+          error: true, 
+          message: response.message || "Login failed" 
         };
       }
-      
-      // Verify userData before proceeding
-      if (!userData || typeof userData !== 'object') {
-        console.error('Invalid user data returned:', userData);
-        setLoading(false);
-        return {
-          error: true,
-          message: "Terjadi kesalahan saat memproses data pengguna"
-        };
-      }
-      
-      setUser(userData);
-      console.log('Login successful, session saved:', userData.email);
-
-      // Refresh user data from database (Supabase) setelah login
-      await refreshUser();
-
-      setTimeout(() => {
-        router.push('/');
-      }, 300);
-      
-      // Return success (no error returned means success)
     } catch (error: any) {
-      // This should never execute since we catch errors earlier
-      console.error('Unhandled auth context login error:', error);
-      setLoading(false);
-      return {
-        error: true,
-        message: error.message || "Terjadi kesalahan yang tidak terduga"
+      console.error("Login error:", error);
+      return { 
+        error: true, 
+        message: error.message || "Terjadi kesalahan saat login" 
       };
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const loginWithGoogle = async () => {
-    setLoading(true)
     try {
-      // This is a placeholder - implement actual Google OAuth
-      const userData = await authService.loginWithGoogle({
-        id: 999,
-        email: 'user@gmail.com',
-        nama_lengkap: 'Google User',
-        verifikasi_email: true,
-        status: 'success',
-        dibuat_pada: new Date().toISOString()
-      })
-      setUser(userData)
-      console.log('Google login successful, session saved')
-      router.push('/')
-    } catch (error) {
-      throw error
+      setLoading(true);
+      // Implement Google OAuth with JWT
+      // This would typically involve redirecting to Google OAuth
+      // and handling the callback to get JWT tokens
+      console.log("Google login with JWT not implemented yet");
+      throw new Error("Google login not implemented yet");
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      throw new Error(error.message || "Terjadi kesalahan saat login dengan Google");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const logout = () => {
-    authService.logout()
-    setUser(null)
-    console.log('User logged out, session cleared')
-    router.push('/login')
-  }
+    console.log("Logging out and clearing JWT tokens");
+    jwtService.clearTokens();
+    setUser(null);
+    router.push('/login');
+  };
 
-  const updateUser = async (data: { nama_lengkap?: string, nomor_telepon?: string, foto_profile?: string }) => {
-    if (!user) throw new Error('No user logged in')
-    try {
-      const updatedUser = await authService.updateUser(user.id, data)
-      setUser(updatedUser)
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // Move refreshSession inside AuthProvider to access user state
-  const refreshSession = () => {
-    if (user && authService.isSessionValid()) {
-      authService.extendSession();
-      console.log('Session refreshed');
-    }
-  }
-
-  // Add refreshUser implementation
   const refreshUser = async () => {
     try {
-      if (!user || !user.id) return;
-      // Get latest user data from database
-      const currentUser = await authService.getCurrentUser(true); // forceRemote = true
-      if (currentUser) {
-        setUser(currentUser);
-        console.log('User data refreshed');
+      if (jwtService.isAuthenticated()) {
+        const userFromToken = jwtService.getUserFromToken();
+        if (userFromToken) {
+          const userData = await httpClient.get(`/api/auth/user/${userFromToken.userId}`);
+          if (userData.success && userData.user) {
+            setUser(userData.user);
+          }
+        }
       }
     } catch (error) {
-      console.error('Error refreshing user data:', error);
+      console.error("Failed to refresh user:", error);
     }
-  }
-
-  const value: AuthContextType = {
-    user,
-    loading,
-    login,
-    loginWithGoogle,
-    logout,
-    updateUser,
-    refreshSession,
-    refreshUser // Add refreshUser to the context value
-  }
+  };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      loginWithGoogle,
+      logout,
+      loading,
+      refreshUser
+    }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
+
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }
