@@ -672,19 +672,21 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   // Fetch membership_type dari payment Supabase
   useEffect(() => {
     const fetchMembership = async () => {
-      if (!user?.email) {
+      if (!user) {
         setActiveMembershipType("free");
         return;
       }
-      const { data } = await supabase.from("payment").select("membership_type, created_at, status").eq("email", user.email).eq("status", "success").order("created_at", { ascending: false }).limit(1).maybeSingle();
-      if (data && data.membership_type) {
-        setActiveMembershipType(data.membership_type as "free" | "plus" | "pro");
+
+      // Use the account_membership field directly from user object
+      if (user.account_membership) {
+        setActiveMembershipType(user.account_membership as "free" | "plus" | "pro");
       } else {
+        // Fallback to free if account_membership is not available
         setActiveMembershipType("free");
       }
     };
     fetchMembership();
-  }, [user?.email]);
+  }, [user]);
 
   const isModelUnlocked = (modelId: string) => {
     if (activeMembershipType === "pro") return true;
@@ -1083,7 +1085,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-0 rounded-xl max-w-full h-auto" style={{ maxHeight: 130 }} />}
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
-                            ${message.role === "user" ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl" : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"}`}
+                            ${
+                              message.role === "user"
+                                ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl"
+                                : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"
+                            }`}
                           style={{
                             lineHeight: "1.35",
                             fontSize: "1.1rem",
