@@ -37,7 +37,7 @@ export default function TeamSection() {
                 The <span className="text-6xl text-teal-700 cardo italic">Minds</span>
               </span>
               <span>
-                <div className="bg-white border-l-2 lg:block hidden border-gray-200 border-dashed ml-1 w-full h-full"></div>
+                <div className="bg-white border-l-2 lg:block hidden border-gray-300 border-dashed ml-1 w-full h-full"></div>
               </span>
               <br className="block lg:hidden" />
               <span>

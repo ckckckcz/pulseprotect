@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import Navbar from "@/components/widget/navbar"
 import Footer from "@/components/widget/footer"
 import DaftarObat from "@/components/widget/cek-obat/daftar-obat"
+import DoctorHeader from "@/public/images/doctor-obat.webp"
 import {
   MapPin,
   Stethoscope,
@@ -162,39 +163,63 @@ export default function CekObat() {
   const infiniteDoctors = generateInfiniteDoctors(displayDoctors);
   const controls = useAnimation();
 
+  // Add a key to track remounts
+  const [animationKey, setAnimationKey] = useState(Date.now());
+
+  // Reset animation when doctors data changes or component remounts
+  useEffect(() => {
+    // Reset the animation key to force remounting of animation components
+    setAnimationKey(Date.now());
+  }, [doctors]);
+
+  // Separate useEffect for animation to ensure it runs independently
   useEffect(() => {
     if (infiniteDoctors.length === 0) return;
     
+    let isMounted = true; // Track if component is mounted
+    
     // Simpler animation approach that's more reliable
     const animate = async () => {
-      // Calculate total width based on number of doctors and card width
-      const cardWidth = 320; // Approximate width of each card including gap
-      
-      // Get the total width of all cards
-      const totalWidth = infiniteDoctors.length * cardWidth;
-      
-      // Reset to start position
-      controls.set({ x: 0 });
-      
-      // Animate continuously to the left
-      await controls.start({
-        x: -totalWidth / 2, // Move half the width (we have duplicates)
-        transition: {
-          duration: 40, // Slower animation for smoother effect
-          ease: "linear",
-          repeat: Infinity,
-          repeatType: "loop"
-        }
-      });
+      try {
+        // Calculate total width based on number of doctors and card width
+        const cardWidth = 320; // Approximate width of each card including gap
+        
+        // Get the total width of all cards
+        const totalWidth = infiniteDoctors.length * cardWidth;
+        
+        // Reset to start position
+        controls.set({ x: 0 });
+        
+        // Only continue if component is still mounted
+        if (!isMounted) return;
+        
+        // Animate continuously to the left
+        await controls.start({
+          x: -totalWidth / 2, // Move half the width (we have duplicates)
+          transition: {
+            duration: 40, // Slower animation for smoother effect
+            ease: "linear",
+            repeat: Infinity,
+            repeatType: "loop"
+          }
+        });
+      } catch (error) {
+        console.error("Animation error:", error);
+      }
     };
     
-    animate();
+    // Small timeout to ensure DOM is fully ready
+    const animationTimer = setTimeout(() => {
+      if (isMounted) animate();
+    }, 100);
     
-    // Cleanup
+    // Cleanup function to stop animation and clear timers
     return () => {
+      isMounted = false;
+      clearTimeout(animationTimer);
       controls.stop();
     };
-  }, [controls, infiniteDoctors.length])
+  }, [controls, infiniteDoctors.length, animationKey]); // Add animationKey as dependency
 
   const features = [
     {
@@ -340,7 +365,7 @@ export default function CekObat() {
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <Image
-                    src="/placeholder.svg?height=320&width=320"
+                    src={DoctorHeader}
                     alt="Medicine and wellness"
                     fill
                     className="object-cover"
@@ -354,14 +379,14 @@ export default function CekObat() {
                   animate={{ y: [-10, 10, -10] }}
                   transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
                 >
-                  <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-red-500" />
+                  <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 fill-current" />
                 </motion.div>
                 <motion.div
                   className="absolute -bottom-2 -left-2 sm:-bottom-4 sm:-left-4 w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center"
                   animate={{ y: [10, -10, 10] }}
                   transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, delay: 1.5 }}
                 >
-                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-teal-600" />
+                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-teal-600 fill-current" />
                 </motion.div>
               </div>
             </motion.div>
@@ -401,18 +426,19 @@ export default function CekObat() {
             </div>
           ) : (
             <div className="relative overflow-hidden w-full">
-              <div className="w-full mx-auto overflow-hidden">
+              <div className="w-full mx-auto overflow-hidden" key={animationKey}>
                 <motion.div 
                   className="flex gap-4 pl-4"
                   animate={controls}
-                  style={{ willChange: "transform" }} // Optimization for animation performance
+                  initial={{ x: 0 }}
+                  style={{ willChange: "transform" }}
                 >
                   {infiniteDoctors.map((doctor, index) => (
                     <motion.div
                       key={`${doctor.id}-${index}`}
                       className="flex-shrink-0 w-[300px]"
                     >
-                      <Card className="shadow-xl rounded-xl border border-gray-200 hover:shadow-2xl transition-all duration-500 bg-white overflow-hidden h-full">
+                      <Card className=" rounded-xl border border-gray-200 transition-all duration-500 bg-white overflow-hidden h-full">
                         <CardContent className="p-0">
                           {/* Doctor Image */}
                           <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden">
