@@ -126,7 +126,7 @@ export default function RegisterPage() {
                   <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
                 </div>
               </div>
-              <span className="text-xl font-bold text-teal-600">SmartCity</span>
+              <span className="text-xl font-bold text-teal-600">pulseprotect</span>
             </Link>
           </div>
 
@@ -137,7 +137,7 @@ export default function RegisterPage() {
             className="mb-8"
           >
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Bergabung dengan SmartCity
+              Bergabung dengan pulseprotect
             </h1>
             <p className="text-gray-600">
               Buat akun untuk mengakses semua fitur
@@ -439,12 +439,12 @@ export default function RegisterPage() {
             transition={{ delay: 0.8 }}
           >
             <blockquote className="text-2xl font-medium mb-6 leading-relaxed">
-              "Bergabung dengan SmartCity adalah keputusan terbaik! Sekarang mengelola kota jadi lebih mudah dan efisien."
+              "Bergabung dengan pulseprotect adalah keputusan terbaik! Sekarang mengelola kota jadi lebih mudah dan efisien."
             </blockquote>
             
             <div className="mb-6">
               <p className="font-semibold">Ahmad Rahman</p>
-              <p className="text-teal-100">City Manager at SmartCity</p>
+              <p className="text-teal-100">City Manager at pulseprotect</p>
             </div>
 
             <div className="flex items-center space-x-4">

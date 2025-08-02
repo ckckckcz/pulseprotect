@@ -156,7 +156,7 @@ async function testRegistrationFlow() {
   try {
     const bcrypt = require('bcryptjs')
     
-    const testEmail = `testuser${Date.now()}@smartcity.com`
+    const testEmail = `testuser${Date.now()}@pulseprotect.com`
     const password = 'testpassword123'
     const saltRounds = 10
     const passwordHash = await bcrypt.hash(password, saltRounds)

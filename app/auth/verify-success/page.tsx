@@ -50,7 +50,7 @@ export default function VerifySuccessPage() {
           </h1>
           
           <p className="text-gray-600 mb-8">
-            Selamat! Email Anda telah berhasil diverifikasi. Sekarang Anda dapat masuk ke akun SmartCity Anda.
+            Selamat! Email Anda telah berhasil diverifikasi. Sekarang Anda dapat masuk ke akun pulseprotect Anda.
           </p>
           
           <Link href="/login">

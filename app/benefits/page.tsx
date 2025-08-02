@@ -91,7 +91,7 @@ const testimonials = [
     name: "Mayor Sarah Johnson",
     city: "Metro City",
     quote:
-      "SmartCity platform transformed our operations. We've seen remarkable improvements in efficiency and citizen satisfaction.",
+      "pulseprotect platform transformed our operations. We've seen remarkable improvements in efficiency and citizen satisfaction.",
     image: "/placeholder.svg?height=60&width=60",
   },
   {
@@ -155,7 +155,7 @@ export default function BenefitsPage() {
             transition={{ delay: 0.2 }}
             className="text-xl text-gray-300 max-w-3xl mx-auto mb-12"
           >
-            See the real-world impact SmartCity platform delivers to cities worldwide. From cost savings to improved
+            See the real-world impact pulseprotect platform delivers to cities worldwide. From cost savings to improved
             citizen satisfaction, the results speak for themselves.
           </motion.p>
         </div>
@@ -213,7 +213,7 @@ export default function BenefitsPage() {
               Additional <span className="text-[#00D4AA]">Advantages</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Beyond the core benefits, SmartCity platform offers numerous additional advantages that enhance overall
+              Beyond the core benefits, pulseprotect platform offers numerous additional advantages that enhance overall
               city operations and citizen experience.
             </p>
           </motion.div>
@@ -253,7 +253,7 @@ export default function BenefitsPage() {
               What City Leaders <span className="text-[#00D4AA]">Say</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Hear from city leaders who have experienced the transformative benefits of SmartCity platform.
+              Hear from city leaders who have experienced the transformative benefits of pulseprotect platform.
             </p>
           </motion.div>
 
@@ -299,7 +299,7 @@ export default function BenefitsPage() {
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">Experience These Benefits Today</h2>
             <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Join the growing number of cities that have transformed their operations with SmartCity platform.
+              Join the growing number of cities that have transformed their operations with pulseprotect platform.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/login">

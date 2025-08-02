@@ -182,7 +182,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="inline-flex items-center">
             <Zap className="w-8 h-8 text-teal-600 rounded-xl flex items-center justify-center mr-3" fill="currentColor" />
-            <span className="text-xl font-bold text-teal-600">SmartCity</span>
+            <span className="text-xl font-bold text-teal-600">Pulse Protect</span>
           </Link>
 
           {/* Navigation - Desktop */}

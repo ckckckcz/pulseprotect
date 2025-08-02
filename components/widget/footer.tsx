@@ -26,7 +26,7 @@ export default function Footer() {
               <div className="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <div className="w-6 h-6 bg-white rounded-lg"></div>
               </div>
-              <span className="text-3xl font-bold">Bakekok</span>
+              <span className="text-3xl font-bold">Pulse Protect</span>
             </div>
             <p className="text-gray-400 mb-6 leading-relaxed text-lg">Platform deteksi obat palsu untuk melindungi kesehatan masyarakat Indonesia dengan teknologi AI terdepan dan database resmi BPOM.</p>
             <div className="flex space-x-4">

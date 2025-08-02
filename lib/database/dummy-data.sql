@@ -12,7 +12,7 @@ INSERT INTO public.user (
   account_membership
 ) VALUES (
   'Admin System',
-  'admin@smartcity.com',
+  'admin@pulseprotect.com',
   '081234567890',
   '$2a$10$rZfN.xQ9BFNpMZN.0X0IueP/u6H8dB9JVT.ZWwXTrVJSs.6B1LS4i', -- hashed password: admin123
   'admin',
@@ -32,7 +32,7 @@ INSERT INTO public.admin (
   created_at,
   updated_at
 ) VALUES (
-  'admin@smartcity.com',
+  'admin@pulseprotect.com',
   'IT Department',
   'Super Admin',
   CURRENT_TIMESTAMP,
@@ -54,7 +54,7 @@ INSERT INTO public.user (
   account_membership
 ) VALUES (
   'Dr. John Doe',
-  'doctor@smartcity.com',
+  'doctor@pulseprotect.com',
   '081298765432',
   '$2a$10$HCrwNQsVUpoOQRdOu.QnBu5mDVvXfrHAzEMya7wioYhcYy9F9L0gm', -- hashed password: doctor123
   'dokter',
@@ -80,10 +80,10 @@ INSERT INTO public.dokter (
   created_at,
   updated_at
 ) VALUES (
-  'doctor@smartcity.com',
+  'doctor@pulseprotect.com',
   'Dokter Umum',
   'Jakarta Selatan',
-  'RS SmartCity Medika',
+  'RS pulseprotect Medika',
   '5 tahun',
   150000.00,
   '{
@@ -117,7 +117,7 @@ INSERT INTO public.user (
   account_membership
 ) VALUES (
   'Dr. Jane Smith',
-  'drjane@smartcity.com',
+  'drjane@pulseprotect.com',
   '081287654321',
   '$2a$10$HCrwNQsVUpoOQRdOu.QnBu5mDVvXfrHAzEMya7wioYhcYy9F9L0gm', -- hashed password: doctor123
   'dokter',
@@ -143,7 +143,7 @@ INSERT INTO public.dokter (
   created_at,
   updated_at
 ) VALUES (
-  'drjane@smartcity.com',
+  'drjane@pulseprotect.com',
   'Spesialis Jantung',
   'Jakarta Pusat',
   'Rumah Sakit Jantung Indonesia',
@@ -180,7 +180,7 @@ INSERT INTO public.user (
   account_membership
 ) VALUES (
   'Super Administrator',
-  'superadmin@smartcity.com',
+  'superadmin@pulseprotect.com',
   '081212341234',
   '$2a$10$rZfN.xQ9BFNpMZN.0X0IueP/u6H8dB9JVT.ZWwXTrVJSs.6B1LS4i', -- hashed password: admin123
   'admin',
@@ -200,7 +200,7 @@ INSERT INTO public.admin (
   created_at,
   updated_at
 ) VALUES (
-  'superadmin@smartcity.com',
+  'superadmin@pulseprotect.com',
   'Executive Management',
   'System Administrator',
   CURRENT_TIMESTAMP,

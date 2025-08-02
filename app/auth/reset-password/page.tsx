@@ -112,12 +112,12 @@ export default function ResetPasswordPage() {
             transition={{ delay: 0.8 }}
           >
             <blockquote className="text-2xl font-medium mb-6 leading-relaxed">
-              "SmartCity memudahkan saya dalam mengelola kota dan mengakses semua layanan dalam satu platform."
+              "pulseprotect memudahkan saya dalam mengelola kota dan mengakses semua layanan dalam satu platform."
             </blockquote>
             
             <div className="mb-6">
               <p className="font-semibold">Ahmad Rahman</p>
-              <p className="text-teal-100">City Manager at SmartCity</p>
+              <p className="text-teal-100">City Manager at pulseprotect</p>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -247,7 +247,7 @@ function ResetPasswordForm() {
                 <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
               </div>
             </div>
-            <span className="text-xl font-bold text-teal-600">SmartCity</span>
+            <span className="text-xl font-bold text-teal-600">pulseprotect</span>
           </Link>
         </div>
         
@@ -271,7 +271,7 @@ function ResetPasswordForm() {
                 <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
               </div>
             </div>
-            <span className="text-xl font-bold text-teal-600">SmartCity</span>
+            <span className="text-xl font-bold text-teal-600">pulseprotect</span>
           </Link>
         </div>
         
@@ -304,7 +304,7 @@ function ResetPasswordForm() {
               <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
             </div>
           </div>
-          <span className="text-xl font-bold text-teal-600">SmartCity</span>
+          <span className="text-xl font-bold text-teal-600">pulseprotect</span>
         </Link>
       </div>
 

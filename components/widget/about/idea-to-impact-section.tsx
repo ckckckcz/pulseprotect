@@ -122,9 +122,9 @@ export default function IdeaToImpactSection() {
           >
             <p className="text-gray-600 text-lg lg:text-xl leading-relaxed mb-8">
               Every project is built on a foundation of{" "}
-              <span className="text-teal-600 font-semibold">collaboration</span>,{" "}
-              <span className="text-blue-600 font-semibold">strategy</span>, and{" "}
-              <span className="text-purple-600 font-semibold">innovation</span>.
+              <span className="text-teal-600 font-semibold cardo italic">collaboration</span>,{" "}
+              <span className="text-teal-600 font-semibold cardo italic">strategy</span>, and{" "}
+              <span className="text-teal-600 font-semibold cardo italic">innovation</span>.
             </p>
 
             {/* Stats */}

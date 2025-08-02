@@ -99,7 +99,7 @@ const awards = [
     logo: "/placeholder.svg?height=80&width=120",
   },
   {
-    title: "Bakekok Platform Detects 99.7% of Counterfeit Drugs",
+    title: "PulseProtect Platform Detects 99.7% of Counterfeit Drugs",
     subtitle: "Independent Healthcare Security Assessment",
     year: "2024",
     logo: "/placeholder.svg?height=80&width=120",

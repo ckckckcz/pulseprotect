@@ -118,7 +118,7 @@ export default function FeaturesPage() {
             transition={{ delay: 0.2 }}
             className="text-xl text-gray-300 max-w-3xl mx-auto mb-12"
           >
-            Discover the comprehensive suite of tools and capabilities that make SmartCity the most trusted platform for
+            Discover the comprehensive suite of tools and capabilities that make pulseprotect the most trusted platform for
             urban management and citizen engagement.
           </motion.p>
         </div>
@@ -172,7 +172,7 @@ export default function FeaturesPage() {
               Key <span className="text-[#00D4AA]">Benefits</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              See how SmartCity platform delivers measurable improvements across all aspects of urban management.
+              See how pulseprotect platform delivers measurable improvements across all aspects of urban management.
             </p>
           </motion.div>
 
@@ -210,7 +210,7 @@ export default function FeaturesPage() {
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Transform Your City?</h2>
             <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Join hundreds of cities worldwide that trust SmartCity platform for their digital transformation.
+              Join hundreds of cities worldwide that trust pulseprotect platform for their digital transformation.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/login">

@@ -140,13 +140,13 @@ export const emailService = {
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
                         <div style="margin-bottom: 24px;">
-                            <img src="https://i.ibb.co/TDJ7RRnR/svgviewer-png-output.png" width="40" height="40" alt="SmartCity Icon" style="display: block;" />
+                            <img src="https://i.ibb.co/TDJ7RRnR/svgviewer-png-output.png" width="40" height="40" alt="pulseprotect Icon" style="display: block;" />
                         </div>
 
                         <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">Halo 👋🏽, ${fullName}</h1>
 
                         <p style="margin-bottom: 16px; font-weight: 600;">
-                            Kami menerima permintaan untuk mengatur ulang kata sandi akun SmartCity Anda. Klik tombol di bawah untuk melanjutkan proses pengaturan ulang kata sandi. Link ini akan kedaluwarsa dalam 24 jam.
+                            Kami menerima permintaan untuk mengatur ulang kata sandi akun pulseprotect Anda. Klik tombol di bawah untuk melanjutkan proses pengaturan ulang kata sandi. Link ini akan kedaluwarsa dalam 24 jam.
                         </p>
 
                         <div style="margin: 32px 0;">
@@ -164,7 +164,7 @@ export const emailService = {
                     </div>
 
                     <div style="padding: 20px 0; text-align: center; color: #6b7280;">
-                        <p>© SmartCity. Semua hak dilindungi undang-undang.</p>
+                        <p>© pulseprotect. Semua hak dilindungi undang-undang.</p>
                     </div>
                 </div>
             </body>

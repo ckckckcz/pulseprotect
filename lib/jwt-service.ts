@@ -18,9 +18,9 @@ interface TokenStorage {
 
 export class JWTService {
   private static instance: JWTService;
-  private readonly ACCESS_TOKEN_KEY = 'smartcity_access_token';
-  private readonly REFRESH_TOKEN_KEY = 'smartcity_refresh_token';
-  private readonly TOKEN_EXPIRES_KEY = 'smartcity_token_expires';
+  private readonly ACCESS_TOKEN_KEY = 'pulseprotect_access_token';
+  private readonly REFRESH_TOKEN_KEY = 'pulseprotect_refresh_token';
+  private readonly TOKEN_EXPIRES_KEY = 'pulseprotect_token_expires';
 
   static getInstance(): JWTService {
     if (!JWTService.instance) {

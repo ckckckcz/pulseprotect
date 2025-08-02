@@ -16,7 +16,7 @@ async function seedUsers() {
       .from('user')
       .upsert({
         nama_lengkap: 'Admin System',
-        email: 'admin@smartcity.com',
+        email: 'admin@pulseprotect.com',
         nomor_telepon: '081234567890',
         kata_sandi: adminPassword,
         role: 'admin',
@@ -39,7 +39,7 @@ async function seedUsers() {
       const { error: adminProfileError } = await supabase
         .from('admin')
         .upsert({
-          email: 'admin@smartcity.com',
+          email: 'admin@pulseprotect.com',
           department: 'IT Department',
           access_level: 'Super Admin',
           last_login: new Date().toISOString(),
@@ -60,7 +60,7 @@ async function seedUsers() {
       .from('user')
       .upsert({
         nama_lengkap: 'Dr. John Doe',
-        email: 'doctor@smartcity.com',
+        email: 'doctor@pulseprotect.com',
         nomor_telepon: '081298765432',
         kata_sandi: doctorPassword,
         role: 'dokter',
@@ -83,10 +83,10 @@ async function seedUsers() {
       const { error: doctorProfileError } = await supabase
         .from('dokter')
         .upsert({
-          email: 'doctor@smartcity.com',
+          email: 'doctor@pulseprotect.com',
           spesialis: 'Dokter Umum',
           lokasi: 'Jakarta Selatan',
-          lokasi_rumah_sakit: 'RS SmartCity Medika',
+          lokasi_rumah_sakit: 'RS pulseprotect Medika',
           pengalaman: '5 tahun',
           harga_konsultasi: 150000,
           updated_at: new Date().toISOString()

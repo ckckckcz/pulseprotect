@@ -54,7 +54,7 @@ function ForgotPasswordForm() {
               <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
             </div>
           </div>
-          <span className="text-xl font-bold text-teal-600">SmartCity</span>
+          <span className="text-xl font-bold text-teal-600">pulseprotect</span>
         </Link>
       </div>
 
