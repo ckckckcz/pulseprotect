@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Globe, Mail, Phone, MapPin, ArrowRight } from "lucide-react";
+import { Globe, Mail, Phone, MapPin, ArrowRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 export default function Footer() {
   const partners = [
@@ -22,10 +22,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12 mb-16">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <div className="w-6 h-6 bg-white rounded-lg"></div>
-              </div>
+            <div className="flex items-center space-x-1 mb-6">
+              <Zap className="w-12 h-12 text-teal-600 rounded-xl flex items-center justify-center mr-3" fill="currentColor" />
+
               <span className="text-3xl font-bold">Pulse Protect</span>
             </div>
             <p className="text-gray-400 mb-6 leading-relaxed text-lg">Platform deteksi obat palsu untuk melindungi kesehatan masyarakat Indonesia dengan teknologi AI terdepan dan database resmi BPOM.</p>
@@ -139,7 +138,6 @@ export default function Footer() {
             </div>
           </div>
         </div>
-
       </div>
     </footer>
   );
