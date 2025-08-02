@@ -14,6 +14,7 @@ import {
   PanelLeft,
   Plus,
   Search,
+  Square,
   ArrowUp,
   Sparkles,
   Crown,
@@ -583,7 +584,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       // Fetch response from AI
       const response = await aiService.generateCompletion(selectedModel, messageHistory);
 
-      // MULAI TYPING ANIM LANGSUNG!
+      // MULAI TYPING ANIMASI
       setIsAiTyping(true);
       let i = 0;
       const text = response.text;
@@ -592,7 +593,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         if (i <= text.length) {
           setAiTypingText(text.slice(0, i));
           i++;
-          setTimeout(typeChar, 18);
+          setTimeout(typeChar, 18); // bisa diganti 40 untuk lambat, 18 untuk cepat
         } else {
           setIsAiTyping(false);
           setMessages((prev) => [
@@ -1076,7 +1077,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
                     const isLastAi = message.role === "assistant" && idx === messages.length - 1 && (isAiTyping || aiTypingText);
-
                     const imageUrlMatch = message.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|svg)/i);
                     const textContent = imageUrlMatch ? message.content.replace(imageUrlMatch[0], "").trim() : message.content;
 
@@ -1097,7 +1097,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             minHeight: "unset",
                           }}
                         >
-                          <div className="whitespace-pre-wrap break-words leading-relaxed">{isLastAi && aiTypingText ? aiTypingText : textContent}</div>
+                          <div className="whitespace-pre-wrap break-words leading-relaxed">{isLastAi && aiTypingText ? aiTypingText : message.content}</div>
                         </div>
 
                         {message.role === "assistant" && (
@@ -1361,7 +1361,23 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       </div>
 
                       <div>
-                        {input.trim() || imageFiles.length > 0 ? (
+                        {isAiTyping ? (
+                          // When AI is actively typing, show the stop button with Square icon
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="rounded-full w-10 h-10 p-0 transition-all bg-gray-200 hover:bg-teal-600 hover:text-white text-teal-600"
+                            onClick={() => {
+                              setIsAiTyping(false);
+                              setAiTypingText("");
+                              setIsLoading(false);
+                            }}
+                            aria-label="Stop AI response"
+                          >
+                            <Square className="w-5 h-5 fill-teal-600 hover:fill-teal-white" />
+                          </Button>
+                        ) : input.trim() || imageFiles.length > 0 ? (
+                          // When there's input or images, show submit button with Arrow or X
                           <Button
                             type={isLoading ? "button" : "submit"}
                             size="sm"
@@ -1372,6 +1388,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             {isLoading ? <X className="w-5 h-5" /> : <ArrowUp className="w-5 h-5" />}
                           </Button>
                         ) : (
+                          // When there's no input, show mic button
                           <Button
                             type="button"
                             size="sm"
