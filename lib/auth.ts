@@ -169,8 +169,15 @@ export const authService = {
     }
   },
 
-  async loginWithGoogle(googleUserInfo: any, fullName?: string, phone?: string) {
+  async loginWithGoogle(googleUserInfo: any, fullName?: string, phone?: string, avatarUrl?: string) {
     try {
+      console.log('loginWithGoogle called with:', {
+        email: googleUserInfo.email,
+        hasFullName: !!fullName,
+        hasPhone: !!phone,
+        hasAvatarUrl: !!avatarUrl
+      });
+
       const response = await fetch('/api/auth/google-login', {
         method: 'POST',
         headers: {
@@ -179,19 +186,24 @@ export const authService = {
         body: JSON.stringify({
           googleUserInfo,
           fullName,
-          phone
+          phone,
+          avatarUrl
         })
       });
 
       const data = await response.json();
+      console.log('Google login API response:', data);
 
       if (!response.ok) {
+        console.error('Google login API error:', data.error);
         throw new Error(data.error || 'Terjadi kesalahan saat login dengan Google');
       }
 
       if (data.success && data.user) {
         // Save user session
         this.saveUserSession(data.user);
+        console.log('Google login successful, user session saved');
+        
         return {
           success: true,
           user: data.user,
@@ -203,59 +215,6 @@ export const authService = {
     } catch (error: any) {
       console.error('Google login error:', error);
       throw new Error(error.message || 'Terjadi kesalahan saat login dengan Google');
-    }
-  },
-
-  saveUserSession(user: any) {
-    if (typeof window !== 'undefined') {
-      try {
-        console.log("Saving user session for user ID:", user.id);
-        
-        // First verify we have a valid user object
-        if (!user || !user.id) {
-          throw new Error("Invalid user data for session");
-        }
-        
-        // Ensure account_membership is set to 'free' if it doesn't exist
-        if (!user.account_membership) {
-          user.account_membership = 'free';
-          console.log('Setting default account_membership to free');
-        }
-        
-        // Save directly without stringifying first
-        try {
-          localStorage.setItem('user', JSON.stringify(user));
-          localStorage.setItem('sessionTimestamp', new Date().toISOString());
-          
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + 7);
-          localStorage.setItem('sessionExpiry', expiryDate.toISOString());
-        } catch (localStorageError) {
-          console.error("LocalStorage error:", localStorageError);
-        }
-        
-        // Save to cookies with error handling
-        try {
-          Cookies.set('user-session', JSON.stringify({
-            userId: user.id,
-            email: user.email || '',
-            nama_lengkap: user.nama_lengkap || '',
-            role: user.role || 'user',
-            account_membership: user.account_membership || 'free', // Default to 'free' if null
-            expires: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString()
-          }), { 
-            expires: 7,
-            path: '/',
-            sameSite: 'lax'
-          });
-        } catch (cookieError) {
-          console.error("Cookie error:", cookieError);
-        }
-        
-        // console.log('User session saved successfully with membership:', user.account_membership || 'free');
-      } catch (error) {
-        console.error('Error saving user session:', error);
-      }
     }
   },
 
@@ -290,37 +249,9 @@ export const authService = {
           return data;
         }
       }
-      // First try to get user from cookies
+      
+      // Prioritize localStorage for faster loading
       if (typeof window !== 'undefined') {
-        const sessionCookie = Cookies.get('user-session');
-        if (sessionCookie) {
-          try {
-            const sessionData = JSON.parse(sessionCookie);
-            // console.log('Found user session in cookie:', sessionData.email);
-            
-            // Validate expiration
-            const now = new Date();
-            const expiry = new Date(sessionData.expires);
-            if (now > expiry) {
-              console.log('Session expired, logging out');
-              this.logout();
-              return null;
-            }
-            
-            // If we have a valid session cookie but need full user data
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-              return JSON.parse(storedUser);
-            }
-            
-            // If we only have the cookie but not localStorage data
-            return sessionData;
-          } catch (error) {
-            console.error('Error parsing session cookie:', error);
-          }
-        }
-        
-        // Fall back to localStorage
         const storedUser = localStorage.getItem('user');
         const sessionExpiry = localStorage.getItem('sessionExpiry');
         
@@ -334,13 +265,117 @@ export const authService = {
             return null;
           }
           
-          return JSON.parse(storedUser);
+          const user = JSON.parse(storedUser);
+          
+          // Validate that we have essential user data
+          if (user && user.id && user.email) {
+            return user;
+          }
+        }
+        
+        // Fallback to cookies if localStorage is empty
+        const sessionCookie = Cookies.get('user-session');
+        if (sessionCookie) {
+          try {
+            const sessionData = JSON.parse(sessionCookie);
+            
+            // Validate expiration
+            const now = new Date();
+            const expiry = new Date(sessionData.expires);
+            if (now > expiry) {
+              console.log('Session expired, logging out');
+              this.logout();
+              return null;
+            }
+            
+            // If we only have the cookie but not localStorage data, rebuild localStorage
+            if (!storedUser && sessionData.userId) {
+              // Try to get full user data from cookie or return minimal data
+              return {
+                id: sessionData.userId,
+                email: sessionData.email,
+                nama_lengkap: sessionData.nama_lengkap,
+                role: sessionData.role || 'user',
+                account_membership: sessionData.account_membership || 'free'
+              };
+            }
+            
+            return sessionData;
+          } catch (error) {
+            console.error('Error parsing session cookie:', error);
+          }
         }
       }
       return null;
     } catch (error) {
       console.error("Error getting current user:", error);
       return null;
+    }
+  },
+
+  // Add method to force session refresh
+  async refreshUserSession() {
+    if (typeof window !== 'undefined') {
+      const user = await this.getCurrentUser(true); // Force remote fetch
+      return user;
+    }
+    return null;
+  },
+
+  // Improve saveUserSession to ensure data persistence
+  saveUserSession(user: any) {
+    if (typeof window !== 'undefined') {
+      try {
+        console.log("Saving user session for user ID:", user.id);
+        
+        // First verify we have a valid user object
+        if (!user || !user.id) {
+          throw new Error("Invalid user data for session");
+        }
+        
+        // Ensure account_membership is set to 'free' if it doesn't exist
+        if (!user.account_membership) {
+          user.account_membership = 'free';
+          console.log('Setting default account_membership to free');
+        }
+        
+        // Save to localStorage immediately
+        try {
+          localStorage.setItem('user', JSON.stringify(user));
+          localStorage.setItem('sessionTimestamp', new Date().toISOString());
+          
+          const expiryDate = new Date();
+          expiryDate.setDate(expiryDate.getDate() + 7);
+          localStorage.setItem('sessionExpiry', expiryDate.toISOString());
+          
+          // Trigger storage event to notify other components
+          window.dispatchEvent(new Event('storage'));
+        } catch (localStorageError) {
+          console.error("LocalStorage error:", localStorageError);
+        }
+        
+        // Save to cookies with error handling
+        try {
+          Cookies.set('user-session', JSON.stringify({
+            userId: user.id,
+            email: user.email || '',
+            nama_lengkap: user.nama_lengkap || '',
+            role: user.role || 'user',
+            account_membership: user.account_membership || 'free',
+            expires: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString()
+          }), { 
+            expires: 7,
+            path: '/',
+            sameSite: 'lax'
+          });
+        } catch (cookieError) {
+          console.error("Cookie error:", cookieError);
+        }
+        
+        console.log('User session saved successfully with membership:', user.account_membership || 'free');
+      } catch (error) {
+        console.error('Error saving user session:', error);
+      }
     }
   },
 

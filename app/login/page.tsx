@@ -121,26 +121,48 @@ function LoginForm() {
         throw new Error('Gagal mendapatkan informasi dari Google');
       }
 
-      // Try to login/register with Google info
-      const result = await authService.loginWithGoogle(googleUser);
-      
-      if (result.success) {
-        if (result.isExistingUser) {
-          // Existing user - redirect to appropriate dashboard
-          const role = result.user.role || 'user';
-          const homePath = getHomePathForRole(role);
-          router.push(homePath);
-        } else {
-          // New user - show completion form
+      console.log('Google user info received:', googleUser);
+
+      // Try to login with existing user first (without additional info)
+      try {
+        const result = await authService.loginWithGoogle(googleUser);
+        
+        if (result.success) {
+          if (result.isExistingUser) {
+            // Existing user - redirect to appropriate dashboard
+            const role = result.user.role || 'user';
+            const homePath = getHomePathForRole(role);
+            router.push(homePath);
+            return;
+          } else {
+            // New user - show completion form
+            setGoogleUserInfo(googleUser);
+            setShowGoogleUserForm(true);
+            return;
+          }
+        }
+      } catch (loginError: any) {
+        console.log('Google login attempt result:', loginError.message);
+        
+        // If error is about missing full name, show the form
+        if (loginError.message.includes('Nama lengkap wajib diisi')) {
+          console.log('Showing Google user form for new user');
           setGoogleUserInfo(googleUser);
           setShowGoogleUserForm(true);
+          return;
         }
+        
+        // If it's any other error, rethrow it
+        throw loginError;
       }
+
     } catch (error: any) {
       console.error('Google login error:', error);
       
-      // More specific error handling based on error types
-      if (error.message.includes('FedCM') || error.message.includes('NetworkError')) {
+      // Handle specific error types
+      if (error.message.includes('origin is not allowed') || error.message.includes('not allowed for the given client ID')) {
+        setError('Google OAuth belum dikonfigurasi dengan benar untuk domain ini. Silakan gunakan login email/password atau hubungi administrator.');
+      } else if (error.message.includes('FedCM') || error.message.includes('NetworkError')) {
         setError('Terjadi masalah jaringan dengan Google. Silakan periksa koneksi internet Anda dan coba lagi, atau gunakan login email/password.');
       } else if (error.message.includes('popup') || error.message.includes('closed') || error.message.includes('tidak dapat ditampilkan')) {
         setError('Google sign-in diblokir atau dibatalkan. Pastikan popup tidak diblokir di browser Anda dan coba lagi.');
@@ -153,8 +175,12 @@ function LoginForm() {
       } else if (error.message.includes('Konfigurasi') || error.message.includes('tidak valid')) {
         setError('Konfigurasi Google OAuth bermasalah. Silakan gunakan login email/password.');
       } else if (error.message.includes('Nama lengkap wajib diisi')) {
-        // This means we need to show the form for new users
-        setShowGoogleUserForm(true);
+        // This should not happen here anymore since we handle it above
+        console.log('Fallback: Showing Google user form');
+        if (!showGoogleUserForm && googleUserInfo) {
+          setShowGoogleUserForm(true);
+          return;
+        }
       } else {
         setError(error.message || 'Terjadi kesalahan saat login dengan Google. Silakan coba lagi atau gunakan login email/password.');
       }
@@ -168,10 +194,14 @@ function LoginForm() {
       setError("");
       setIsGoogleLoading(true);
 
+      // Get avatar URL from the GoogleUserForm component
+      const avatarUrl = document.querySelector<HTMLImageElement>('img[alt*="User"]')?.src ?? undefined;
+
       const result = await authService.loginWithGoogle(
         googleUserInfo,
         formData.fullName,
-        formData.phone
+        formData.phone,
+        avatarUrl
       );
 
       if (result.success) {
