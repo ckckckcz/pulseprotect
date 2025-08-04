@@ -48,11 +48,11 @@ export class JWTService {
         localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
       }
 
-      console.log('JWT tokens stored successfully', {
-        userId: decoded.userId,
-        email: decoded.email,
-        expiresAt: new Date(expiresAt).toISOString()
-      });
+      // console.log('JWT tokens stored successfully', {
+      //   userId: decoded.userId,
+      //   email: decoded.email,
+      //   expiresAt: new Date(expiresAt).toISOString()
+      // });
     } catch (error) {
       console.error('Error storing JWT tokens:', error);
       this.clearTokens();
@@ -69,7 +69,7 @@ export class JWTService {
 
       // Check if token is expired
       if (this.isTokenExpired(token)) {
-        console.log('Access token expired, clearing tokens');
+        // console.log('Access token expired, clearing tokens');
         this.clearTokens();
         return null;
       }
@@ -134,7 +134,7 @@ export class JWTService {
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.TOKEN_EXPIRES_KEY);
     
-    console.log('JWT tokens cleared');
+    // console.log('JWT tokens cleared');
   }
 
   // Refresh access token
@@ -142,11 +142,11 @@ export class JWTService {
     try {
       const refreshToken = this.getRefreshToken();
       if (!refreshToken) {
-        console.log('No refresh token available');
+        // console.log('No refresh token available');
         return null;
       }
 
-      console.log('Attempting to refresh access token...');
+      // console.log('Attempting to refresh access token...');
 
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
@@ -166,7 +166,7 @@ export class JWTService {
       
       if (data.accessToken) {
         this.setTokens(data.accessToken, data.refreshToken || refreshToken);
-        console.log('Access token refreshed successfully');
+        // console.log('Access token refreshed successfully');
         return data.accessToken;
       }
 

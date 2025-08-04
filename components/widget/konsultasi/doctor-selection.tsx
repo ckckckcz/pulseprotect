@@ -196,11 +196,11 @@ export function DoctorSelection({ onSelectDoctor }: DoctorSelectionProps) {
           // Transform database data to component format
           const transformedData = transformDoctorData(data);
           setDoctors(transformedData);
-          console.log("Fetched doctors:", transformedData);
+          // console.log("Fetched doctors:", transformedData);
         } else {
           // If no doctors in database, use local fallback data
           setDoctors(localDoctors);
-          console.log("No doctors found in database, using fallback data");
+          // console.log("No doctors found in database, using fallback data");
         }
       } catch (error: any) {
         console.error("Error fetching doctors:", error);

@@ -193,7 +193,7 @@ function ResetPasswordForm() {
         throw new Error("Token reset password tidak ditemukan.");
       }
 
-      console.log("Submitting password reset request");
+      // console.log("Submitting password reset request");
       
       // Call the API to reset the password
       const response = await fetch("/api/auth/reset-password", {

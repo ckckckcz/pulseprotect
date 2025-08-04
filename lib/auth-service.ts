@@ -22,7 +22,7 @@ export interface UserSession {
 // Function to login with email and password
 export async function loginWithCredentials(email: string, password: string) {
   try {
-    console.log("Attempting login with:", email);
+    // console.log("Attempting login with:", email);
     
     const { data: user, error } = await supabase
       .from('user')
@@ -61,7 +61,7 @@ export async function loginWithCredentials(email: string, password: string) {
     }
 
     if (!isValidPassword) {
-      console.log("Invalid password for:", email);
+      // console.log("Invalid password for:", email);
       return { success: false, message: 'Email atau kata sandi salah' };
     }
 

@@ -5,26 +5,26 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
-    console.log('=== API: Starting payment token creation ===');
+    // console.log('=== API: Starting payment token creation ===');
     
     // Check environment variables
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
     const isProduction = process.env.MIDTRANS_PRODUCTION === 'true';
     
-    console.log('Environment check:', {
-      hasServerKey: !!serverKey,
-      isProduction,
-      serverKeyPrefix: serverKey ? serverKey.substring(0, 15) : 'missing',
-      mode: isProduction ? 'PRODUCTION' : 'SANDBOX',
-    });
+    // console.log('Environment check:', {
+    //   hasServerKey: !!serverKey,
+    //   isProduction,
+    //   serverKeyPrefix: serverKey ? serverKey.substring(0, 15) : 'missing',
+    //   mode: isProduction ? 'PRODUCTION' : 'SANDBOX',
+    // });
     
     // Validate sandbox configuration
     if (!isProduction && serverKey && !serverKey.startsWith('SB-Mid-server-')) {
-      console.error('Sandbox mode but server key does not start with SB-Mid-server-');
-      return corsResponse(
-        { error: 'Invalid sandbox server key format' },
-        { status: 500 }
-      );
+      // console.error('Sandbox mode but server key does not start with SB-Mid-server-');
+      // return corsResponse(
+      //   { error: 'Invalid sandbox server key format' },
+      //   { status: 500 }
+      // );
     }
     
     if (!serverKey) {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     let body;
     try {
       body = await request.json();
-      console.log('API: Received body:', JSON.stringify(body, null, 2));
+      // console.log('API: Received body:', JSON.stringify(body, null, 2));
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
       return corsResponse(
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     
     // Validate required fields
     if (!body.transaction_details) {
-      console.error('API: Missing transaction_details');
+      // console.error('API: Missing transaction_details');
       return corsResponse(
         { error: 'Missing transaction_details' },
         { status: 400 }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     }
 
     if (!body.transaction_details.order_id || !body.transaction_details.gross_amount) {
-      console.error('API: Missing order_id or gross_amount');
+      // console.error('API: Missing order_id or gross_amount');
       return corsResponse(
         { error: 'Missing order_id or gross_amount' },
         { status: 400 }
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     // Create Midtrans Snap instance with the correct import
     let snap;
     try {
-      console.log(`Creating fresh Midtrans Snap instance in ${isProduction ? 'PRODUCTION' : 'SANDBOX'} mode`);
+      // console.log(`Creating fresh Midtrans Snap instance in ${isProduction ? 'PRODUCTION' : 'SANDBOX'} mode`);
       
       // Use direct import instead of destructured import
       snap = new midtransClient.Snap({
@@ -170,12 +170,12 @@ export async function POST(request: Request) {
       }
     };
 
-    console.log('Final transaction params:', JSON.stringify(transactionParams, null, 2));
+    // console.log('Final transaction params:', JSON.stringify(transactionParams, null, 2));
 
     // Record payment intent in database (critical untuk membership update)
     try {
       if (customerDetails.email && customerDetails.email !== 'customer@example.com') {
-        console.log('=== Recording payment intent in database ===');
+        // console.log('=== Recording payment intent in database ===');
         
         // Determine package name from item details - make sure it's LOWERCASE
         let packageName = 'free'; // default
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString()
         };
         
-        console.log('Payment intent data with lowercase package_name:', intentData);
+        // console.log('Payment intent data with lowercase package_name:', intentData);
         
         const { data: intentResult, error: intentError } = await supabase
           .from('payment_intent')
@@ -224,7 +224,7 @@ export async function POST(request: Request) {
         if (intentError) {
           console.error('Failed to record payment intent:', intentError);
         } else {
-          console.log('Payment intent recorded successfully:', intentResult);
+          // console.log('Payment intent recorded successfully:', intentResult);
         }
       }
     } catch (dbError) {
@@ -234,11 +234,11 @@ export async function POST(request: Request) {
     // Create transaction with detailed error handling
     let transaction;
     try {
-      console.log('Calling Midtrans API...');
+      // console.log('Calling Midtrans API...');
       transaction = await snap.createTransaction(transactionParams);
-      console.log('Midtrans transaction created successfully');
-      console.log('Token received:', transaction.token ? 'Yes' : 'No');
-      console.log('Redirect URL received:', transaction.redirect_url ? 'Yes' : 'No');
+      // console.log('Midtrans transaction created successfully');
+      // console.log('Token received:', transaction.token ? 'Yes' : 'No');
+      // console.log('Redirect URL received:', transaction.redirect_url ? 'Yes' : 'No');
     } catch (midtransError: any) {
       console.error('Midtrans API Error:', midtransError);
       console.error('Midtrans Error Details:', {
@@ -287,7 +287,7 @@ export async function POST(request: Request) {
       orderId: transactionParams.transaction_details.order_id,
     };
 
-    console.log('API: Returning successful response:', response);
+    // console.log('API: Returning successful response:', response);
     return corsResponse(response);
 
   } catch (error: any) {

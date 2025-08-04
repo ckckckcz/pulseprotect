@@ -123,7 +123,7 @@ export default function UserProfile() {
         const data = await response.json();
         
         // Log the total number of countries loaded
-        console.log(`Loaded ${data.length} countries`);
+        // console.log(`Loaded ${data.length} countries`);
         
         // Check if Indonesia exists in the data
         const indonesia = data.find((country: Country) => 
@@ -131,7 +131,7 @@ export default function UserProfile() {
         );
         
         if (indonesia) {
-          console.log("Indonesia found in country data:", indonesia);
+          // console.log("Indonesia found in country data:", indonesia);
         } else {
           console.warn("Indonesia not found in country data");
         }
@@ -164,14 +164,14 @@ export default function UserProfile() {
       
       // Parse phone number if exists
       if ((user as UserWithStatus).nomor_telepon) {
-        console.log("Original phone:", (user as UserWithStatus).nomor_telepon);
+        // console.log("Original phone:", (user as UserWithStatus).nomor_telepon);
         
         // If countries not yet loaded, use the full number temporarily
         if (countries.length === 0) {
           setPhoneNumber((user as UserWithStatus).nomor_telepon || "");
         } else {
           const phoneWithoutCode = parsePhoneNumber((user as UserWithStatus).nomor_telepon || "");
-          console.log("Parsed phone:", phoneWithoutCode);
+          // console.log("Parsed phone:", phoneWithoutCode);
           
           // Use the national number part
           setPhoneNumber(phoneWithoutCode.nationalNumber);
@@ -182,7 +182,7 @@ export default function UserProfile() {
               c => c.dial_code.replace('+', '') === phoneWithoutCode.countryCode
             );
             if (matchedCountry) {
-              console.log("Matched country:", matchedCountry);
+              // console.log("Matched country:", matchedCountry);
               setSelectedCountry(matchedCountry);
             }
           } else if (selectedCountry === null && countries.length > 0) {
@@ -354,7 +354,7 @@ export default function UserProfile() {
         }
       }
       
-      console.log("Formatted phone to save:", formattedPhone);
+      // console.log("Formatted phone to save:", formattedPhone);
     }
     
     try {
@@ -410,7 +410,7 @@ export default function UserProfile() {
       // Process and set payments data
       if (result.data && Array.isArray(result.data)) {
         setPayments(result.data);
-        console.log(`Loaded ${result.data.length} payment records from payment_intent table`);
+        // console.log(`Loaded ${result.data.length} payment records from payment_intent table`);
       } else {
         console.warn('Unexpected payment data format:', result);
         setPayments([]);
@@ -921,7 +921,7 @@ export default function UserProfile() {
                                     value={countrySearchQuery}
                                     onValueChange={(value) => {
                                       setCountrySearchQuery(value);
-                                      console.log(`Searching for: "${value}"`);
+                                      // console.log(`Searching for: "${value}"`);
                                     }}
                                   />
                                   <CommandEmpty>Negara tidak ditemukan</CommandEmpty>
@@ -932,7 +932,7 @@ export default function UserProfile() {
                                           key={country.code}
                                           value={`${country.code}-${country.name}`}
                                           onSelect={() => {
-                                            console.log(`Selected country: ${country.name}`);
+                                            // console.log(`Selected country: ${country.name}`);
                                             setSelectedCountry(country);
                                             setCountryOpen(false);
                                           }}

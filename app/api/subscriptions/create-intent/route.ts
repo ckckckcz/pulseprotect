@@ -5,7 +5,7 @@ import { corsHeaders, corsResponse } from "@/lib/cors";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log("Creating payment intent:", body);
+    // console.log("Creating payment intent:", body);
 
     const {
       userId,
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       }
     }
 
-    console.log("Final package name (lowercase):", finalPackageName);
+    // console.log("Final package name (lowercase):", finalPackageName);
 
     // Insert or update payment intent
     const { data, error } = await supabase
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("Payment intent created successfully with lowercase package_name:", data);
+    // console.log("Payment intent created successfully with lowercase package_name:", data);
 
     return corsResponse({
       success: true,

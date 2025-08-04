@@ -56,7 +56,7 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
   // Use the doctor email from the selected patient, auth context, or as a last resort, the default
   const doctorEmail = selectedPatient?.doctorEmail || authUser?.email || "satria@pulseprotect.com"
 
-  console.log("Using doctor email in consultation room:", doctorEmail)
+  // console.log("Using doctor email in consultation room:", doctorEmail)
 
   useEffect(() => {
     async function fetchUsers() {
@@ -116,8 +116,8 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
 
   useEffect(() => {
     // Additional logging to help debug
-    console.log('Selected patient in consultation room:', selectedPatient);
-    console.log('Active consultation:', activeConsultation);
+    // console.log('Selected patient in consultation room:', selectedPatient);
+    // console.log('Active consultation:', activeConsultation);
     
     if (activeConsultation.chatRoomId) {
       loadMessages()
@@ -132,7 +132,7 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
             table: 'messages',
             filter: `chat_room_id=eq.${activeConsultation.chatRoomId}`
           }, (payload) => {
-            console.log('Received new message:', payload);
+            // console.log('Received new message:', payload);
             const newMessage = payload.new
             
             // Add the new message to our state
@@ -153,7 +153,7 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
           })
           .subscribe()
           
-        console.log('Successfully subscribed to real-time updates for chat room');
+        // console.log('Successfully subscribed to real-time updates for chat room');
           
         return () => {
           supabase.removeChannel(channel)
@@ -218,11 +218,11 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
 
   const loadMessages = async () => {
     if (!activeConsultation.chatRoomId) {
-      console.log('No chat room ID available, skipping message load');
+      // console.log('No chat room ID available, skipping message load');
       return;
     }
     
-    console.log('Loading messages for chat room:', activeConsultation.chatRoomId);
+    // console.log('Loading messages for chat room:', activeConsultation.chatRoomId);
     setIsLoading(true);
     
     try {
@@ -237,7 +237,7 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
         return
       }
       
-      console.log('Loaded messages:', data);
+      // console.log('Loaded messages:', data);
       
       // Transform the messages to our format
       const formattedMessages = data?.map(msg => ({
@@ -262,12 +262,12 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
 
   const sendMessage = async () => {
     if (!message.trim() || !activeConsultation.chatRoomId) {
-      console.log('Cannot send message: Empty message or no chat room ID');
+      // console.log('Cannot send message: Empty message or no chat room ID');
       return;
     }
     
-    console.log('Sending message to chat room:', activeConsultation.chatRoomId);
-    console.log('Using doctor email for message:', doctorEmail);
+    // console.log('Sending message to chat room:', activeConsultation.chatRoomId);
+    // console.log('Using doctor email for message:', doctorEmail);
     
     try {
       const newMessage = {
@@ -278,13 +278,13 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
         message_type: 'text' as const
       }
       
-      console.log('Message payload:', newMessage);
+      // console.log('Message payload:', newMessage);
       
       const { data, error } = await supabase
         .from('messages')
         .insert(newMessage)
       
-      console.log('Send message response:', { data, error });
+      // console.log('Send message response:', { data, error });
       
       if (error) {
         console.error('Error sending message:', error)

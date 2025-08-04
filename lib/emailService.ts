@@ -100,9 +100,9 @@ export const emailService = {
     };
 
     try {
-      console.log("Attempting to send verification email to:", email);
+      // console.log("Attempting to send verification email to:", email);
       const result = await transport.sendMail(mailOptions);
-      console.log("Verification email sent:", result.messageId);
+      // console.log("Verification email sent:", result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error("Failed to send verification email:", error);
@@ -173,9 +173,9 @@ export const emailService = {
     };
 
     try {
-      console.log("Attempting to send password reset email to:", email);
+      // console.log("Attempting to send password reset email to:", email);
       const result = await transport.sendMail(mailOptions);
-      console.log("Password reset email sent:", result.messageId);
+      // console.log("Password reset email sent:", result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error("Failed to send password reset email:", error);
@@ -246,9 +246,9 @@ export const emailService = {
     };
 
     try {
-      console.log("Attempting to send early access confirmation email to:", email);
+      // console.log("Attempting to send early access confirmation email to:", email);
       const result = await transport.sendMail(mailOptions);
-      console.log("Early access confirmation email sent:", result.messageId);
+      // console.log("Early access confirmation email sent:", result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error("Failed to send early access confirmation email:", error);

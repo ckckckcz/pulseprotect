@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     const verificationToken = emailService.generateVerificationToken()
     const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    console.log('Starting registration process for:', email)
+    // console.log('Starting registration process for:', email)
 
     // Insert new user data into 'user' table - match exact schema
     const { data: newUser, error: insertError } = await supabase
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
         fullName.trim(),
         verificationToken
       )
-      console.log('Verification email sent successfully')
+      // console.log('Verification email sent successfully')
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError)
       // Delete the user record if email fails

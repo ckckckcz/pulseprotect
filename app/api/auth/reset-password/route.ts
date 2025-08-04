@@ -6,8 +6,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { token, newPassword } = body;
     
-    console.log("Reset password API called with token:", token ? `${token.substring(0, 8)}...` : "null");
-    
     if (!token || !newPassword) {
       return NextResponse.json(
         { error: "Token dan kata sandi baru diperlukan" },

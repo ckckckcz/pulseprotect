@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const barcode = searchParams.get('barcode');
 
-  console.log('🔍 API Request received:', { barcode, type: typeof barcode });
+  // console.log('🔍 API Request received:', { barcode, type: typeof barcode });
 
   if (!barcode) {
     return new Response(JSON.stringify({ error: 'Barcode diperlukan' }), {
@@ -42,14 +42,14 @@ export async function GET(req: NextRequest) {
 
   // Clean and normalize barcode
   const cleanBarcode = barcode.trim().replace(/\s+/g, '');
-  console.log('🧹 Cleaned barcode:', cleanBarcode);
-  console.log('📊 Available barcodes:', dummyProduk.map((p) => p.barcode));
+  // console.log('🧹 Cleaned barcode:', cleanBarcode);
+  // console.log('📊 Available barcodes:', dummyProduk.map((p) => p.barcode));
 
   // Find product with exact match
   const produk = dummyProduk.find((p) => {
     const productBarcode = p.barcode.trim();
     const isMatch = productBarcode === cleanBarcode;
-    console.log(`🔄 Comparing: "${productBarcode}" === "${cleanBarcode}" = ${isMatch}`);
+    // console.log(`🔄 Comparing: "${productBarcode}" === "${cleanBarcode}" = ${isMatch}`);
     return isMatch;
   });
 

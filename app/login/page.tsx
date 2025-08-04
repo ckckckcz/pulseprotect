@@ -56,11 +56,11 @@ function LoginForm() {
     }
     
     try {
-      console.log(`Attempting login with email: ${email}`)
+      // console.log(`Attempting login with email: ${email}`)
       
       // First check if this email exists and what role they have
       const userRole = await checkUserRole(email.trim());
-      console.log(`Checked user role for ${email}: ${userRole || 'unknown'}`);
+      // console.log(`Checked user role for ${email}: ${userRole || 'unknown'}`);
       
       // Use safe error handling with the login function
       const loginResult = await login(email.trim(), password)
@@ -75,7 +75,7 @@ function LoginForm() {
       if (loginResult && loginResult.user) {
         const role = loginResult.user.role || 'user';
         const homePath = getHomePathForRole(role);
-        console.log(`Login successful. Redirecting to ${homePath} for role ${role}`);
+        // console.log(`Login successful. Redirecting to ${homePath} for role ${role}`);
         router.push(homePath);
       }
       

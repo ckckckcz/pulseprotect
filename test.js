@@ -7,10 +7,6 @@ function loadEnvFile() {
   const envPath = path.join(__dirname, '.env.local')
   
   if (!fs.existsSync(envPath)) {
-    console.error('❌ .env.local file not found!')
-    console.log('Please create .env.local file with:')
-    console.log('NEXT_PUBLIC_SUPABASE_URL=your_url')
-    console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key')
     return {}
   }
 
@@ -33,14 +29,6 @@ const supabaseUrl = envVars.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = envVars.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables!')
-  console.log('Make sure you have .env.local file with:')
-  console.log('NEXT_PUBLIC_SUPABASE_URL=your_url')
-  console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key')
-  console.log('')
-  console.log('Current values:')
-  console.log('SUPABASE_URL:', supabaseUrl ? '✅ Found' : '❌ Missing')
-  console.log('SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Found' : '❌ Missing')
   process.exit(1)
 }
 
@@ -77,14 +65,6 @@ async function testConnection() {
     }
   } catch (err) {
     console.error('❌ Connection failed:', err.message)
-    
-    if (err.message.includes('Invalid API key') || err.message.includes('401')) {
-      console.log('💡 Check your NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local')
-    } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-      console.log('💡 Check your NEXT_PUBLIC_SUPABASE_URL in .env.local')
-      console.log('💡 Make sure your internet connection is working')
-    }
-    
     return false
   }
 }

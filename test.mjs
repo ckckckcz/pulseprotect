@@ -38,7 +38,6 @@ async function testRegistration() {
     }
 
     console.log('✅ Registration test passed!')
-    console.log('📝 Created user:', data)
 
     // Clean up test user
     await supabase.from('users').delete().eq('id', data.id)

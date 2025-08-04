@@ -108,20 +108,20 @@ export default function PricingPage() {
   // Test Midtrans loading on component mount
   useEffect(() => {
     const testMidtransLoading = async () => {
-      console.log("=== TESTING MIDTRANS LOADING ===");
-      console.log("Environment check:");
-      console.log("- CLIENT_KEY:", process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ? 'Set' : 'Missing');
-      console.log("- SNAP_URL:", process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL);
-      console.log("- User authenticated:", !!currentUser);
-      console.log("- JWT valid:", jwtService.isAuthenticated());
+      // console.log("=== TESTING MIDTRANS LOADING ===");
+      // console.log("Environment check:");
+      // console.log("- CLIENT_KEY:", process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ? 'Set' : 'Missing');
+      // console.log("- SNAP_URL:", process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL);
+      // console.log("- User authenticated:", !!currentUser);
+      // console.log("- JWT valid:", jwtService.isAuthenticated());
       
       if (typeof window !== 'undefined') {
-        console.log("Browser environment detected");
-        console.log("Initial window.snap:", typeof window.snap);
+        // console.log("Browser environment detected");
+        // console.log("Initial window.snap:", typeof window.snap);
         
         try {
           await import('@/services/payment');
-          console.log("Payment service imported successfully");
+          // console.log("Payment service imported successfully");
         } catch (importError) {
           console.error("Error importing payment service:", importError);
         }
@@ -133,7 +133,7 @@ export default function PricingPage() {
 
   // Function to handle when user is not authenticated
   const promptLogin = () => {
-    console.log("Prompting login - clearing any existing tokens first");
+    // console.log("Prompting login - clearing any existing tokens first");
     jwtService.clearTokens(); // Clear any invalid tokens
     
     toast({
@@ -228,32 +228,32 @@ export default function PricingPage() {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("=== PAYMENT HANDLER START ===");
-    console.log("Package type:", packageType);
-    console.log("Event prevented and propagation stopped");
+    // console.log("=== PAYMENT HANDLER START ===");
+    // console.log("Package type:", packageType);
+    // console.log("Event prevented and propagation stopped");
     
     // Check JWT authentication first
     const isJWTValid = jwtService.isAuthenticated();
-    console.log("JWT authentication check:", isJWTValid);
-    console.log("Current user from context:", !!currentUser);
-    console.log("User email:", currentUser?.email);
+    // console.log("JWT authentication check:", isJWTValid);
+    // console.log("Current user from context:", !!currentUser);
+    // console.log("User email:", currentUser?.email);
     
     // Check if user is authenticated via JWT
     if (!isJWTValid || !currentUser || !currentUser.email) {
-      console.log("User not authenticated:", { 
-        jwtValid: isJWTValid, 
-        hasUser: !!currentUser, 
-        hasEmail: !!currentUser?.email 
-      });
+      // console.log("User not authenticated:", { 
+      //   jwtValid: isJWTValid, 
+      //   hasUser: !!currentUser, 
+      //   hasEmail: !!currentUser?.email 
+      // });
       promptLogin();
       return;
     }
     
-    console.log("User authenticated via JWT:", {
-      id: currentUser.id,
-      email: currentUser.email,
-      name: currentUser.nama_lengkap
-    });
+    // console.log("User authenticated via JWT:", {
+    //   id: currentUser.id,
+    //   email: currentUser.email,
+    //   name: currentUser.nama_lengkap
+    // });
     
     setIsLoading(packageType);
 
@@ -281,25 +281,25 @@ export default function PricingPage() {
         phone: currentUser.nomor_telepon || "",
       };
 
-      console.log("=== PAYMENT DETAILS ===");
-      console.log("User ID:", userId);
-      console.log("Package details:", packageDetails);
-      console.log("Customer info:", customerInfo);
-      console.log("Period:", period);
+      // console.log("=== PAYMENT DETAILS ===");
+      // console.log("User ID:", userId);
+      // console.log("Package details:", packageDetails);
+      // console.log("Customer info:", customerInfo);
+      // console.log("Period:", period);
 
-      console.log("Creating payment token with JWT auth...");
+      // console.log("Creating payment token with JWT auth...");
       
       // Create payment token via API
       const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
       
-      console.log("Payment token creation result:", paymentResult);
+      // console.log("Payment token creation result:", paymentResult);
       
       if (!paymentResult.token) {
         console.error("No token received from payment creation");
         throw new Error("Invalid payment token received");
       }
 
-      console.log("Payment token received successfully:", paymentResult.token);
+      // console.log("Payment token received successfully:", paymentResult.token);
 
       // Check if we're in browser environment
       if (typeof window === 'undefined') {
@@ -313,21 +313,21 @@ export default function PricingPage() {
         return;
       }
 
-      console.log("Checking Midtrans environment...");
-      console.log("window exists:", typeof window !== 'undefined');
-      console.log("Initial window.snap check:", typeof window.snap);
+      // console.log("Checking Midtrans environment...");
+      // console.log("window exists:", typeof window !== 'undefined');
+      // console.log("Initial window.snap check:", typeof window.snap);
 
       // Try to handle Midtrans payment
-      console.log("Initiating Midtrans payment...");
+      // console.log("Initiating Midtrans payment...");
       
       try {
         await handleMidtransPayment(paymentResult.token, {
           onSuccess: async (result) => {
-            console.log("=== PAYMENT SUCCESS CALLBACK ===", result);
+            // console.log("=== PAYMENT SUCCESS CALLBACK ===", result);
             
             // Manual check status untuk memastikan database terupdate
             try {
-              console.log("Checking payment status manually...");
+              // console.log("Checking payment status manually...");
               const statusResponse = await fetch('/api/payment/check-status', {
                 method: 'POST',
                 headers: {
@@ -338,7 +338,7 @@ export default function PricingPage() {
               
               if (statusResponse.ok) {
                 const statusData = await statusResponse.json();
-                console.log("Status check result:", statusData);
+                // console.log("Status check result:", statusData);
                 
                 if (statusData.status === 'success') {
                   toast({
@@ -393,13 +393,13 @@ export default function PricingPage() {
             setIsLoading(null);
           },
           onClose: () => {
-            console.log("=== PAYMENT CLOSE CALLBACK ===");
-            console.log("User closed the payment dialog");
+            // console.log("=== PAYMENT CLOSE CALLBACK ===");
+            // console.log("User closed the payment dialog");
             setIsLoading(null);
           },
         });
         
-        console.log("handleMidtransPayment completed successfully");
+        // console.log("handleMidtransPayment completed successfully");
         
       } catch (snapError) {
         console.error("=== MIDTRANS SNAP ERROR ===");
@@ -424,7 +424,7 @@ export default function PricingPage() {
       
       // If it's an authentication error, prompt login
       if (error instanceof Error && error.message.includes('Authentication')) {
-        console.log("Authentication error detected, prompting login");
+        // console.log("Authentication error detected, prompting login");
         promptLogin();
       } else {
         toast({

@@ -6,15 +6,15 @@ import ChatInterface from '@/components/widget/chat/ChatInterface';
 export default function SilvaPage() {
   // Define default props or fetch data if needed
   const handleRegenerate = () => {
-    console.log('Regenerate');
+    // console.log('Regenerate');
   };
 
   const handleSpeak = (text: string) => {
-    console.log('Speak:', text);
+    // console.log('Speak:', text);
   };
 
   const handleCopy = (text: string) => {
-    console.log('Copy:', text);
+    // console.log('Copy:', text);
   };
 
   return (

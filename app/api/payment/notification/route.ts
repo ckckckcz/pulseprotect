@@ -5,8 +5,8 @@ import { corsResponse, corsHeaders } from '@/lib/cors';
 export async function POST(request: Request) {
   try {
     const notification = await request.json();
-    console.log('=== MIDTRANS NOTIFICATION RECEIVED ===');
-    console.log('Full notification:', JSON.stringify(notification, null, 2));
+    // console.log('=== MIDTRANS NOTIFICATION RECEIVED ===');
+    // console.log('Full notification:', JSON.stringify(notification, null, 2));
     
     const orderId = notification.order_id;
     const transactionStatus = notification.transaction_status;
@@ -27,10 +27,10 @@ export async function POST(request: Request) {
       status = 'failed';
     }
     
-    console.log(`Processing order ${orderId} with status: ${status}`);
+    // console.log(`Processing order ${orderId} with status: ${status}`);
     
     // Update payment_intent status - database trigger akan otomatis update user membership
-    console.log('=== UPDATING PAYMENT INTENT STATUS ===');
+    // console.log('=== UPDATING PAYMENT INTENT STATUS ===');
     const { data: paymentIntentData, error: intentUpdateError } = await supabase
       .from("payment_intent")
       .update({
@@ -49,12 +49,12 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
     
-    console.log("✅ Payment intent updated successfully:", paymentIntentData);
+    // console.log("✅ Payment intent updated successfully:", paymentIntentData);
     
     // HANYA JIKA SUCCESSFUL, database trigger sudah otomatis update user membership
     // DAN tambahkan ke payment table
     if (status === 'success' && paymentIntentData) {
-      console.log('=== RECORDING PAYMENT IN PAYMENT TABLE (SUCCESS ONLY) ===');
+      // console.log('=== RECORDING PAYMENT IN PAYMENT TABLE (SUCCESS ONLY) ===');
       
       const membershipType = paymentIntentData.package_name?.toLowerCase() || 'free';
       const paymentType = notification.payment_type || 'unknown';
@@ -86,10 +86,10 @@ export async function POST(request: Request) {
         if (paymentError) {
           console.error("❌ Error creating payment record:", paymentError);
         } else {
-          console.log("✅ Payment record created successfully:", paymentData);
+          // console.log("✅ Payment record created successfully:", paymentData);
         }
       } else {
-        console.log("✅ Payment record already exists for order:", orderId);
+        // console.log("✅ Payment record already exists for order:", orderId);
       }
       
       // Verify user membership was updated by trigger
@@ -99,9 +99,9 @@ export async function POST(request: Request) {
         .eq("email", paymentIntentData.email)
         .single();
         
-      console.log("✅ User membership after trigger:", updatedUser);
+      // console.log("✅ User membership after trigger:", updatedUser);
     } else if (status !== 'success') {
-      console.log(`⏳ Payment status is ${status}, not recording in payment table yet`);
+      // console.log(`⏳ Payment status is ${status}, not recording in payment table yet`);
     }
     
     return corsResponse({ 

@@ -20,7 +20,7 @@ export async function GET(request: Request) {
         const decoded = jwtService.verifyToken(token);
         if (decoded && decoded.email) {
           authenticatedUserEmail = decoded.email;
-          console.log('User authenticated via JWT:', authenticatedUserEmail);
+          // console.log('User authenticated via JWT:', authenticatedUserEmail);
         }
       } catch (tokenError) {
         console.warn('Invalid JWT token:', tokenError);
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
     // If no email parameter but we have an authenticated user, use their email
     if (!email && authenticatedUserEmail) {
-      console.log('Using email from JWT token:', authenticatedUserEmail);
+      // console.log('Using email from JWT token:', authenticatedUserEmail);
     } else if (!email && !authenticatedUserEmail) {
       return corsResponse({ error: 'Email parameter is required' }, { status: 400 });
     }
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       return corsResponse({ error: 'Failed to fetch payment data' }, { status: 500 });
     }
 
-    console.log(`Found ${data?.length || 0} payment intents for email: ${userEmail}`);
+    // console.log(`Found ${data?.length || 0} payment intents for email: ${userEmail}`);
 
     return corsResponse({
       success: true,

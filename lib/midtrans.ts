@@ -12,17 +12,17 @@ export const midtransConfig = {
 // Validate configuration dengan logging yang lebih detail
 if (typeof window === 'undefined') {
   // Only log on server-side to avoid cluttering client logs
-  console.log('=== Midtrans Configuration Check ===');
-  console.log('Server Key:', midtransConfig.serverKey ? `${midtransConfig.serverKey.substring(0, 15)}...` : 'MISSING');
-  console.log('Client Key:', midtransConfig.clientKey ? `${midtransConfig.clientKey.substring(0, 15)}...` : 'MISSING');
-  console.log('Merchant ID:', midtransConfig.merchantId || 'MISSING');
-  console.log('Is Production:', midtransConfig.isProduction);
-  console.log('API URL:', midtransConfig.apiUrl);
-  console.log('APP URL:', midtransConfig.appUrl);
+  // console.log('=== Midtrans Configuration Check ===');
+  // console.log('Server Key:', midtransConfig.serverKey ? `${midtransConfig.serverKey.substring(0, 15)}...` : 'MISSING');
+  // console.log('Client Key:', midtransConfig.clientKey ? `${midtransConfig.clientKey.substring(0, 15)}...` : 'MISSING');
+  // console.log('Merchant ID:', midtransConfig.merchantId || 'MISSING');
+  // console.log('Is Production:', midtransConfig.isProduction);
+  // console.log('API URL:', midtransConfig.apiUrl);
+  // console.log('APP URL:', midtransConfig.appUrl);
 
   // Validate Sandbox keys
   if (!midtransConfig.isProduction) {
-    console.log('🏗️ SANDBOX MODE DETECTED');
+    // console.log('🏗️ SANDBOX MODE DETECTED');
     if (midtransConfig.serverKey && !midtransConfig.serverKey.startsWith('SB-Mid-server-')) {
       console.warn('⚠️ Server key does not look like a sandbox key');
     }
@@ -30,31 +30,31 @@ if (typeof window === 'undefined') {
       console.warn('⚠️ Client key does not look like a sandbox key');
     }
   } else {
-    console.log('🚀 PRODUCTION MODE DETECTED');
+    // console.log('🚀 PRODUCTION MODE DETECTED');
   }
 
   if (!midtransConfig.serverKey) {
     console.error('❌ MIDTRANS_SERVER_KEY is not set');
   } else {
-    console.log('✅ MIDTRANS_SERVER_KEY is set');
+    // console.log('✅ MIDTRANS_SERVER_KEY is set');
   }
 
   if (!midtransConfig.clientKey) {
     console.error('❌ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is not set');
   } else {
-    console.log('✅ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is set');
+    // console.log('✅ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is set');
   }
 
   // Validate key format for sandbox
   if (!midtransConfig.isProduction) {
     if (midtransConfig.serverKey && midtransConfig.serverKey.startsWith('SB-Mid-server-')) {
-      console.log('✅ Sandbox server key format is correct');
+      // console.log('✅ Sandbox server key format is correct');
     } else if (midtransConfig.serverKey) {
       console.error('❌ Server key should start with "SB-Mid-server-" for sandbox');
     }
     
     if (midtransConfig.clientKey && midtransConfig.clientKey.startsWith('SB-Mid-client-')) {
-      console.log('✅ Sandbox client key format is correct');
+      // console.log('✅ Sandbox client key format is correct');
     } else if (midtransConfig.clientKey) {
       console.error('❌ Client key should start with "SB-Mid-client-" for sandbox');
     }

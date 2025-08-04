@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
       
-      console.log(`User ${email} has role: ${data.role}`);
+      // console.log(`User ${email} has role: ${data.role}`);
       return data.role;
     } catch (error) {
       console.error("Error in checkUserRole:", error);
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     
     try {
-      console.log("Login attempt for:", email);
+      // console.log("Login attempt for:", email);
       
       const { data, error } = await supabase
         .from('user')

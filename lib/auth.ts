@@ -62,7 +62,7 @@ export const authService = {
         throw new Error("Email dan password wajib diisi");
       }
 
-      console.log("Attempting to login with email:", email);
+      // console.log("Attempting to login with email:", email);
       
       let userData;
       try {
@@ -79,7 +79,7 @@ export const authService = {
         }
         
         if (!data) {
-          console.log("No user found with email:", email);
+          // console.log("No user found with email:", email);
           throw new Error("Email atau password salah");
         }
         
@@ -120,7 +120,7 @@ export const authService = {
         throw new Error("Email atau password salah");
       }
 
-      console.log("Login successful for:", email);
+      // console.log("Login successful for:", email);
       
       // Get additional profile data based on role
       if (userData.role === 'dokter' || userData.role === 'admin') {
@@ -226,7 +226,7 @@ export const authService = {
           console.error("Cookie error:", cookieError);
         }
         
-        console.log('User session saved successfully with membership:', user.account_membership || 'free');
+        // console.log('User session saved successfully with membership:', user.account_membership || 'free');
       } catch (error) {
         console.error('Error saving user session:', error);
       }
@@ -270,7 +270,7 @@ export const authService = {
         if (sessionCookie) {
           try {
             const sessionData = JSON.parse(sessionCookie);
-            console.log('Found user session in cookie:', sessionData.email);
+            // console.log('Found user session in cookie:', sessionData.email);
             
             // Validate expiration
             const now = new Date();
@@ -329,7 +329,7 @@ export const authService = {
         // Clear cookies using js-cookie
         Cookies.remove('user-session', { path: '/' });
         
-        console.log('User session cleared');
+        // console.log('User session cleared');
       } catch (error) {
         console.error('Error clearing session:', error);
       }

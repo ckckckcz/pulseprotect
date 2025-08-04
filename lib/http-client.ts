@@ -52,13 +52,13 @@ class HttpClient {
     };
 
     try {
-      console.log(`Making ${requestConfig.method || 'GET'} request to:`, url);
+      // console.log(`Making ${requestConfig.method || 'GET'} request to:`, url);
       
       const response = await fetch(url, requestOptions);
       
       // Handle 401 Unauthorized - token might be expired
       if (response.status === 401 && !skipAuth && retry) {
-        console.log('Received 401, attempting token refresh...');
+        // console.log('Received 401, attempting token refresh...');
         
         const newToken = await jwtService.refreshAccessToken();
         if (newToken) {
@@ -140,7 +140,7 @@ class HttpClient {
 
   // Handle authentication errors
   private handleAuthError(): void {
-    console.log('Authentication error detected, clearing tokens and redirecting...');
+    // console.log('Authentication error detected, clearing tokens and redirecting...');
     jwtService.clearTokens();
     
     if (typeof window !== 'undefined') {

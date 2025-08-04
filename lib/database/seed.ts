@@ -5,7 +5,7 @@ import path from 'path';
 
 async function seedUsers() {
   try {
-    console.log('Starting to seed users...');
+    // console.log('Starting to seed users...');
     
     // Hash passwords
     const adminPassword = await bcrypt.hash('admin123', 10);
@@ -33,7 +33,7 @@ async function seedUsers() {
     if (adminError) {
       console.error('Error creating admin user:', adminError);
     } else {
-      console.log('Admin user created or updated:', adminUser);
+      // console.log('Admin user created or updated:', adminUser);
       
       // Insert admin profile
       const { error: adminProfileError } = await supabase
@@ -51,7 +51,7 @@ async function seedUsers() {
       if (adminProfileError) {
         console.error('Error creating admin profile:', adminProfileError);
       } else {
-        console.log('Admin profile created or updated');
+        // console.log('Admin profile created or updated');
       }
     }
     
@@ -77,7 +77,7 @@ async function seedUsers() {
     if (doctorError) {
       console.error('Error creating doctor user:', doctorError);
     } else {
-      console.log('Doctor user created or updated:', doctorUser);
+      // console.log('Doctor user created or updated:', doctorUser);
       
       // Insert doctor profile
       const { error: doctorProfileError } = await supabase
@@ -97,11 +97,11 @@ async function seedUsers() {
       if (doctorProfileError) {
         console.error('Error creating doctor profile:', doctorProfileError);
       } else {
-        console.log('Doctor profile created or updated');
+        // console.log('Doctor profile created or updated');
       }
     }
     
-    console.log('Seeding completed!');
+    // console.log('Seeding completed!');
   } catch (error) {
     console.error('Error during seeding:', error);
   }
@@ -109,7 +109,7 @@ async function seedUsers() {
 
 async function seedFromSqlFile() {
   try {
-    console.log('Seeding database from SQL file...');
+    // console.log('Seeding database from SQL file...');
     
     const sqlPath = path.join(process.cwd(), 'lib', 'database', 'dummy-data.sql');
     const sqlContent = fs.readFileSync(sqlPath, 'utf8');
@@ -129,7 +129,7 @@ async function seedFromSqlFile() {
       }
     }
     
-    console.log('SQL seeding completed!');
+    // console.log('SQL seeding completed!');
   } catch (error) {
     console.error('Error seeding from SQL file:', error);
   }

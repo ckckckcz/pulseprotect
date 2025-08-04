@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     // Parse request body
     const body = await request.json();
-    console.log("Creating subscription with data:", body);
+    // console.log("Creating subscription with data:", body);
 
     const {
       userId,
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     let userEmail = email;
     
     if (!userEmail && orderId) {
-      console.log("Email not provided, looking up from payment_intent for order:", orderId);
+      // console.log("Email not provided, looking up from payment_intent for order:", orderId);
       const { data: intentData } = await supabase
         .from("payment_intent")
         .select("email")
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       
       if (intentData && intentData.email) {
         userEmail = intentData.email;
-        console.log("Found email from payment_intent:", userEmail);
+        // console.log("Found email from payment_intent:", userEmail);
       }
     }
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const membershipType = packageId.split("_")[1] || packageId;
 
     // Create payment record using email 
-    console.log("Creating payment record with email:", userEmail);
+    // console.log("Creating payment record with email:", userEmail);
     const { data: payment, error: paymentError } = await supabase
       .from("payment")
       .insert({
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       return corsResponse({ error: "Failed to create payment record", details: paymentError.message }, { status: 500 });
     }
 
-    console.log("Payment record created:", payment);
+    // console.log("Payment record created:", payment);
 
     // Calculate expiry date
     const startDate = new Date();
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
           console.error("Error updating user membership:", userUpdateError);
           // Continue execution as payment is already recorded
         } else {
-          console.log("Updated user membership successfully");
+          // console.log("Updated user membership successfully");
         }
       } catch (err) {
         console.error("Error updating user data:", err);

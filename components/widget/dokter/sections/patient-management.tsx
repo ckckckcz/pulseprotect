@@ -74,8 +74,8 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
     try {
       setProcessingUser(patient.id)
       
-      console.log('Starting consultation with patient:', patient.email)
-      console.log('Using doctor email from auth context:', doctorEmail)
+      // console.log('Starting consultation with patient:', patient.email)
+      // console.log('Using doctor email from auth context:', doctorEmail)
       
       // Check if a chat room already exists between this doctor and patient
       const { data: existingRooms, error: roomError } = await supabase
@@ -90,13 +90,13 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
         return
       }
       
-      console.log('Existing rooms:', existingRooms)
+      // console.log('Existing rooms:', existingRooms)
       
       let chatRoomId = existingRooms && existingRooms.length > 0 ? existingRooms[0].id : null
       
       // If no chat room exists, create a new one
       if (!chatRoomId) {
-        console.log('Creating new chat room...')
+        // console.log('Creating new chat room...')
         
         try {
           const { data: newRooms, error: createError } = await supabase
@@ -108,7 +108,7 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
             })
             .select('id')
           
-          console.log('Insert response:', { newRooms, createError })
+          // console.log('Insert response:', { newRooms, createError })
           
           if (createError) {
             console.error('Error creating new chat room:', createError)
@@ -127,7 +127,7 @@ export function PatientManagement({ setSelectedPatient, setActiveSection }: Pati
         }
       }
       
-      console.log('Using chat room ID:', chatRoomId)
+      // console.log('Using chat room ID:', chatRoomId)
       
       if (!chatRoomId) {
         console.error('Failed to get a valid chat room ID')

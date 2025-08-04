@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return corsResponse({ error: 'Order ID required' }, { status: 400 });
     }
 
-    console.log('Checking payment status for order:', orderId);
+    // console.log('Checking payment status for order:', orderId);
 
     // Check Midtrans API untuk status terbaru
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const midtransData = await midtransResponse.json();
-    console.log('Midtrans status response:', midtransData);
+    // console.log('Midtrans status response:', midtransData);
 
     let status = 'pending';
     const transactionStatus = midtransData.transaction_status;
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       status = 'failed';
     }
 
-    console.log('Determined status:', status);
+    // console.log('Determined status:', status);
 
     // Update payment_intent status
     const { data: paymentIntentData, error: intentUpdateError } = await supabase
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       return corsResponse({ error: 'Failed to update payment intent' }, { status: 500 });
     }
 
-    console.log("Payment intent updated:", paymentIntentData);
+    // console.log("Payment intent updated:", paymentIntentData);
 
     // Jika status success, database trigger akan otomatis update user membership
     if (status === 'success' && paymentIntentData) {
@@ -106,10 +106,10 @@ export async function POST(request: Request) {
         if (paymentError) {
           console.error("Error creating payment record:", paymentError);
         } else {
-          console.log("Payment record created:", paymentData);
+          // console.log("Payment record created:", paymentData);
         }
       } else {
-        console.log("Payment record already exists for order:", orderId);
+        // console.log("Payment record already exists for order:", orderId);
       }
 
       // Verify user membership was updated by trigger
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
         .eq("email", paymentIntentData.email)
         .single();
         
-      console.log("User membership after trigger:", updatedUser);
+      // console.log("User membership after trigger:", updatedUser);
     }
 
     return corsResponse({ 
