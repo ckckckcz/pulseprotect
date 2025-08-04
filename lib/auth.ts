@@ -326,7 +326,7 @@ export const authService = {
   saveUserSession(user: any) {
     if (typeof window !== 'undefined') {
       try {
-        console.log("Saving user session for user ID:", user.id);
+        console.log("Saving user session for user ID:", user.id, "Email:", user.email);
         
         // First verify we have a valid user object
         if (!user || !user.id) {
@@ -348,8 +348,7 @@ export const authService = {
           expiryDate.setDate(expiryDate.getDate() + 7);
           localStorage.setItem('sessionExpiry', expiryDate.toISOString());
           
-          // Trigger storage event to notify other components
-          window.dispatchEvent(new Event('storage'));
+          console.log('User session saved to localStorage successfully');
         } catch (localStorageError) {
           console.error("LocalStorage error:", localStorageError);
         }
@@ -368,9 +367,22 @@ export const authService = {
             path: '/',
             sameSite: 'lax'
           });
+          
+          console.log('User session saved to cookies successfully');
         } catch (cookieError) {
           console.error("Cookie error:", cookieError);
         }
+        
+        // Trigger multiple storage events to ensure UI updates
+        setTimeout(() => {
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'user',
+            newValue: JSON.stringify(user),
+            storageArea: localStorage
+          }));
+          console.log('Storage events dispatched for UI update');
+        }, 50);
         
         console.log('User session saved successfully with membership:', user.account_membership || 'free');
       } catch (error) {

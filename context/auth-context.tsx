@@ -6,6 +6,7 @@ import Cookies from "js-cookie";
 import { supabase } from "@/lib/supabaseClient";
 import bcrypt from 'bcryptjs';
 import { getHomePathForRole } from "@/lib/role-utils";
+import { authService } from "@/lib/auth"; // Add this import for authService
 
 export interface UserData {
   id: number;
@@ -22,7 +23,7 @@ interface AuthContextType {
   user: UserData | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<any>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: (googleUserInfo: any, fullName?: string, phone?: string, avatarUrl?: string) => Promise<{ success: boolean; user: any; isExistingUser: any; }>;
   logout: () => void;
   checkUserRole: (email: string) => Promise<string | null>;
   refreshUser: () => Promise<void>;
@@ -184,25 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async () => {
-    setLoading(true);
-    
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
-      });
-      
-      if (error) throw error;
-      
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      setLoading(false);
-      throw error;
-    }
-  };
+  // Removed duplicate loginWithGoogle function to fix redeclaration error
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
@@ -250,51 +233,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Add refreshUser implementation
-  const refreshUser = async () => {
-    if (!user?.email) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('user')
-        .select('*')
-        .eq('email', user.email)
-        .maybeSingle();
-      
-      if (error || !data) {
-        console.error("Error refreshing user data:", error);
-        return;
+  // (Removed duplicate refreshUser function to fix redeclaration error)
+
+  // Check authentication status on mount and storage changes
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser()
+        console.log('Auth context checking user:', currentUser?.email || 'none')
+        setUser(currentUser)
+      } catch (error) {
+        console.error('Auth check error:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
       }
-      
-      // Get additional profile data based on role
-      if (data.role === 'dokter' || data.role === 'admin') {
-        try {
-          const table = data.role === 'dokter' ? 'dokter' : 'admin';
-          const { data: profileData } = await supabase
-            .from(table)
-            .select('*')
-            .eq('email', user.email)
-            .single();
-            
-          if (profileData) {
-            data.profile = profileData;
-          }
-        } catch (profileError) {
-          console.error(`Error fetching ${data.role} profile:`, profileError);
-        }
-      }
-      
-      // Remove sensitive data
-      const { kata_sandi, konfirmasi_kata_sandi, verification_token, ...safeUser } = data;
-      
-      // Save updated user data
-      saveUserSession(safeUser);
-      
-      // Update state
-      setUser(safeUser);
-    } catch (error) {
-      console.error("Error refreshing user:", error);
     }
-  };
+
+    checkAuth()
+
+    // Listen for storage changes (when user logs in/out in another tab or component)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user' || e.key === 'sessionExpiry') {
+        console.log('Storage changed, rechecking auth')
+        checkAuth()
+      }
+    }
+
+    // Listen for custom storage events
+    const handleCustomStorageChange = () => {
+      console.log('Custom storage event, rechecking auth')
+      checkAuth()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('storage', handleCustomStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('storage', handleCustomStorageChange)
+    }
+  }, [])
+
+  // (Removed duplicate login function to fix redeclaration error)
+
+  const loginWithGoogle = async (googleUserInfo: any, fullName?: string, phone?: string, avatarUrl?: string) => {
+    try {
+      setLoading(true)
+      const result = await authService.loginWithGoogle(googleUserInfo, fullName, phone, avatarUrl)
+      if (result.success) {
+        console.log('Google login successful, updating user state:', result.user.email)
+        setUser(result.user) // Set user immediately
+      }
+      setLoading(false)
+      return result
+    } catch (error: any) {
+      setLoading(false)
+      throw error
+    }
+  }
+
+  const logout = () => {
+    console.log('Logging out, clearing user state')
+    authService.logout()
+    setUser(null)
+    // Trigger storage event to notify other components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'))
+    }
+  }
+
+  // Add refreshUser function to manually refresh user data
+  const refreshUser = async () => {
+    try {
+      console.log('Manually refreshing user data')
+      const currentUser = await authService.getCurrentUser(true) // Force remote fetch
+      console.log('Refreshed user:', currentUser?.email || 'none')
+      setUser(currentUser)
+      return currentUser
+    } catch (error) {
+      console.error('Error refreshing user:', error)
+      setUser(null)
+      return null
+    }
+  }
 
   const contextValue: AuthContextType = {
     user,

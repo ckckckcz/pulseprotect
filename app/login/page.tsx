@@ -27,7 +27,7 @@ function LoginForm() {
   const [googleUserInfo, setGoogleUserInfo] = useState<any>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const router = useRouter()
-  const { login, loginWithGoogle, loading: isLoading, user, checkUserRole } = useAuth()
+  const { login, loginWithGoogle, loading: isLoading, user, checkUserRole, refreshUser } = useAuth()
 
   // Initialize Google login on component mount
   useEffect(() => {
@@ -129,10 +129,22 @@ function LoginForm() {
         
         if (result.success) {
           if (result.isExistingUser) {
-            // Existing user - redirect to appropriate dashboard
-            const role = result.user.role || 'user';
-            const homePath = getHomePathForRole(role);
-            router.push(homePath);
+            // Existing user - manually update auth context and redirect
+            console.log('Existing Google user login successful, updating auth context');
+            
+            // Force refresh user in auth context
+            if (typeof refreshUser === 'function') {
+              await refreshUser();
+            }
+            
+            // Small delay to ensure context is updated
+            setTimeout(() => {
+              const role = result.user.role || 'user';
+              const homePath = getHomePathForRole(role);
+              console.log('Redirecting to:', homePath);
+              router.push(homePath);
+            }, 100);
+            
             return;
           } else {
             // New user - show completion form
@@ -205,9 +217,20 @@ function LoginForm() {
       );
 
       if (result.success) {
-        const role = result.user.role || 'user';
-        const homePath = getHomePathForRole(role);
-        router.push(homePath);
+        console.log('New Google user registration successful, updating auth context');
+        
+        // Force refresh user in auth context
+        if (typeof refreshUser === 'function') {
+          await refreshUser();
+        }
+        
+        // Small delay to ensure context is updated
+        setTimeout(() => {
+          const role = result.user.role || 'user';
+          const homePath = getHomePathForRole(role);
+          console.log('Redirecting to:', homePath);
+          router.push(homePath);
+        }, 100);
       }
     } catch (error: any) {
       console.error('Google user form submission error:', error);

@@ -21,9 +21,20 @@ export default function Navbar() {
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  // Add a key to force re-render when user state changes
-  const authStateKey = user ? `user-${user.id}` : "no-user";
+  // Add a key to force re-render when user state changes and debug logging
+  const authStateKey = user ? `user-${user.id}-${user.email}` : "no-user";
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Navbar: Auth state changed:', {
+      hasUser: !!user,
+      userEmail: user?.email,
+      loading,
+      authStateKey
+    });
+  }, [user, loading, authStateKey]);
 
+  // Hide navbar on scroll down, show on scroll up
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -213,7 +224,7 @@ export default function Navbar() {
               </div>
             ) : user ? (
               // User is logged in - show profile
-              <DropdownMenu>
+              <DropdownMenu key={authStateKey}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
                     <div className="relative">
@@ -287,7 +298,7 @@ export default function Navbar() {
               </DropdownMenu>
             ) : (
               // User is not logged in - show login/register buttons
-              <>
+              <div key="auth-buttons" className="flex items-center space-x-4">
                 <Link href="/login">
                   <Button
                     variant="outline"
@@ -301,7 +312,7 @@ export default function Navbar() {
                 <Link href="/register">
                   <Button className={`font-medium rounded-xl px-6 ${scrolled ? "bg-teal-600 hover:bg-teal-700 text-white" : "bg-teal-600 hover:bg-teal-700 text-white"}`}>Daftar</Button>
                 </Link>
-              </>
+              </div>
             )}
           </div>
 
@@ -378,7 +389,7 @@ export default function Navbar() {
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500"></div>
                     </div>
                   ) : user ? (
-                    <div className="flex flex-col space-y-4">
+                    <div key={authStateKey} className="flex flex-col space-y-4">
                       <div className="flex items-center space-x-3 p-2">
                         <div className="relative">
                           <Avatar className={`h-10 w-10 border-2 border-teal-500 ${getAvatarClass()}`}>
@@ -421,7 +432,7 @@ export default function Navbar() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col space-y-2">
+                    <div key="mobile-auth-buttons" className="flex flex-col space-y-2">
                       <Link href="/login" className="w-full">
                         <Button variant="outline" className="w-full bg-gray-50 border-2 border-gray-200 hover:bg-gray-200 hover:text-gray-900 rounded-xl ">
                           Masuk
