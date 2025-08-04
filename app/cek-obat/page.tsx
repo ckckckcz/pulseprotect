@@ -319,36 +319,6 @@ export default function CekObat() {
                   </Button>
                 </div>
               </motion.div>
-
-              {/* Quick Actions */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4"
-              >
-                <Button
-                  variant="outline"
-                  className="border-teal-200 text-teal-700 hover:bg-teal-500 bg-transparent rounded-xl text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3"
-                >
-                  <Filter className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Filter Spesialis</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-blue-200 text-blue-700 hover:bg-blue-500 bg-transparent rounded-xl text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3"
-                >
-                  <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Jadwal Hari Ini</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="border-green-200 text-green-700 hover:bg-green-500 bg-transparent rounded-xl text-sm sm:text-base px-4 py-2 sm:px-6 sm:py-3"
-                >
-                  <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Konsultasi Darurat</span>
-                </Button>
-              </motion.div>
             </motion.div>
 
             {/* Right Content - Medicine Animation */}
@@ -360,7 +330,7 @@ export default function CekObat() {
             >
               <div className="relative">
                 <motion.div
-                  className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 rounded-3xl overflow-hidden shadow-2xl ring-4 sm:ring-8 ring-white/50"
+                  className="relative w-96 h-96 lg:w-80 lg:h-80 rounded-3xl overflow-hidden shadow-2xl ring-4 sm:ring-8 ring-white/50"
                   whileHover={{ scale: 1.05, rotate: 2 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -375,18 +345,18 @@ export default function CekObat() {
 
                 {/* Floating elements */}
                 <motion.div
-                  className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center"
+                  className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center"
                   animate={{ y: [-10, 10, -10] }}
                   transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY }}
                 >
-                  <Heart className="w-6 h-6 sm:w-8 sm:h-8 text-red-500 fill-current" />
+                  <Heart className="w-8 h-8 sm:w-8 sm:h-8 text-red-500 fill-current" />
                 </motion.div>
                 <motion.div
-                  className="absolute -bottom-2 -left-2 sm:-bottom-4 sm:-left-4 w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center"
+                  className="absolute -bottom-2 -left-2 sm:-bottom-4 sm:-left-4 w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center"
                   animate={{ y: [10, -10, 10] }}
                   transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, delay: 1.5 }}
                 >
-                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-teal-600 fill-current" />
+                  <Shield className="w-8 h-8 sm:w-8 sm:h-8 text-teal-600 fill-current" />
                 </motion.div>
               </div>
             </motion.div>
