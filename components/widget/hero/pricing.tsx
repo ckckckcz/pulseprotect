@@ -14,6 +14,7 @@ import Celebration from "@/components/widget/celebration-confetti";
 import { createAIPackagePayment, handleMidtransPayment, PackageDetails } from "@/services/payment";
 import { useAuth } from "@/context/auth-context"; // Use JWT auth context instead of supabase
 import { jwtService } from "@/lib/jwt-service";
+import { validateAndSavePromoCode, getLatestPromoCode, deletePromoCode } from "@/lib/pricing-code";
 
 type PlanType = "free" | "plus" | "pro";
 
@@ -94,7 +95,7 @@ export default function PricingPage() {
 
   const { toast } = useToast();
   const router = useRouter();
-  
+
   // Use JWT auth context instead of manual auth handling
   const { user: currentUser, loading: isAuthLoading } = useAuth();
 
@@ -114,20 +115,20 @@ export default function PricingPage() {
       // console.log("- SNAP_URL:", process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL);
       // console.log("- User authenticated:", !!currentUser);
       // console.log("- JWT valid:", jwtService.isAuthenticated());
-      
-      if (typeof window !== 'undefined') {
+
+      if (typeof window !== "undefined") {
         // console.log("Browser environment detected");
         // console.log("Initial window.snap:", typeof window.snap);
-        
+
         try {
-          await import('@/services/payment');
+          await import("@/services/payment");
           // console.log("Payment service imported successfully");
         } catch (importError) {
           console.error("Error importing payment service:", importError);
         }
       }
     };
-    
+
     testMidtransLoading();
   }, [currentUser]);
 
@@ -135,13 +136,13 @@ export default function PricingPage() {
   const promptLogin = () => {
     // console.log("Prompting login - clearing any existing tokens first");
     jwtService.clearTokens(); // Clear any invalid tokens
-    
+
     toast({
       title: "Login Required",
       description: "Please login to continue with your purchase.",
       variant: "destructive",
     });
-    router.push('/login?redirect=/pricing');
+    router.push("/login?redirect=/pricing");
   };
 
   // Function to validate and apply promo code
@@ -151,12 +152,15 @@ export default function PricingPage() {
       return;
     }
 
+    if (!currentUser?.email) {
+      promptLogin();
+      return;
+    }
+
     setIsApplyingPromo(true);
     setPromoError("");
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const foundPromo = promoCodes.find((promo) => promo.code.toLowerCase() === promoCode.toLowerCase().trim());
+    const foundPromo = await validateAndSavePromoCode(currentUser.email, promoCode);
 
     if (foundPromo) {
       setAppliedPromo(foundPromo);
@@ -169,7 +173,6 @@ export default function PricingPage() {
         description: `${foundPromo.description} - Hemat ${foundPromo.discount}%`,
       });
 
-      // Hide celebration after 4 seconds
       setTimeout(() => {
         setShowCelebration(false);
       }, 4000);
@@ -186,7 +189,10 @@ export default function PricingPage() {
   };
 
   // Function to remove applied promo
-  const removePromo = () => {
+  const removePromo = async () => {
+    if (currentUser?.email && appliedPromo) {
+      await deletePromoCode(currentUser.email, appliedPromo.code);
+    }
     setAppliedPromo(null);
     setPromoError("");
     toast({
@@ -194,6 +200,26 @@ export default function PricingPage() {
       description: "Kode promo telah dihapus dari pesanan Anda",
     });
   };
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (currentUser && currentUser.account_membership) {
+        setActiveMembershipType(currentUser.account_membership as PlanType);
+
+        // Load saved promo code
+        if (currentUser.email) {
+          const savedPromo = await getLatestPromoCode(currentUser.email);
+          if (savedPromo) {
+            setAppliedPromo(savedPromo);
+            setShowCelebration(true);
+            setTimeout(() => setShowCelebration(false), 4000);
+          }
+        }
+      }
+    };
+
+    loadUserData();
+  }, [currentUser]);
 
   // Function to calculate discounted price
   const getDiscountedPrice = (originalPrice: number) => {
@@ -227,34 +253,15 @@ export default function PricingPage() {
   const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // console.log("=== PAYMENT HANDLER START ===");
-    // console.log("Package type:", packageType);
-    // console.log("Event prevented and propagation stopped");
-    
+
     // Check JWT authentication first
     const isJWTValid = jwtService.isAuthenticated();
-    // console.log("JWT authentication check:", isJWTValid);
-    // console.log("Current user from context:", !!currentUser);
-    // console.log("User email:", currentUser?.email);
-    
-    // Check if user is authenticated via JWT
+    // Only redirect to login if NOT authenticated
     if (!isJWTValid || !currentUser || !currentUser.email) {
-      // console.log("User not authenticated:", { 
-      //   jwtValid: isJWTValid, 
-      //   hasUser: !!currentUser, 
-      //   hasEmail: !!currentUser?.email 
-      // });
       promptLogin();
       return;
     }
-    
-    // console.log("User authenticated via JWT:", {
-    //   id: currentUser.id,
-    //   email: currentUser.email,
-    //   name: currentUser.nama_lengkap
-    // });
-    
+
     setIsLoading(packageType);
 
     try {
@@ -263,47 +270,34 @@ export default function PricingPage() {
 
       const packageDetails: PackageDetails = {
         packageId: `pkg_${packageType}`,
-        packageName: packageType, // Send lowercase: "pro", "plus", "free" (not "Pro", "Plus", "Free")
-        price: isYearly ? pricingPlans.find((p) => p.type === packageType)?.yearlyPrice || 0 : pricingPlans.find((p) => p.type === packageType)?.monthlyPrice || 0,
+        packageName: packageType,
+        price: isYearly
+          ? pricingPlans.find((p) => p.type === packageType)?.yearlyPrice || 0
+          : pricingPlans.find((p) => p.type === packageType)?.monthlyPrice || 0,
         period,
+        ...(appliedPromo?.code && { promoCode: appliedPromo.code }),
       };
 
       // Apply promo if available
       if (appliedPromo) {
-        console.log("Applying promo:", appliedPromo);
         packageDetails.price = getDiscountedPrice(packageDetails.price);
       }
 
-      // Use authenticated user information
       const customerInfo = {
         firstName: currentUser.nama_lengkap || "User",
         email: currentUser.email,
         phone: currentUser.nomor_telepon || "",
       };
 
-      // console.log("=== PAYMENT DETAILS ===");
-      // console.log("User ID:", userId);
-      // console.log("Package details:", packageDetails);
-      // console.log("Customer info:", customerInfo);
-      // console.log("Period:", period);
-
-      // console.log("Creating payment token with JWT auth...");
-      
       // Create payment token via API
       const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
-      
-      // console.log("Payment token creation result:", paymentResult);
-      
+
       if (!paymentResult.token) {
         console.error("No token received from payment creation");
         throw new Error("Invalid payment token received");
       }
 
-      // console.log("Payment token received successfully:", paymentResult.token);
-
-      // Check if we're in browser environment
-      if (typeof window === 'undefined') {
-        console.error("Not in browser environment");
+      if (typeof window === "undefined") {
         toast({
           title: "Payment Error",
           description: "Payment must be initiated from browser.",
@@ -313,118 +307,66 @@ export default function PricingPage() {
         return;
       }
 
-      // console.log("Checking Midtrans environment...");
-      // console.log("window exists:", typeof window !== 'undefined');
-      // console.log("Initial window.snap check:", typeof window.snap);
+      // Show Snap Midtrans popup
+      await handleMidtransPayment(paymentResult.token, {
+        onSuccess: async (result) => {
+          try {
+            const statusResponse = await fetch("/api/payment/check-status", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId: paymentResult.orderId }),
+            });
 
-      // Try to handle Midtrans payment
-      // console.log("Initiating Midtrans payment...");
-      
-      try {
-        await handleMidtransPayment(paymentResult.token, {
-          onSuccess: async (result) => {
-            // console.log("=== PAYMENT SUCCESS CALLBACK ===", result);
-            
-            // Manual check status untuk memastikan database terupdate
-            try {
-              // console.log("Checking payment status manually...");
-              const statusResponse = await fetch('/api/payment/check-status', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ orderId: paymentResult.orderId })
-              });
-              
-              if (statusResponse.ok) {
-                const statusData = await statusResponse.json();
-                // console.log("Status check result:", statusData);
-                
-                if (statusData.status === 'success') {
-                  toast({
-                    title: "Pembayaran Berhasil",
-                    description: "Terima kasih, pembayaran Anda berhasil dan membership telah diperbarui.",
-                  });
-                  setActiveMembershipType(packageType);
-                } else {
-                  toast({
-                    title: "Pembayaran Dikonfirmasi",
-                    description: "Pembayaran sedang diproses, mohon tunggu beberapa saat.",
-                  });
-                }
-              } else {
-                console.error("Failed to check payment status");
+            if (statusResponse.ok) {
+              const statusData = await statusResponse.json();
+              if (statusData.status === "success") {
                 toast({
                   title: "Pembayaran Berhasil",
-                  description: "Pembayaran berhasil, membership akan diperbarui segera.",
+                  description: "Terima kasih, pembayaran Anda berhasil dan membership telah diperbarui.",
+                });
+                setActiveMembershipType(packageType);
+              } else {
+                toast({
+                  title: "Pembayaran Dikonfirmasi",
+                  description: "Pembayaran sedang diproses, mohon tunggu beberapa saat.",
                 });
               }
-            } catch (statusError) {
-              console.error("Error checking payment status:", statusError);
+            } else {
               toast({
                 title: "Pembayaran Berhasil",
                 description: "Pembayaran berhasil, membership akan diperbarui segera.",
               });
             }
-            
-            setIsLoading(null);
-            
-            // Refresh user data setelah delay
-            setTimeout(() => {
-              console.log("Reloading page to refresh user data");
-              window.location.reload();
-            }, 3000);
-          },
-          onPending: (result) => {
-            console.log("=== PAYMENT PENDING CALLBACK ===", result);
+          } catch (statusError) {
             toast({
-              title: "Pembayaran Pending",
-              description: "Pembayaran Anda masih diproses.",
+              title: "Pembayaran Berhasil",
+              description: "Pembayaran berhasil, membership akan diperbarui segera.",
             });
-            setIsLoading(null);
-          },
-          onError: (result) => {
-            console.error("=== PAYMENT ERROR CALLBACK ===", result);
-            toast({
-              title: "Pembayaran Gagal",
-              description: "Terjadi kesalahan saat pembayaran.",
-              variant: "destructive",
-            });
-            setIsLoading(null);
-          },
-          onClose: () => {
-            // console.log("=== PAYMENT CLOSE CALLBACK ===");
-            // console.log("User closed the payment dialog");
-            setIsLoading(null);
-          },
-        });
-        
-        // console.log("handleMidtransPayment completed successfully");
-        
-      } catch (snapError) {
-        console.error("=== MIDTRANS SNAP ERROR ===");
-        console.error("Snap error:", snapError);
-        console.error("Snap error type:", typeof snapError);
-        console.error("Snap error message:", snapError instanceof Error ? snapError.message : String(snapError));
-        console.error("Snap error stack:", snapError instanceof Error ? snapError.stack : 'No stack');
-        
-        toast({
-          title: "Pembayaran Error",
-          description: `Terjadi kesalahan saat memuat sistem pembayaran: ${snapError instanceof Error ? snapError.message : 'Unknown error'}`,
-          variant: "destructive",
-        });
-        setIsLoading(null);
-      }
+          }
+          setIsLoading(null);
+          setTimeout(() => window.location.reload(), 3000);
+        },
+        onPending: (result) => {
+          toast({
+            title: "Pembayaran Pending",
+            description: "Pembayaran Anda masih diproses.",
+          });
+          setIsLoading(null);
+        },
+        onError: (result) => {
+          toast({
+            title: "Pembayaran Gagal",
+            description: "Terjadi kesalahan saat pembayaran.",
+            variant: "destructive",
+          });
+          setIsLoading(null);
+        },
+        onClose: () => {
+          setIsLoading(null);
+        },
+      });
     } catch (error) {
-      console.error("=== PAYMENT PROCESS ERROR ===");
-      console.error("Process error:", error);
-      console.error("Process error type:", typeof error);
-      console.error("Process error message:", error instanceof Error ? error.message : String(error));
-      console.error("Process error stack:", error instanceof Error ? error.stack : 'No stack');
-      
-      // If it's an authentication error, prompt login
-      if (error instanceof Error && error.message.includes('Authentication')) {
-        // console.log("Authentication error detected, prompting login");
+      if (error instanceof Error && error.message.includes("Authentication")) {
         promptLogin();
       } else {
         toast({
@@ -511,9 +453,9 @@ export default function PricingPage() {
                   ))}
                 </ul>
               </div>
-              <Button 
-                className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50" 
-                onClick={(e) => handlePayment(e, "free")} 
+              <Button
+                className="w-full bg-white rounded-xl text-gray-900 border border-gray-300 hover:bg-gray-50"
+                onClick={(e) => handlePayment(e, "free")}
                 onMouseDown={(e) => e.preventDefault()}
                 disabled={isAuthLoading || isLoading !== null || activeMembershipType === "free"}
               >
@@ -566,20 +508,13 @@ export default function PricingPage() {
                   ))}
                 </ul>
               </div>
-              <Button 
-                className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl" 
-                onClick={(e) => handlePayment(e, "plus")} 
+              <Button
+                className="w-full bg-teal-600 text-white hover:bg-teal-700 rounded-xl"
+                onClick={(e) => handlePayment(e, "plus")}
                 onMouseDown={(e) => e.preventDefault()}
                 disabled={isAuthLoading || isLoading !== null || activeMembershipType === "plus"}
               >
-                {isAuthLoading 
-                  ? "Loading..." 
-                  : isLoading === "plus" 
-                    ? "Memproses..." 
-                    : activeMembershipType === "plus" 
-                      ? "Membership Aktif" 
-                      : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`
-                }
+                {isAuthLoading ? "Loading..." : isLoading === "plus" ? "Memproses..." : activeMembershipType === "plus" ? "Membership Aktif" : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`}
               </Button>
             </motion.div>
 
@@ -628,20 +563,13 @@ export default function PricingPage() {
                   ))}
                 </ul>
               </div>
-              <Button 
-                className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50" 
-                onClick={(e) => handlePayment(e, "pro")} 
+              <Button
+                className="w-full rounded-xl bg-white text-gray-900 border border-gray-300 hover:bg-gray-50"
+                onClick={(e) => handlePayment(e, "pro")}
                 onMouseDown={(e) => e.preventDefault()}
                 disabled={isAuthLoading || isLoading !== null || activeMembershipType === "pro"}
               >
-                {isAuthLoading 
-                  ? "Loading..." 
-                  : isLoading === "pro" 
-                    ? "Memproses..." 
-                    : activeMembershipType === "pro" 
-                      ? "Membership Aktif" 
-                      : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`
-                }
+                {isAuthLoading ? "Loading..." : isLoading === "pro" ? "Memproses..." : activeMembershipType === "pro" ? "Membership Aktif" : `Berlangganan ${isYearly ? "Tahunan" : "Bulanan"}`}
               </Button>
             </motion.div>
           </motion.div>
@@ -898,3 +826,4 @@ export default function PricingPage() {
     </>
   );
 }
+                                    

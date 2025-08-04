@@ -40,6 +40,42 @@ interface ConsultationRoomProps {
   selectedPatient?: any
 }
 
+const PatientAvatar = ({ src, name, className }: { src?: string | null, name: string, className?: string }) => {
+  const [imgError, setImgError] = useState(false);
+  
+  const getInitials = (fullName: string) => {
+    return fullName
+      .split(" ")
+      .map((n: string) => n[0] || "")
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+  
+  const initials = getInitials(name);
+  
+  return (
+    <Avatar className={`${className || ""} border-2 border-teal-600`}>
+      {!imgError && src ? (
+        <AvatarImage 
+          src={src} 
+          alt={name}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <AvatarImage 
+          src={`/placeholder.svg?height=40&width=40&query=${name}`}
+          alt={name}
+          onError={() => setImgError(true)}
+        />
+      )}
+      <AvatarFallback className="bg-teal-600 text-white">
+        {initials}
+      </AvatarFallback>
+    </Avatar>
+  );
+};
+
 export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
   const [message, setMessage] = useState("")
   const [isVideoOn, setIsVideoOn] = useState(true)
@@ -317,17 +353,11 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
             <CardHeader className="border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar className="border-2 border-teal-600">
-                    <AvatarImage 
-                      src={activeConsultation.patientPhoto || `/placeholder.svg?height=40&width=40&query=${activeConsultation.patient}`} 
-                    />
-                    <AvatarFallback>
-                      {activeConsultation.patient
-                        .split(" ")
-                        .map((n: string) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* Replace the original Avatar with our improved PatientAvatar */}
+                  <PatientAvatar 
+                    src={activeConsultation.patientPhoto} 
+                    name={activeConsultation.patient} 
+                  />
                   <div>
                     <h3 className="font-semibold">{activeConsultation.patient}</h3>
                     <p className="text-sm text-muted-foreground">
@@ -418,17 +448,12 @@ export function ConsultationRoom({ selectedPatient }: ConsultationRoomProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
-                <Avatar className="h-16 w-16 border-2 border-teal-600">
-                  <AvatarImage 
-                    src={activeConsultation.patientPhoto || `/placeholder.svg?height=60&width=60&query=${activeConsultation.patient}`}
-                  />
-                  <AvatarFallback className="text-lg">
-                    {activeConsultation.patient
-                      .split(" ")
-                      .map((n: string) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
+                {/* Replace the original Avatar with our improved PatientAvatar here too */}
+                <PatientAvatar 
+                  src={activeConsultation.patientPhoto} 
+                  name={activeConsultation.patient}
+                  className="h-16 w-16" 
+                />
                 <div>
                   <p className="font-medium text-lg">{activeConsultation.patient}</p>
                   <p className="text-sm text-muted-foreground">{activeConsultation.patientEmail}</p>
