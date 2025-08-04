@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
 import { getHomePathForRole } from "@/lib/role-utils"
-import { initializeGoogleLogin, triggerGoogleSignIn } from '@/lib/google-auth';
+import { initializeGoogleLogin, triggerGoogleSignIn, resetGoogleAuthState } from '@/lib/google-auth';
 import GoogleUserForm from '@/components/auth/GoogleUserForm';
 import { authService } from "@/lib/auth";
 
@@ -33,32 +33,22 @@ function LoginForm() {
   // Initialize Google login on component mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Reset any previous state first
+      resetGoogleAuthState();
+      
       // Only initialize if Google Client ID is configured
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (googleClientId && googleClientId !== '' && googleClientId !== 'undefined') {
         initializeGoogleLogin()
           .then(() => {
             console.log('Google login initialized successfully');
-            // Try to show One Tap after initialization
-            setTimeout(() => {
-              if (!user && !oneTapShown) {
-                initializeOneTap()
-                  .then(() => {
-                    setOneTapShown(true);
-                    console.log('One Tap initialized');
-                  })
-                  .catch(error => {
-                    console.log('One Tap not available:', error.message);
-                  });
-              }
-            }, 1000); // Wait 1 second before showing One Tap
           })
           .catch(error => {
             console.error('Failed to initialize Google login:', error);
           });
       }
     }
-  }, [user, oneTapShown]);
+  }, []);
 
   // Disable One Tap when user manually logs out
   useEffect(() => {
@@ -142,8 +132,14 @@ function LoginForm() {
         throw new Error('Google login belum dikonfigurasi. Silakan gunakan login email/password.');
       }
 
-      // Disable One Tap before showing manual login popup
+      // Disable One Tap and reset state before showing manual login popup
       disableOneTap();
+      resetGoogleAuthState();
+      
+      // Small delay to ensure any pending requests are cleared
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      console.log('Starting Google sign-in process...');
 
       // Trigger Google sign-in with comprehensive error handling
       const googleUser = await triggerGoogleSignIn();
@@ -152,7 +148,7 @@ function LoginForm() {
         throw new Error('Gagal mendapatkan informasi dari Google');
       }
 
-      console.log('Google user info received:', googleUser);
+      console.log('Google user info received:', googleUser.email);
 
       // Try to login with existing user first (without additional info)
       try {
@@ -202,33 +198,28 @@ function LoginForm() {
     } catch (error: any) {
       console.error('Google login error:', error);
       
-      // Handle specific error types
-      if (error.message.includes('origin is not allowed') || error.message.includes('not allowed for the given client ID')) {
-        setError('Google OAuth belum dikonfigurasi dengan benar untuk domain ini. Silakan gunakan login email/password atau hubungi administrator.');
-      } else if (error.message.includes('FedCM') || error.message.includes('NetworkError')) {
-        setError('Terjadi masalah jaringan dengan Google. Silakan periksa koneksi internet Anda dan coba lagi, atau gunakan login email/password.');
-      } else if (error.message.includes('popup') || error.message.includes('closed') || error.message.includes('tidak dapat ditampilkan')) {
-        setError('Google sign-in diblokir atau dibatalkan. Pastikan popup tidak diblokir di browser Anda dan coba lagi.');
+      // Handle specific error types with better messages
+      if (error.message.includes('sedang diproses')) {
+        setError('Google sign-in sedang diproses. Silakan tunggu sebentar dan coba lagi.');
+      } else if (error.message.includes('diblokir') || error.message.includes('popup')) {
+        setError('Popup Google sign-in diblokir. Pastikan popup tidak diblokir di browser Anda dan coba lagi.');
+      } else if (error.message.includes('NetworkError') || error.message.includes('jaringan')) {
+        setError('Terjadi masalah jaringan dengan Google. Periksa koneksi internet Anda dan coba lagi.');
+      } else if (error.message.includes('dibatalkan')) {
+        setError('Google sign-in dibatalkan. Silakan coba lagi jika Anda ingin melanjutkan.');
       } else if (error.message.includes('Timeout')) {
         setError('Login Google timeout. Periksa koneksi internet Anda dan coba lagi.');
-      } else if (error.message.includes('tidak tersedia') || error.message.includes('belum dikonfigurasi')) {
+      } else if (error.message.includes('belum dikonfigurasi')) {
         setError('Google authentication saat ini tidak tersedia. Silakan gunakan login email/password.');
-      } else if (error.message.includes('SDK belum dimuat')) {
-        setError('Google SDK belum dimuat. Silakan refresh halaman dan coba lagi.');
-      } else if (error.message.includes('Konfigurasi') || error.message.includes('tidak valid')) {
-        setError('Konfigurasi Google OAuth bermasalah. Silakan gunakan login email/password.');
-      } else if (error.message.includes('Nama lengkap wajib diisi')) {
-        // This should not happen here anymore since we handle it above
-        console.log('Fallback: Showing Google user form');
-        if (!showGoogleUserForm && googleUserInfo) {
-          setShowGoogleUserForm(true);
-          return;
-        }
       } else {
-        setError(error.message || 'Terjadi kesalahan saat login dengan Google. Silakan coba lagi atau gunakan login email/password.');
+        setError(error.message || 'Terjadi kesalahan saat login dengan Google. Silakan coba lagi atau gunakan login email/password.');  
       }
     } finally {
       setIsGoogleLoading(false);
+      // Reset state to allow future requests
+      setTimeout(() => {
+        resetGoogleAuthState();
+      }, 1000);
     }
   };
 

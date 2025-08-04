@@ -2,7 +2,7 @@ import { supabase } from "./supabaseClient";
 import bcrypt from "bcryptjs";
 import { emailService } from './emailService';
 import Cookies from 'js-cookie';
-import { disableOneTap } from './google-auth';
+import { disableOneTap, resetGoogleAuthState } from './google-auth';
 
 export interface RegisterData {
   email: string;
@@ -403,10 +403,11 @@ export const authService = {
         // Clear cookies using js-cookie
         Cookies.remove('user-session', { path: '/' });
         
-        // Disable Google One Tap for next login
+        // Disable Google One Tap and reset auth state for next login
         disableOneTap();
+        resetGoogleAuthState();
         
-        console.log('User session cleared and One Tap disabled');
+        console.log('User session cleared and Google auth state reset');
       } catch (error) {
         console.error('Error clearing session:', error);
       }

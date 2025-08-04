@@ -31,59 +31,239 @@ function validateGoogleConfig(): boolean {
   return true;
 }
 
+let isGoogleSDKLoaded = false;
+let isInitialized = false;
+let oneTapDisabled = false;
+let credentialRequestPending = false;
+let initializationPromise: Promise<void> | null = null;
+
+// Track active requests to prevent overlaps
+let activeRequest: Promise<any> | null = null;
+
 // Initialize Google login with One Tap support
-export function initializeGoogleLogin(): Promise<void> {
-  return new Promise((resolve, reject) => {
+export const initializeGoogleLogin = (): Promise<void> => {
+  // Return existing promise if already initializing
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  initializationPromise = new Promise((resolve, reject) => {
     if (typeof window === 'undefined') {
-      reject(new Error('Google login hanya tersedia di browser'));
-      return;
+      return reject(new Error('Google login only available in browser'));
     }
 
-    // Validate configuration first
-    if (!validateGoogleConfig()) {
-      reject(new Error('Google OAuth belum dikonfigurasi dengan benar'));
-      return;
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === 'undefined' || clientId === '') {
+      return reject(new Error('Google Client ID tidak dikonfigurasi'));
     }
 
-    // Check if already loaded
-    if (window.google?.accounts?.id) {
-      resolve();
-      return;
+    // If already initialized, resolve immediately
+    if (isInitialized && (window as any).google?.accounts?.oauth2) {
+      return resolve();
     }
 
-    // Load Google Identity Services script
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    
-    script.onload = () => {
+    // If SDK is already loaded but not initialized
+    if (isGoogleSDKLoaded && (window as any).google?.accounts?.oauth2) {
       try {
-        // Initialize Google Identity Services with One Tap support
-        window.google?.accounts.id.initialize({
-          client_id: GOOGLE_CONFIG.clientId,
-          callback: handleGoogleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: false, // Disable FedCM to avoid network errors
-          itp_support: true,
-          // One Tap configuration
-          context: 'signin',
-          ux_mode: 'popup',
-          state_cookie_domain: window.location.hostname
-        });
-        resolve();
-      } catch (initError) {
-        console.error('Google initialization error:', initError);
-        reject(new Error('Gagal menginisialisasi Google Authentication'));
+        isInitialized = true;
+        return resolve();
+      } catch (error) {
+        console.error('Error initializing Google SDK:', error);
+        return reject(error);
       }
-    };
-    
-    script.onerror = () => {
-      reject(new Error('Gagal memuat Google Authentication'));
-    };
-    
-    document.head.appendChild(script);
+    }
+
+    // Load Google SDK if not loaded
+    if (!isGoogleSDKLoaded) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      
+      script.onload = () => {
+        isGoogleSDKLoaded = true;
+        
+        // Wait for Google SDK to be fully available
+        const checkGoogleReady = () => {
+          if ((window as any).google?.accounts?.oauth2) {
+            isInitialized = true;
+            resolve();
+          } else {
+            // Retry after a short delay
+            setTimeout(checkGoogleReady, 100);
+          }
+        };
+        
+        checkGoogleReady();
+      };
+
+      script.onerror = () => {
+        isGoogleSDKLoaded = false;
+        initializationPromise = null;
+        reject(new Error('Gagal memuat Google SDK'));
+      };
+
+      document.head.appendChild(script);
+    }
+  });
+
+  return initializationPromise;
+};
+
+// Trigger Google sign-in popup with better error handling
+export const triggerGoogleSignIn = (): Promise<any> => {
+  return new Promise(async (resolve, reject) => {
+    if (typeof window === 'undefined') {
+      return reject(new Error('Google sign-in hanya tersedia di browser'));
+    }
+
+    // Check if there's already an active request
+    if (activeRequest) {
+      console.log('Google sign-in already in progress, waiting for completion...');
+      try {
+        const result = await activeRequest;
+        return resolve(result);
+      } catch (error) {
+        // If the active request failed, we can try again
+        activeRequest = null;
+      }
+    }
+
+    // Check if there's already a pending credential request
+    if (credentialRequestPending) {
+      return reject(new Error('Google sign-in sedang diproses. Silakan tunggu sebentar.'));
+    }
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === 'undefined' || clientId === '') {
+      return reject(new Error('Google login belum dikonfigurasi'));
+    }
+
+    // Ensure Google SDK is initialized
+    try {
+      await initializeGoogleLogin();
+    } catch (error) {
+      return reject(new Error('Google SDK tidak dapat diinisialisasi'));
+    }
+
+    if (!(window as any).google?.accounts?.oauth2) {
+      return reject(new Error('Google SDK belum dimuat dengan benar'));
+    }
+
+    // Cancel any existing One Tap to prevent conflicts
+    disableOneTap();
+
+    // Set up the request promise
+    const requestPromise = new Promise<any>((resolveRequest, rejectRequest) => {
+      try {
+        credentialRequestPending = true;
+        
+        // Set up timeout
+        const timeoutId = setTimeout(() => {
+          credentialRequestPending = false;
+          activeRequest = null;
+          rejectRequest(new Error('Timeout: Login Google memakan waktu terlalu lama. Silakan coba lagi.'));
+        }, 30000); // 30 second timeout
+
+        // Use OAuth2 popup method to avoid FedCM conflicts
+        const client = (window as any).google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (response: any) => {
+            clearTimeout(timeoutId);
+            credentialRequestPending = false;
+            activeRequest = null;
+
+            try {
+              if (response.error) {
+                console.error('Google OAuth error:', response.error);
+                return rejectRequest(new Error(response.error_description || 'Google authentication error'));
+              }
+
+              if (!response.access_token) {
+                return rejectRequest(new Error('Tidak mendapat akses token dari Google'));
+              }
+
+              // Get user info using access token
+              const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                headers: {
+                  Authorization: `Bearer ${response.access_token}`,
+                },
+              });
+
+              if (!userInfoResponse.ok) {
+                return rejectRequest(new Error('Gagal mendapatkan informasi pengguna dari Google'));
+              }
+
+              const userInfo = await userInfoResponse.json();
+              console.log('Google user info retrieved successfully');
+              resolveRequest(userInfo);
+            } catch (error: any) {
+              console.error('Error processing Google response:', error);
+              rejectRequest(new Error(error.message || 'Error processing Google response'));
+            }
+          },
+          error_callback: (error: any) => {
+            clearTimeout(timeoutId);
+            credentialRequestPending = false;
+            activeRequest = null;
+            
+            console.error('Google OAuth error callback:', error);
+            
+            if (error.type === 'popup_closed') {
+              rejectRequest(new Error('Google sign-in dibatalkan'));
+            } else if (error.type === 'popup_failed_to_open') {
+              rejectRequest(new Error('Popup Google sign-in diblokir. Pastikan popup tidak diblokir di browser Anda.'));
+            } else {
+              rejectRequest(new Error(error.message || 'Terjadi kesalahan saat Google sign-in'));
+            }
+          },
+        });
+
+        // Small delay to ensure any previous requests are fully cleared
+        setTimeout(() => {
+          try {
+            // Request access token with popup
+            client.requestAccessToken({
+              prompt: 'select_account',
+            });
+          } catch (requestError: any) {
+            clearTimeout(timeoutId);
+            credentialRequestPending = false;
+            activeRequest = null;
+            
+            console.error('Error requesting Google access token:', requestError);
+            rejectRequest(new Error('Gagal memulai proses Google sign-in'));
+          }
+        }, 100);
+
+      } catch (error: any) {
+        credentialRequestPending = false;
+        activeRequest = null;
+        
+        console.error('Google sign-in setup error:', error);
+        
+        if (error.message?.includes('popup')) {
+          rejectRequest(new Error('Popup Google sign-in diblokir atau gagal dibuka. Pastikan popup tidak diblokir di browser Anda.'));
+        } else if (error.message?.includes('NetworkError')) {
+          rejectRequest(new Error('Terjadi masalah jaringan dengan Google. Periksa koneksi internet Anda.'));
+        } else if (error.message?.includes('NotAllowedError')) {
+          rejectRequest(new Error('Google sign-in sedang diproses. Silakan tunggu sebentar dan coba lagi'));
+        } else {
+          rejectRequest(new Error(error.message || 'Terjadi kesalahan saat Google sign-in'));
+        }
+      }
+    });
+
+    // Store the active request
+    activeRequest = requestPromise;
+
+    try {
+      const result = await requestPromise;
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
@@ -95,64 +275,81 @@ export function initializeOneTap(): Promise<void> {
       return;
     }
 
-    if (!validateGoogleConfig()) {
-      reject(new Error('Google OAuth belum dikonfigurasi dengan benar'));
-      return;
+    if (oneTapDisabled) {
+      return reject(new Error('One Tap telah dinonaktifkan'));
     }
 
-    if (!window.google?.accounts?.id) {
-      reject(new Error('Google SDK belum dimuat'));
-      return;
+    if (credentialRequestPending || activeRequest) {
+      return reject(new Error('Credential request sedang berlangsung'));
+    }
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === 'undefined' || clientId === '') {
+      return reject(new Error('Google Client ID tidak dikonfigurasi'));
+    }
+
+    if (!(window as any).google?.accounts?.id) {
+      return reject(new Error('Google One Tap SDK belum dimuat'));
     }
 
     try {
-      // Show One Tap if user has previously signed in
-      window.google.accounts.id.prompt((notification: any) => {
-        console.log('One Tap notification:', notification);
-        
+      (window as any).google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: any) => {
+          try {
+            if (!response.credential) {
+              return;
+            }
+
+            // Decode JWT token
+            const credential = JSON.parse(atob(response.credential.split('.')[1]));
+            
+            const userInfo = {
+              id: credential.sub,
+              email: credential.email,
+              name: credential.name,
+              picture: credential.picture,
+              verified_email: credential.email_verified,
+            };
+
+            console.log('One Tap login successful:', userInfo);
+            
+          } catch (error) {
+            console.error('One Tap callback error:', error);
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        context: 'signin',
+        itp_support: true,
+      });
+
+      (window as any).google.accounts.id.prompt((notification: any) => {
         if (notification.isNotDisplayed()) {
-          console.log('One Tap was not displayed:', notification.getNotDisplayedReason());
-          resolve(); // Don't reject, just resolve without showing
+          console.log('One Tap tidak ditampilkan:', notification.getNotDisplayedReason());
+          reject(new Error('One Tap tidak dapat ditampilkan'));
         } else if (notification.isSkippedMoment()) {
-          console.log('One Tap was skipped:', notification.getSkippedReason());
-          resolve(); // Don't reject, just resolve without showing
+          console.log('One Tap dilewati:', notification.getSkippedReason());
+          reject(new Error('One Tap dilewati'));
         } else if (notification.isDismissedMoment()) {
-          console.log('One Tap was dismissed:', notification.getDismissedReason());
-          resolve(); // Don't reject, just resolve without showing
+          console.log('One Tap dibatalkan:', notification.getDismissedReason());
+          reject(new Error('One Tap dibatalkan'));
         } else {
-          console.log('One Tap is being displayed');
           resolve();
         }
       });
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('One Tap initialization error:', error);
-      resolve(); // Don't reject, just resolve without showing
+      reject(error);
     }
   });
 }
 
-// Check if user is eligible for One Tap
-export function checkOneTapEligibility(): boolean {
-  if (typeof window === 'undefined' || !window.google?.accounts?.id) {
-    return false;
-  }
-
-  // Check if there's a stored Google session
-  const cookies = document.cookie.split(';');
-  const hasGoogleSession = cookies.some(cookie => 
-    cookie.trim().startsWith('g_state') || 
-    cookie.trim().startsWith('__Secure-1PSID') ||
-    cookie.trim().startsWith('__Secure-3PSID')
-  );
-
-  return hasGoogleSession;
-}
-
-// Disable One Tap (useful when user manually logs out)
 export function disableOneTap(): void {
-  if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+  if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
     try {
-      window.google.accounts.id.disableAutoSelect();
+      (window as any).google.accounts.id.disableAutoSelect();
       console.log('One Tap disabled');
     } catch (error) {
       console.error('Error disabling One Tap:', error);
@@ -160,180 +357,25 @@ export function disableOneTap(): void {
   }
 }
 
-// Handle Google credential response
-function handleGoogleCredentialResponse(response: any) {
-  try {
-    if (response.credential) {
-      // Decode JWT token to get user info
-      const userInfo = parseJwt(response.credential);
-      
-      if (!userInfo) {
-        const errorEvent = new CustomEvent('googleLoginError', {
-          detail: { message: 'Gagal memproses kredensial Google' }
-        });
-        window.dispatchEvent(errorEvent);
-        return;
-      }
-      
-      // Trigger custom event with user data
-      const event = new CustomEvent('googleLoginSuccess', {
-        detail: {
-          credential: response.credential,
-          userInfo: userInfo
-        }
-      });
-      window.dispatchEvent(event);
-    } else {
-      const errorEvent = new CustomEvent('googleLoginError', {
-        detail: { message: 'Tidak menerima kredensial dari Google' }
-      });
-      window.dispatchEvent(errorEvent);
-    }
-  } catch (error) {
-    console.error('Error handling Google credential response:', error);
-    const errorEvent = new CustomEvent('googleLoginError', {
-      detail: { message: 'Terjadi kesalahan saat memproses respon Google' }
-    });
-    window.dispatchEvent(errorEvent);
-  }
-}
+export const enableOneTap = () => {
+  oneTapDisabled = false;
+};
 
-// Parse JWT token to extract user information
-function parseJwt(token: string) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error parsing JWT:', error);
-    return null;
-  }
-}
+// Reset all states
+export const resetGoogleAuthState = () => {
+  credentialRequestPending = false;
+  activeRequest = null;
+  oneTapDisabled = false;
+  console.log('Google auth state reset');
+};
 
-// Trigger Google sign-in popup with better error handling
-export function triggerGoogleSignIn(): Promise<GoogleUserInfo> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') {
-      reject(new Error('Google authentication tidak tersedia'));
-      return;
-    }
-
-    if (!validateGoogleConfig()) {
-      reject(new Error('Google OAuth belum dikonfigurasi dengan benar'));
-      return;
-    }
-
-    if (!window.google?.accounts?.id) {
-      reject(new Error('Google SDK belum dimuat. Silakan refresh halaman dan coba lagi.'));
-      return;
-    }
-
-    // Listen for the success event
-    const handleSuccess = (event: any) => {
-      window.removeEventListener('googleLoginSuccess', handleSuccess);
-      const userInfo = event.detail.userInfo;
-      
-      if (userInfo && userInfo.email) {
-        resolve({
-          id: userInfo.sub,
-          email: userInfo.email,
-          name: userInfo.name,
-          picture: userInfo.picture,
-          verified_email: userInfo.email_verified
-        });
-      } else {
-        reject(new Error('Gagal mendapatkan informasi pengguna dari Google'));
-      }
-    };
-
-    // Listen for network/popup errors
-    const handleError = (event: any) => {
-      window.removeEventListener('googleLoginError', handleError);
-      window.removeEventListener('googleLoginSuccess', handleSuccess);
-      reject(new Error(event.detail?.message || 'Terjadi kesalahan saat login dengan Google'));
-    };
-
-    window.addEventListener('googleLoginSuccess', handleSuccess);
-    window.addEventListener('googleLoginError', handleError);
-
-    // Try Google sign-in with fallback methods
-    try {
-      // Method 1: Try prompt first
-      window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          console.log('Google prompt not displayed, trying alternative method');
-          
-          // Method 2: Try creating a temporary button as fallback
-          setTimeout(() => {
-            try {
-              const tempDiv = document.createElement('div');
-              tempDiv.style.position = 'absolute';
-              tempDiv.style.top = '-9999px';
-              tempDiv.style.left = '-9999px';
-              document.body.appendChild(tempDiv);
-
-              window.google!.accounts.id.renderButton(tempDiv, {
-                theme: 'outline',
-                size: 'large',
-                type: 'standard',
-                click_listener: () => {
-                  document.body.removeChild(tempDiv);
-                }
-              });
-
-              // Simulate button click
-              const button = tempDiv.querySelector('div[role="button"]') as HTMLElement;
-              if (button) {
-                button.click();
-              } else {
-                // If button method fails, show error
-                window.removeEventListener('googleLoginSuccess', handleSuccess);
-                window.removeEventListener('googleLoginError', handleError);
-                reject(new Error('Google sign-in tidak tersedia saat ini. Silakan coba lagi nanti atau gunakan login email/password.'));
-              }
-            } catch (buttonError) {
-              console.error('Button fallback error:', buttonError);
-              window.removeEventListener('googleLoginSuccess', handleSuccess);
-              window.removeEventListener('googleLoginError', handleError);
-              reject(new Error('Google sign-in tidak tersedia saat ini. Silakan gunakan login email/password.'));
-            }
-          }, 1000);
-        }
-      });
-    } catch (error) {
-      console.error('Google sign-in trigger error:', error);
-      window.removeEventListener('googleLoginSuccess', handleSuccess);
-      window.removeEventListener('googleLoginError', handleError);
-      reject(new Error('Gagal memulai proses login Google. Silakan coba lagi atau gunakan login email/password.'));
-    }
-
-    // Timeout after 30 seconds
-    setTimeout(() => {
-      window.removeEventListener('googleLoginSuccess', handleSuccess);
-      window.removeEventListener('googleLoginError', handleError);
-      reject(new Error('Timeout: Login Google memakan waktu terlalu lama. Silakan coba lagi.'));
-    }, 30000);
-  });
-}
-
-// Declare global types for Google Identity Services
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          prompt: (callback?: (notification: any) => void) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
-          disableAutoSelect: () => void;
-        };
-      };
-    };
-  }
-}
+// Get current state for debugging
+export const getGoogleAuthState = () => {
+  return {
+    isGoogleSDKLoaded,
+    isInitialized,
+    oneTapDisabled,
+    credentialRequestPending,
+    hasActiveRequest: activeRequest !== null,
+  };
+};
