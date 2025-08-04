@@ -10,9 +10,46 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authService } from "@/lib/auth"
 
+// Password strength calculation
+const calculatePasswordStrength = (password: string) => {
+  let score = 0
+  const checks = {
+    length: password.length >= 8,
+    lowercase: /[a-z]/.test(password),
+    uppercase: /[A-Z]/.test(password),
+    numbers: /\d/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  }
+
+  // Add points for each criteria
+  if (checks.length) score += 2
+  if (checks.lowercase) score += 1
+  if (checks.uppercase) score += 1
+  if (checks.numbers) score += 1
+  if (checks.special) score += 1
+
+  // Determine strength level
+  if (score <= 2) return { level: 'weak' as const, score, checks }
+  if (score <= 4) return { level: 'medium' as const, score, checks }
+  return { level: 'strong' as const, score, checks }
+}
+
+type PasswordStrength = ReturnType<typeof calculatePasswordStrength>
+
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({
+    level: 'weak',
+    score: 0,
+    checks: {
+      length: false,
+      lowercase: false,
+      uppercase: false,
+      numbers: false,
+      special: false
+    }
+  })
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -29,6 +66,13 @@ export default function RegisterPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    
+    // Calculate password strength when password changes
+    if (field === 'password') {
+      const strength = calculatePasswordStrength(value)
+      setPasswordStrength(strength)
+    }
+    
     setError("") // Clear error when user types
     setSuccess("") // Clear success when user types
   }
@@ -52,8 +96,8 @@ export default function RegisterPage() {
       return
     }
 
-    if (formData.password.length < 6) {
-      setError("Password minimal 6 karakter")
+    if (formData.password.length < 8) {
+      setError("Password minimal 8 karakter")
       setIsLoading(false)
       return
     }
@@ -214,7 +258,7 @@ export default function RegisterPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm"
+              className="mb-4 p-3 bg-teal-50 border border-teal-200 text-teal-700 rounded-xl text-sm"
             >
               {success}
             </motion.div>
@@ -275,6 +319,7 @@ export default function RegisterPage() {
                     />
                   </motion.div>
 
+                </div>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -307,7 +352,7 @@ export default function RegisterPage() {
                         value={formData.password}
                         onChange={(e) => handleInputChange("password", e.target.value)}
                         className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                        placeholder="Minimal 6 karakter"
+                        placeholder="Minimal 8 karakter"
                         required
                         disabled={isLoading}
                       />
@@ -320,8 +365,62 @@ export default function RegisterPage() {
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
+                    
+                    {/* Password Strength Indicator */}
+                    {formData.password && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-gray-600">
+                            Kekuatan Password
+                          </span>
+                          <span className={`text-xs font-medium capitalize ${
+                            passwordStrength.level === 'weak' ? 'text-red-500' :
+                            passwordStrength.level === 'medium' ? 'text-yellow-500' : 'text-teal-500'
+                          }`}>
+                            {passwordStrength.level === 'weak' ? 'Lemah' :
+                             passwordStrength.level === 'medium' ? 'Sedang' : 'Kuat'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex space-x-1 mb-2">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <div
+                              key={level}
+                              className={`h-2 flex-1 rounded-full transition-all duration-300 ${
+                                level <= passwordStrength.score
+                                  ? passwordStrength.level === 'weak' ? 'bg-red-400' :
+                                    passwordStrength.level === 'medium' ? 'bg-yellow-400' : 'bg-teal-400'
+                                  : 'bg-gray-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <div className={`flex items-center ${passwordStrength.checks.length ? 'text-teal-600' : 'text-gray-400'}`}>
+                            <span className="mr-2">{passwordStrength.checks.length ? '✓' : '○'}</span>
+                            Minimal 8 karakter
+                          </div>
+                          <div className={`flex items-center ${passwordStrength.checks.lowercase ? 'text-teal-600' : 'text-gray-400'}`}>
+                            <span className="mr-2">{passwordStrength.checks.lowercase ? '✓' : '○'}</span>
+                            Huruf kecil (a-z)
+                          </div>
+                          <div className={`flex items-center ${passwordStrength.checks.uppercase ? 'text-teal-600' : 'text-gray-400'}`}>
+                            <span className="mr-2">{passwordStrength.checks.uppercase ? '✓' : '○'}</span>
+                            Huruf besar (A-Z)
+                          </div>
+                          <div className={`flex items-center ${passwordStrength.checks.numbers ? 'text-teal-600' : 'text-gray-400'}`}>
+                            <span className="mr-2">{passwordStrength.checks.numbers ? '✓' : '○'}</span>
+                            Angka (0-9)
+                          </div>
+                          <div className={`flex items-center ${passwordStrength.checks.special ? 'text-teal-600' : 'text-gray-400'}`}>
+                            <span className="mr-2">{passwordStrength.checks.special ? '✓' : '○'}</span>
+                            Karakter khusus (!@#$%^&*)
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
-                </div>
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -369,7 +468,7 @@ export default function RegisterPage() {
                       </div>
                     ) : success ? (
                       <div className="flex items-center justify-center">
-                        <div className="w-5 h-5 mr-2 text-green-400">✓</div>
+                        <div className="w-5 h-5 mr-2 text-teal-400">✓</div>
                         Berhasil!
                       </div>
                     ) : (
