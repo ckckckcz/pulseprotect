@@ -410,7 +410,7 @@ export default function DaftarObat() {
       </div>
 
       {showScanner && <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setShowScanner(false)} />}
-      <Footer />
+      {/* <Footer /> */}
     </>
   )
 }
