@@ -189,7 +189,7 @@ export default function RegisterPage() {
           </motion.div>
 
           {/* Google Register Button */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -222,14 +222,14 @@ export default function RegisterPage() {
               </svg>
               Daftar dengan Google
             </Button>
-          </motion.div>
+          </motion.div> */}
 
           {/* Divider */}
-          <div className="flex items-center mb-6">
+          {/* <div className="flex items-center mb-6">
             <div className="flex-1 border-t border-gray-300"></div>
             <span className="px-4 text-sm text-gray-500">atau</span>
             <div className="flex-1 border-t border-gray-300"></div>
-          </div>
+          </div> */}
 
           {/* Verification Message */}
           {showVerificationMessage && (
