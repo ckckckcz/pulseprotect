@@ -77,7 +77,10 @@ export default function UserProfile() {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null)
   const [countryOpen, setCountryOpen] = useState(false)
   const [countries, setCountries] = useState<Country[]>([])
-  const [countrySearchQuery, setCountrySearchQuery] = useState("")
+  
+  // Add search state
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<{id: string, label: string, matches: string[]}[]>([])
   
   // Form states
   const [isUpdating, setIsUpdating] = useState(false)
@@ -279,6 +282,9 @@ export default function UserProfile() {
       .map(char => 127397 + char.charCodeAt(0));
     return String.fromCodePoint(...codePoints);
   };
+
+  // Add state for country search query
+  const [countrySearchQuery, setCountrySearchQuery] = useState("");
 
   // Improved filter countries function
   const filteredCountries = useMemo(() => {
@@ -496,6 +502,92 @@ export default function UserProfile() {
     }
   };
 
+  // Add search functionality
+  const sidebarItems = [
+    { id: "general", label: "Umum", icon: User },
+    { id: "security", label: "Keamanan", icon: Shield },
+    { id: "billing", label: "Transaksi", icon: CreditCard },
+    { id: "settings", label: "Pengaturan", icon: Bolt },
+  ]
+
+  const searchableContent = {
+    general: {
+      label: "Umum",
+      keywords: ["avatar", "profil", "nama", "telepon", "informasi", "foto", "gambar", "identitas", "data diri"]
+    },
+    security: {
+      label: "Keamanan", 
+      keywords: ["password", "kata sandi", "autentikasi", "keamanan", "login", "masuk", "verifikasi", "2fa"]
+    },
+    billing: {
+      label: "Transaksi",
+      keywords: ["pembayaran", "transaksi", "tagihan", "paket", "langganan", "invoice", "riwayat", "bayar"]
+    },
+    settings: {
+      label: "Pengaturan",
+      keywords: ["bahasa", "tema", "tampilan", "feedback", "dukungan", "aplikasi", "konfigurasi", "preferensi"]
+    }
+  }
+
+  // Search handler
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    const results: {id: string, label: string, matches: string[]}[] = []
+    const searchTerm = query.toLowerCase().trim()
+
+    Object.entries(searchableContent).forEach(([id, content]) => {
+      const matches: string[] = []
+      
+      // Check if label matches
+      if (content.label.toLowerCase().includes(searchTerm)) {
+        matches.push(content.label)
+      }
+      
+      // Check if any keywords match
+      const matchingKeywords = content.keywords.filter(keyword => 
+        keyword.toLowerCase().includes(searchTerm)
+      )
+      matches.push(...matchingKeywords)
+      
+      if (matches.length > 0) {
+        results.push({
+          id,
+          label: content.label,
+          matches: [...new Set(matches)] // Remove duplicates
+        })
+      }
+    })
+
+    setSearchResults(results)
+  }
+
+  // Handle search result click
+  const handleSearchResultClick = (sectionId: string) => {
+    setActiveSetting(sectionId)
+    setSearchQuery("")
+    setSearchResults([])
+  }
+
+  // Filter sidebar items based on search
+  const filteredSidebarItems = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return sidebarItems
+    }
+    
+    const searchTerm = searchQuery.toLowerCase()
+    return sidebarItems.filter(item => {
+      const content = searchableContent[item.id as keyof typeof searchableContent]
+      return content.label.toLowerCase().includes(searchTerm) ||
+             content.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm))
+    })
+  }, [searchQuery])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -507,13 +599,6 @@ export default function UserProfile() {
   if (!user) {
     return null // Let the useEffect redirect handle this
   }
-
-  const sidebarItems = [
-    { id: "general", label: "Umum", icon: User },
-    { id: "security", label: "Keamanan", icon: Shield },
-    { id: "billing", label: "Transaksi", icon: CreditCard },
-    { id: "settings", label: "Pengaturan", icon: Bolt },
-  ]
 
   // Ambil membership_type dari transaksi terakhir yang sukses
   const latestMembershipType = payments
@@ -574,31 +659,113 @@ export default function UserProfile() {
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
-                  placeholder="Cari..." 
+                  placeholder="Cari pengaturan..." 
                   className="pl-10 bg-white border-gray-200 border rounded-xl text-black" 
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
                 />
+                
+                {/* Search Results Dropdown */}
+                {searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <div className="p-2">
+                      <div className="text-xs text-gray-500 mb-2 px-2">Hasil pencarian:</div>
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.id}
+                          onClick={() => handleSearchResultClick(result.id)}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <div className="font-medium text-sm">{result.label}</div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Cocok: {result.matches.slice(0, 3).join(", ")}
+                            {result.matches.length > 3 && ` +${result.matches.length - 3} lainnya`}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <nav className="space-y-1">
-                {sidebarItems.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveSetting(item.id)}
-                    className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
-                      activeSetting === item.id 
-                        ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white"
-                        : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
-                    }`}
-                  >
-                    <item.icon className="mr-3 h-5 w-5" />
-                    {item.label}
-                  </button>
-                ))}
+                {filteredSidebarItems.length > 0 ? (
+                  filteredSidebarItems.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSetting(item.id)}
+                      className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
+                        activeSetting === item.id 
+                          ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white"
+                          : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
+                      }`}
+                    >
+                      <item.icon className="mr-3 h-5 w-5" />
+                      {item.label}
+                      {/* Highlight if this item matches search */}
+                      {searchQuery && searchResults.some(r => r.id === item.id) && (
+                        <div className="ml-auto w-2 h-2 bg-teal-500 rounded-full"></div>
+                      )}
+                    </button>
+                  ))
+                ) : searchQuery ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Search className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                    <p className="text-sm">Tidak ditemukan pengaturan yang cocok</p>
+                    <button 
+                      onClick={() => {
+                        setSearchQuery("")
+                        setSearchResults([])
+                      }}
+                      className="text-teal-600 text-sm mt-2 hover:underline"
+                    >
+                      Hapus pencarian
+                    </button>
+                  </div>
+                ) : (
+                  sidebarItems.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSetting(item.id)}
+                      className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
+                        activeSetting === item.id 
+                          ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white"
+                          : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
+                      }`}
+                    >
+                      <item.icon className="mr-3 h-5 w-5" />
+                      {item.label}
+                    </button>
+                  ))
+                )}
               </nav>
+              
+              {/* Search Tips */}
+              {searchQuery && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="text-xs text-blue-700">
+                    <div className="font-medium mb-1">Tips pencarian:</div>
+                    <div>• Coba kata kunci seperti "avatar", "password", "pembayaran"</div>
+                    <div>• Gunakan kata dalam bahasa Indonesia atau Inggris</div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Main content */}
             <div className="flex-1">
+              {/* Add search highlight indicator */}
+              {searchQuery && searchResults.some(r => r.id === activeSetting) && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <div className="flex items-center gap-2 text-yellow-800">
+                    <Search className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      Hasil pencarian untuk "{searchQuery}"
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {activeSetting === "general" && (
                 <div className="space-y-6">
                   {/* Avatar Section */}
