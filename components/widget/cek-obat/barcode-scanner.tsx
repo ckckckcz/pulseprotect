@@ -38,10 +38,24 @@ export default function BarcodeScanner({ onDetected, onClose }: { onDetected: (r
           }
 
           if (result && active) {
-            console.log("✅ Barcode ditemukan:", result.getText());
-            onDetected(result.getText());
+            const scannedBarcode = result.getText().trim();
+            console.log("✅ Barcode ditemukan:", scannedBarcode);
+            console.log("📝 Barcode type:", typeof scannedBarcode);
+            console.log("📏 Barcode length:", scannedBarcode.length);
+            
+            // Stop scanner immediately
             active = false;
-            scannerControlsRef.current?.stop();
+            if (scannerControlsRef.current) {
+              scannerControlsRef.current.stop();
+            }
+            
+            // Trigger callback immediately
+            try {
+              onDetected(scannedBarcode);
+              console.log("🎯 Callback triggered successfully");
+            } catch (error) {
+              console.error("❌ Error in onDetected callback:", error);
+            }
           }
 
           if (err && !(err instanceof NotFoundException)) {
