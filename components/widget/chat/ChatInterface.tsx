@@ -53,6 +53,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 const models = [
   { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
+  { id: "bakekok", name: "Model Bakekok", description: "Bakekok 30b", requiredMembership: "free" },
   { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM", requiredMembership: "plus" },
   { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
 ];
