@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient";
 import bcrypt from "bcryptjs";
 import { emailService } from './emailService';
 import Cookies from 'js-cookie';
+import { disableOneTap } from './google-auth';
 
 export interface RegisterData {
   email: string;
@@ -402,7 +403,10 @@ export const authService = {
         // Clear cookies using js-cookie
         Cookies.remove('user-session', { path: '/' });
         
-        // console.log('User session cleared');
+        // Disable Google One Tap for next login
+        disableOneTap();
+        
+        console.log('User session cleared and One Tap disabled');
       } catch (error) {
         console.error('Error clearing session:', error);
       }

@@ -26,6 +26,7 @@ function LoginForm() {
   const [showGoogleUserForm, setShowGoogleUserForm] = useState(false)
   const [googleUserInfo, setGoogleUserInfo] = useState<any>(null)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [oneTapShown, setOneTapShown] = useState(false)
   const router = useRouter()
   const { login, loginWithGoogle, loading: isLoading, user, checkUserRole, refreshUser } = useAuth()
 
@@ -35,12 +36,39 @@ function LoginForm() {
       // Only initialize if Google Client ID is configured
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (googleClientId && googleClientId !== '' && googleClientId !== 'undefined') {
-        initializeGoogleLogin().catch(error => {
-          console.error('Failed to initialize Google login:', error);
-        });
+        initializeGoogleLogin()
+          .then(() => {
+            console.log('Google login initialized successfully');
+            // Try to show One Tap after initialization
+            setTimeout(() => {
+              if (!user && !oneTapShown) {
+                initializeOneTap()
+                  .then(() => {
+                    setOneTapShown(true);
+                    console.log('One Tap initialized');
+                  })
+                  .catch(error => {
+                    console.log('One Tap not available:', error.message);
+                  });
+              }
+            }, 1000); // Wait 1 second before showing One Tap
+          })
+          .catch(error => {
+            console.error('Failed to initialize Google login:', error);
+          });
       }
     }
-  }, []);
+  }, [user, oneTapShown]);
+
+  // Disable One Tap when user manually logs out
+  useEffect(() => {
+    return () => {
+      // Cleanup: disable One Tap when component unmounts
+      if (!user) {
+        disableOneTap();
+      }
+    };
+  }, [user]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -113,6 +141,9 @@ function LoginForm() {
       if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID === 'undefined') {
         throw new Error('Google login belum dikonfigurasi. Silakan gunakan login email/password.');
       }
+
+      // Disable One Tap before showing manual login popup
+      disableOneTap();
 
       // Trigger Google sign-in with comprehensive error handling
       const googleUser = await triggerGoogleSignIn();
@@ -307,6 +338,8 @@ function LoginForm() {
         </p>
       </motion.div>
 
+      {/* One Tap akan muncul secara otomatis di sini jika user eligible */}
+      
       {/* Google Login Button - Only show if configured */}
       {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== '' && (
         <>
@@ -353,6 +386,15 @@ function LoginForm() {
               )}
             </Button>
           </motion.div>
+
+          {/* Info text untuk One Tap */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-600">
+                💡 Jika Anda pernah login dengan Google sebelumnya, One Tap Sign-In akan muncul secara otomatis
+              </p>
+            </div>
+          )}
 
           {/* Divider - Only show if Google button is shown */}
           <div className="flex items-center mb-6">
@@ -590,5 +632,56 @@ export default function LoginPage() {
       </div>
     </div>
   )
+}
+function initializeOneTap(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") {
+      return reject(new Error("One Tap only available in browser"));
+    }
+    // Check if Google One Tap is available
+    if (
+      !(window as any).google ||
+      !(window as any).google.accounts ||
+      !(window as any).google.accounts.id
+    ) {
+      return reject(new Error("Google One Tap SDK belum dimuat"));
+    }
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === "undefined") {
+      return reject(new Error("Google Client ID belum dikonfigurasi"));
+    }
+    try {
+      (window as any).google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response: any) => {
+          // One Tap callback handled in triggerGoogleSignIn or elsewhere
+        },
+        auto_select: false,
+        cancel_on_tap_outside: false,
+        context: "signin",
+      });
+      (window as any).google.accounts.id.prompt((notification: any) => {
+        // notification.isNotDisplayed() etc. can be handled if needed
+      });
+      resolve();
+    } catch (err: any) {
+      reject(err);
+    }
+  });
+}
+function disableOneTap() {
+  if (typeof window === "undefined") return;
+  try {
+    if (
+      (window as any).google &&
+      (window as any).google.accounts &&
+      (window as any).google.accounts.id &&
+      typeof (window as any).google.accounts.id.cancel === "function"
+    ) {
+      (window as any).google.accounts.id.cancel();
+    }
+  } catch (err) {
+    // Silently ignore errors
+  }
 }
 

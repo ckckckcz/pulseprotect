@@ -31,7 +31,7 @@ function validateGoogleConfig(): boolean {
   return true;
 }
 
-// Initialize Google login
+// Initialize Google login with One Tap support
 export function initializeGoogleLogin(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined') {
@@ -59,14 +59,18 @@ export function initializeGoogleLogin(): Promise<void> {
     
     script.onload = () => {
       try {
-        // Initialize Google Identity Services with better error handling
+        // Initialize Google Identity Services with One Tap support
         window.google?.accounts.id.initialize({
           client_id: GOOGLE_CONFIG.clientId,
           callback: handleGoogleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,
           use_fedcm_for_prompt: false, // Disable FedCM to avoid network errors
-          itp_support: true
+          itp_support: true,
+          // One Tap configuration
+          context: 'signin',
+          ux_mode: 'popup',
+          state_cookie_domain: window.location.hostname
         });
         resolve();
       } catch (initError) {
@@ -81,6 +85,79 @@ export function initializeGoogleLogin(): Promise<void> {
     
     document.head.appendChild(script);
   });
+}
+
+// Initialize One Tap Sign-In
+export function initializeOneTap(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('One Tap hanya tersedia di browser'));
+      return;
+    }
+
+    if (!validateGoogleConfig()) {
+      reject(new Error('Google OAuth belum dikonfigurasi dengan benar'));
+      return;
+    }
+
+    if (!window.google?.accounts?.id) {
+      reject(new Error('Google SDK belum dimuat'));
+      return;
+    }
+
+    try {
+      // Show One Tap if user has previously signed in
+      window.google.accounts.id.prompt((notification: any) => {
+        console.log('One Tap notification:', notification);
+        
+        if (notification.isNotDisplayed()) {
+          console.log('One Tap was not displayed:', notification.getNotDisplayedReason());
+          resolve(); // Don't reject, just resolve without showing
+        } else if (notification.isSkippedMoment()) {
+          console.log('One Tap was skipped:', notification.getSkippedReason());
+          resolve(); // Don't reject, just resolve without showing
+        } else if (notification.isDismissedMoment()) {
+          console.log('One Tap was dismissed:', notification.getDismissedReason());
+          resolve(); // Don't reject, just resolve without showing
+        } else {
+          console.log('One Tap is being displayed');
+          resolve();
+        }
+      });
+    } catch (error) {
+      console.error('One Tap initialization error:', error);
+      resolve(); // Don't reject, just resolve without showing
+    }
+  });
+}
+
+// Check if user is eligible for One Tap
+export function checkOneTapEligibility(): boolean {
+  if (typeof window === 'undefined' || !window.google?.accounts?.id) {
+    return false;
+  }
+
+  // Check if there's a stored Google session
+  const cookies = document.cookie.split(';');
+  const hasGoogleSession = cookies.some(cookie => 
+    cookie.trim().startsWith('g_state') || 
+    cookie.trim().startsWith('__Secure-1PSID') ||
+    cookie.trim().startsWith('__Secure-3PSID')
+  );
+
+  return hasGoogleSession;
+}
+
+// Disable One Tap (useful when user manually logs out)
+export function disableOneTap(): void {
+  if (typeof window !== 'undefined' && window.google?.accounts?.id) {
+    try {
+      window.google.accounts.id.disableAutoSelect();
+      console.log('One Tap disabled');
+    } catch (error) {
+      console.error('Error disabling One Tap:', error);
+    }
+  }
 }
 
 // Handle Google credential response
