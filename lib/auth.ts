@@ -169,14 +169,40 @@ export const authService = {
     }
   },
 
-  async loginWithGoogle(user: any) {
+  async loginWithGoogle(googleUserInfo: any, fullName?: string, phone?: string) {
     try {
-      // Save Google user session
-      this.saveUserSession(user);
-      return user;
+      const response = await fetch('/api/auth/google-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          googleUserInfo,
+          fullName,
+          phone
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Terjadi kesalahan saat login dengan Google');
+      }
+
+      if (data.success && data.user) {
+        // Save user session
+        this.saveUserSession(data.user);
+        return {
+          success: true,
+          user: data.user,
+          isExistingUser: data.isExistingUser
+        };
+      }
+
+      throw new Error('Invalid response from Google login API');
     } catch (error: any) {
-      console.error("Google login session error:", error);
-      throw new Error("Gagal menyimpan sesi login");
+      console.error('Google login error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat login dengan Google');
     }
   },
 
