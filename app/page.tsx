@@ -516,7 +516,7 @@ export default function HomePage() {
                 onClick={() => setShowAIModal(true)}
                 className="bg-teal-600 hover:bg-teal-500 text-white px-8 py-6 text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 shadow-xl hover:shadow-2xl border-0 group"
               >
-                {t('early_access_button')} 🤖
+                {t('early_access_button')}
               </Button>
             </div>
             
