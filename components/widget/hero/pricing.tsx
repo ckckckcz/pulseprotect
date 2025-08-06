@@ -263,32 +263,66 @@ export default function PricingPage() {
     setIsApplyingPromo(true);
     setPromoError("");
 
-    const foundPromo = await validateAndSavePromoCode(currentUser.email, promoCode);
+    try {
+      // First check if the promo code is valid without making API calls
+      const foundPromo = await validateAndSavePromoCode(currentUser.email, promoCode);
+      
+      if (foundPromo) {
+        setAppliedPromo(foundPromo);
+        setPromoCode("");
+        setIsPromoDialogOpen(false);
+        setShowCelebration(true);
 
-    if (foundPromo) {
-      setAppliedPromo(foundPromo);
-      setPromoCode("");
-      setIsPromoDialogOpen(false);
-      setShowCelebration(true);
+        toast({
+          title: "Kode Promo Berhasil Diterapkan! 🎉",
+          description: `${foundPromo.description} - Hemat ${foundPromo.discount}%`,
+        });
 
-      toast({
-        title: "Kode Promo Berhasil Diterapkan! 🎉",
-        description: `${foundPromo.description} - Hemat ${foundPromo.discount}%`,
-      });
-
-      setTimeout(() => {
-        setShowCelebration(false);
-      }, 4000);
-    } else {
-      setPromoError("Kode promo tidak valid atau sudah kadaluarsa");
-      toast({
-        title: "Kode Promo Tidak Valid",
-        description: "Periksa kembali kode promo yang Anda masukkan",
-        variant: "destructive",
-      });
+        setTimeout(() => {
+          setShowCelebration(false);
+        }, 4000);
+      } else {
+        setPromoError("Kode promo tidak valid atau sudah kadaluarsa");
+        toast({
+          title: "Kode Promo Tidak Valid",
+          description: "Periksa kembali kode promo yang Anda masukkan",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      // Handle any unexpected errors gracefully
+      // console.error("Error applying promo code:", error);
+      
+      // Last resort fallback - check directly against available promo codes
+      const { checkPromoCode } = await import("@/lib/pricing-code");
+      const directPromo = checkPromoCode(promoCode);
+      
+      if (directPromo) {
+        setAppliedPromo(directPromo);
+        setPromoCode("");
+        setIsPromoDialogOpen(false);
+        setShowCelebration(true);
+        
+        toast({
+          title: "Kode Promo Berhasil Diterapkan! 🎉",
+          description: `${directPromo.description} - Hemat ${directPromo.discount}%`,
+          duration: 5000,
+        });
+        
+        setTimeout(() => {
+          setShowCelebration(false);
+        }, 4000);
+      } else {
+        setPromoError("Terjadi kesalahan saat memproses kode promo");
+        toast({
+          title: "Gagal Memproses Kode Promo",
+          description: "Silakan coba lagi nanti",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsApplyingPromo(false);
     }
-
-    setIsApplyingPromo(false);
   };
 
   // Updated payment handler to use JWT authentication

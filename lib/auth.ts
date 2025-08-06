@@ -50,7 +50,7 @@ export const authService = {
 
       return data;
     } catch (error: any) {
-      // console.error('Registration error:', error);
+      console.error('Registration error:', error);
       throw new Error(error.message || 'Terjadi kesalahan saat mendaftar');
     }
   },
@@ -76,7 +76,7 @@ export const authService = {
           .maybeSingle(); // Use maybeSingle instead of single to avoid 406 error
         
         if (error) {
-          // console.error("Supabase error fetching user:", error);
+          console.error("Supabase error fetching user:", error);
           throw new Error(`Database error: ${error.message}`);
         }
         
@@ -87,7 +87,7 @@ export const authService = {
         
         userData = data;
       } catch (dbError: any) {
-        // console.error("Database query error:", dbError);
+        console.error("Database query error:", dbError);
         
         // Handle specific Supabase errors
         if (dbError.code === 'PGRST116' || dbError.message?.includes('JSON')) {
@@ -107,18 +107,18 @@ export const authService = {
       try {
         // Make sure password and stored hash are valid before comparing
         if (!userData.kata_sandi) {
-          // console.error("User has no password hash stored");
+          console.error("User has no password hash stored");
           throw new Error("Akun belum mengatur password");
         }
 
         isValidPassword = await bcrypt.compare(password, userData.kata_sandi);
       } catch (bcryptError) {
-        // console.error("Password comparison error:", bcryptError);
+        console.error("Password comparison error:", bcryptError);
         throw new Error("Error validasi kredensial");
       }
 
       if (!isValidPassword) {
-        // console.error("Invalid password for user:", email);
+        console.error("Invalid password for user:", email);
         throw new Error("Email atau password salah");
       }
 
@@ -139,7 +139,7 @@ export const authService = {
             userData.profile = profileData;
           }
         } catch (profileError) {
-          // console.error(`Error fetching ${userData.role} profile:`, profileError);
+          console.error(`Error fetching ${userData.role} profile:`, profileError);
           // Continue even if profile fetch fails - user can still log in
         }
       }
@@ -160,25 +160,25 @@ export const authService = {
         // Save user session
         this.saveUserSession(userWithoutPassword);
       } catch (sessionError) {
-        // console.error("Error saving session:", sessionError);
+        console.error("Error saving session:", sessionError);
         // Continue anyway - the login was successful even if session saving fails
       }
       
       return userWithoutPassword;
     } catch (error: any) {
-      // console.error("Login error:", error);
+      console.error("Login error:", error);
       throw error; // Let the caller handle the error
     }
   },
 
   async loginWithGoogle(googleUserInfo: any, fullName?: string, phone?: string, avatarUrl?: string) {
     try {
-      // console.log('loginWithGoogle called with:', {
-      //   email: googleUserInfo.email,
-      //   hasFullName: !!fullName,
-      //   hasPhone: !!phone,
-      //   hasAvatarUrl: !!avatarUrl
-      // });
+      console.log('loginWithGoogle called with:', {
+        email: googleUserInfo.email,
+        hasFullName: !!fullName,
+        hasPhone: !!phone,
+        hasAvatarUrl: !!avatarUrl
+      });
 
       const response = await fetch('/api/auth/google-login', {
         method: 'POST',
@@ -194,25 +194,25 @@ export const authService = {
       });
 
       const data = await response.json();
-      // console.log('Google login API response:', data);
+      console.log('Google login API response:', data);
 
       if (!response.ok) {
-        // console.error('Google login API error:', data.error);
+        console.error('Google login API error:', data.error);
         throw new Error(data.error || 'Terjadi kesalahan saat login dengan Google');
       }
 
       if (data.success && data.user) {
         // Save user session
         this.saveUserSession(data.user);
-        // console.log('Google login successful, user session saved');
+        console.log('Google login successful, user session saved');
         
         // Explicitly ensure JWT tokens are saved - critical step!
         if (data.accessToken) {
           if (jwtService && typeof jwtService.setTokens === 'function') {
-            // console.log('Setting JWT tokens from Google login response');
+            console.log('Setting JWT tokens from Google login response');
             jwtService.setTokens(data.accessToken, data.refreshToken || null);
           } else {
-            // console.error('JWT service not available to set tokens!');
+            console.error('JWT service not available to set tokens!');
             // Fallback: try to set tokens directly
             if (typeof localStorage !== 'undefined') {
               localStorage.setItem('accessToken', data.accessToken);
@@ -222,7 +222,7 @@ export const authService = {
             }
           }
         } else {
-          // console.warn('No JWT tokens in Google login response!');
+          console.warn('No JWT tokens in Google login response!');
         }
         
         return {
@@ -236,7 +236,7 @@ export const authService = {
 
       throw new Error('Invalid response from Google login API');
     } catch (error: any) {
-      // console.error('Google login error:', error);
+      console.error('Google login error:', error);
       throw new Error(error.message || 'Terjadi kesalahan saat login dengan Google');
     }
   },
@@ -306,7 +306,7 @@ export const authService = {
             const now = new Date();
             const expiry = new Date(sessionData.expires);
             if (now > expiry) {
-              // console.log('Session expired, logging out');
+              console.log('Session expired, logging out');
               this.logout();
               return null;
             }
@@ -325,13 +325,13 @@ export const authService = {
             
             return sessionData;
           } catch (error) {
-            // console.error('Error parsing session cookie:', error);
+            console.error('Error parsing session cookie:', error);
           }
         }
       }
       return null;
     } catch (error) {
-      // console.error("Error getting current user:", error);
+      console.error("Error getting current user:", error);
       return null;
     }
   },
@@ -349,7 +349,7 @@ export const authService = {
   saveUserSession(user: any) {
     if (typeof window !== 'undefined') {
       try {
-        // console.log("Saving user session for user ID:", user.id, "Email:", user.email);
+        console.log("Saving user session for user ID:", user.id, "Email:", user.email);
         
         // First verify we have a valid user object
         if (!user || !user.id) {
@@ -359,7 +359,7 @@ export const authService = {
         // Ensure account_membership is set to 'free' if it doesn't exist
         if (!user.account_membership) {
           user.account_membership = 'free';
-          // console.log('Setting default account_membership to free');
+          console.log('Setting default account_membership to free');
         }
         
         // Save to localStorage immediately
@@ -371,9 +371,9 @@ export const authService = {
           expiryDate.setDate(expiryDate.getDate() + 7);
           localStorage.setItem('sessionExpiry', expiryDate.toISOString());
           
-          // console.log('User session saved to localStorage successfully');
+          console.log('User session saved to localStorage successfully');
         } catch (localStorageError) {
-          // console.error("LocalStorage error:", localStorageError);
+          console.error("LocalStorage error:", localStorageError);
         }
         
         // Save to cookies with error handling
@@ -391,9 +391,9 @@ export const authService = {
             sameSite: 'lax'
           });
           
-          // console.log('User session saved to cookies successfully');
+          console.log('User session saved to cookies successfully');
         } catch (cookieError) {
-          // console.error("Cookie error:", cookieError);
+          console.error("Cookie error:", cookieError);
         }
         
         // Trigger multiple storage events to ensure UI updates
@@ -404,12 +404,12 @@ export const authService = {
             newValue: JSON.stringify(user),
             storageArea: localStorage
           }));
-          // console.log('Storage events dispatched for UI update');
+          console.log('Storage events dispatched for UI update');
         }, 50);
         
-        // console.log('User session saved successfully with membership:', user.account_membership || 'free');
+        console.log('User session saved successfully with membership:', user.account_membership || 'free');
       } catch (error) {
-        // console.error('Error saving user session:', error);
+        console.error('Error saving user session:', error);
       }
     }
   },
@@ -429,9 +429,9 @@ export const authService = {
         disableOneTap();
         resetGoogleAuthState();
         
-        // console.log('User session cleared and Google auth state reset');
+        console.log('User session cleared and Google auth state reset');
       } catch (error) {
-        // console.error('Error clearing session:', error);
+        console.error('Error clearing session:', error);
       }
     }
   },
@@ -497,7 +497,7 @@ export const authService = {
         .eq("id", user.id);
 
       if (updateError) {
-        // console.error("Verification update error:", updateError);
+        console.error("Verification update error:", updateError);
         throw new Error("Gagal memverifikasi email");
       }
 
@@ -510,7 +510,7 @@ export const authService = {
         }
       };
     } catch (error: any) {
-      // console.error("Email verification error:", error);
+      console.error("Email verification error:", error);
       throw new Error(error.message || "Terjadi kesalahan saat verifikasi email");
     }
   },
@@ -533,7 +533,7 @@ export const authService = {
 
       return { success: true }
     } catch (error: any) {
-      // console.error("Resend verification error:", error)
+      console.error("Resend verification error:", error)
       throw new Error(error.message || "Gagal mengirim ulang email verifikasi")
     }
   },
@@ -548,7 +548,7 @@ export const authService = {
         .single();
       
       if (error || !userData) {
-        // console.error("Error fetching user:", error || "User not found");
+        console.error("Error fetching user:", error || "User not found");
         throw new Error("Email tidak terdaftar dalam sistem kami.");
       }
       
@@ -568,7 +568,7 @@ export const authService = {
         .eq('email', email);
         
       if (updateError) {
-        // console.error("Error updating user with reset token:", updateError);
+        console.error("Error updating user with reset token:", updateError);
         throw new Error("Gagal membuat token reset password.");
       }
       
@@ -581,11 +581,11 @@ export const authService = {
         );
         return true;
       } catch (emailError) {
-        // console.error("Failed to send password reset email:", emailError);
+        console.error("Failed to send password reset email:", emailError);
         return true;
       }
     } catch (error) {
-      // console.error("Forgot password error:", error);
+      console.error("Forgot password error:", error);
       throw error;
     }
   },
@@ -623,7 +623,7 @@ export const authService = {
       // Return the email to be used for the reset process
       return userData.email;
     } catch (error) {
-      // console.error("Token validation error:", error);
+      console.error("Token validation error:", error);
       throw error;
     }
   },
@@ -632,7 +632,7 @@ export const authService = {
     try {
       // First validate the token and get the user email
       const email = await this.validateResetToken(token);
-      // console.log("Valid token found for email:", email);
+      console.log("Valid token found for email:", email);
 
       // Find user with this token before attempting password update
       const { data: user, error: userError } = await supabase
@@ -644,7 +644,7 @@ export const authService = {
         .single();
     
       if (userError || !user) {
-        // console.error("Error retrieving user with valid token:", userError);
+        console.error("Error retrieving user with valid token:", userError);
         throw new Error("Token tidak valid atau sudah digunakan");
       }
 
@@ -656,7 +656,7 @@ export const authService = {
           throw new Error("Password hashing failed");
         }
 
-        // console.log("Updating password for user ID:", user.id);
+        console.log("Updating password for user ID:", user.id);
         
         // Update user password and clear token in a single operation
         const { data, error } = await supabase
@@ -672,7 +672,7 @@ export const authService = {
           .select();
 
         if (error) {
-          // console.error("Error updating password:", error);
+          console.error("Error updating password:", error);
           throw new Error(`Gagal mengubah kata sandi: ${error.message}`);
         }
 
@@ -680,7 +680,7 @@ export const authService = {
           throw new Error("No records were updated");
         }
 
-        // console.log("Password reset successful for user:", user.id);
+        console.log("Password reset successful for user:", user.id);
         return true;
       } catch (updateError) {
         // Mark the token as failed if password update fails
@@ -689,11 +689,11 @@ export const authService = {
           .update({ reset_password_status: "failed" })
           .eq("id", user.id);
         
-        // console.error("Password update error:", updateError);
+        console.error("Password update error:", updateError);
         throw updateError;
       }
     } catch (error: any) {
-      // console.error("Reset password error:", error);
+      console.error("Reset password error:", error);
       throw error;
     }
   },
@@ -730,7 +730,7 @@ export const authService = {
 
       return userWithoutPassword;
     } catch (error: any) {
-      // console.error("Update user error:", error);
+      console.error("Update user error:", error);
       throw new Error(error.message || "Terjadi kesalahan saat memperbarui profil");
     }
   },
