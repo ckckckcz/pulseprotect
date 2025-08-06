@@ -25,24 +25,33 @@ export const createAIPackagePayment = async (
   userId: string,
   packageDetails: PackageDetails,
   customerInfo: CustomerInfo
-) => {
+): Promise<{ token: string; redirectUrl?: string; orderId: string }> => {
   try {
-    console.log("Creating payment for package:", packageDetails);
+    // Create a unique order ID
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 10);
+    const orderId = `order_${userId}_${packageDetails.packageName}_${timestamp}_${randomSuffix}`;
 
-    // Generate a unique order ID
-    const orderId = `ORDER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    // Ensure package name is lowercase to match constraint
+    packageDetails.packageName = packageDetails.packageName.toLowerCase();
 
-    // Make API request to create payment token
+    // Create payment intent record (will be saved via API)
+    const paymentIntent = await createPaymentIntent(
+      customerInfo.email,
+      packageDetails,
+      orderId
+    );
+
+    // Create payment token
     const response = await fetch("/api/payment/create-token", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${jwtService.getToken()}`,
       },
       body: JSON.stringify({
         transaction_details: {
           order_id: orderId,
-          gross_amount: Math.round(packageDetails.price),
+          gross_amount: packageDetails.price,
         },
         customer_details: {
           first_name: customerInfo.firstName,
@@ -52,37 +61,30 @@ export const createAIPackagePayment = async (
         item_details: [
           {
             id: packageDetails.packageId,
-            name: `${packageDetails.packageName.toUpperCase()} Package - ${
-              packageDetails.period === "yearly" ? "Yearly" : "Monthly"
-            }`,
-            price: Math.round(packageDetails.price),
+            price: packageDetails.price,
             quantity: 1,
-            category: "Subscription",
+            name: `${packageDetails.packageName.toUpperCase()} Package (${packageDetails.period})`,
+            category: "AI Package",
           },
         ],
         custom_field1: packageDetails.period,
         custom_field2: customerInfo.email,
-        custom_field3: packageDetails.promoCode || "",
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(
-        errorData.error || "Failed to create payment token"
-      );
+      throw new Error(errorData.error || "Failed to create payment token");
     }
 
     const data = await response.json();
-    console.log("Payment token created successfully:", data);
-
     return {
       token: data.token,
       redirectUrl: data.redirectUrl,
-      orderId: data.orderId,
+      orderId: orderId,
     };
   } catch (error) {
-    console.error("Error creating payment:", error);
+    console.error("Error creating AI package payment:", error);
     throw error;
   }
 };
@@ -99,31 +101,38 @@ export const handleMidtransPayment = async (
     onClose?: () => void;
   }
 ) => {
-  console.log("📣 handleMidtransPayment called with token:", token ? token.substring(0, 10) + "..." : "null");
-  
+  console.log(
+    "📣 handleMidtransPayment called with token:",
+    token ? token.substring(0, 10) + "..." : "null"
+  );
+
   // Enhanced checking for Midtrans availability
   if (typeof window === "undefined") {
     console.error("❌ Window is undefined, cannot show payment popup");
     throw new Error("Midtrans Snap is not available");
   }
-  
+
   // Explicit check for window.snap
   if (!window.snap) {
     console.error("❌ window.snap is not available!");
-    
+
     // Final attempt to wait for snap to be available (might be in progress)
     let attempts = 0;
     const maxAttempts = 20; // Wait up to 10 seconds (20 * 500ms)
-    
+
     while (!window.snap && attempts < maxAttempts) {
-      console.log(`Waiting for Midtrans Snap to be available (attempt ${attempts + 1}/${maxAttempts})...`);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log(
+        `Waiting for Midtrans Snap to be available (attempt ${attempts + 1}/${maxAttempts})...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, 500));
       attempts++;
     }
-    
+
     if (!window.snap) {
       console.error("❌ Midtrans Snap still not available after waiting");
-      throw new Error("Midtrans Snap is not available after waiting. Please refresh the page and try again.");
+      throw new Error(
+        "Midtrans Snap is not available after waiting. Please refresh the page and try again."
+      );
     } else {
       console.log("✅ Midtrans Snap became available after waiting");
     }
@@ -165,10 +174,14 @@ export const handleMidtransPayment = async (
 function loadMidtransScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     console.log("=== LOADING MIDTRANS SCRIPT ===");
-    
+
     if (typeof window === "undefined") {
       console.error("Window is undefined - cannot load script");
-      reject(new Error("Window not defined - script loading must be done client-side"));
+      reject(
+        new Error(
+          "Window not defined - script loading must be done client-side"
+        )
+      );
       return;
     }
 
@@ -183,7 +196,7 @@ function loadMidtransScript(): Promise<void> {
     const existingScript = document.querySelector('script[src*="snap.js"]');
     if (existingScript) {
       console.log("Midtrans script tag already exists, waiting for load...");
-      
+
       // Wait a bit and check again
       setTimeout(() => {
         if (window.snap) {
@@ -199,10 +212,15 @@ function loadMidtransScript(): Promise<void> {
     }
 
     const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY;
-    const snapUrl = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || "https://app.sandbox.midtrans.com/snap/snap.js";
+    const snapUrl =
+      process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
+      "https://app.sandbox.midtrans.com/snap/snap.js";
 
     console.log("Environment variables:");
-    console.log("- NEXT_PUBLIC_MIDTRANS_CLIENT_KEY:", clientKey ? `${clientKey.substring(0, 20)}...` : "Missing");
+    console.log(
+      "- NEXT_PUBLIC_MIDTRANS_CLIENT_KEY:",
+      clientKey ? `${clientKey.substring(0, 20)}...` : "Missing"
+    );
     console.log("- NEXT_PUBLIC_MIDTRANS_SNAP_URL:", snapUrl);
 
     if (!clientKey) {
@@ -216,22 +234,22 @@ function loadMidtransScript(): Promise<void> {
     script.src = snapUrl;
     script.setAttribute("data-client-key", clientKey);
     script.type = "text/javascript";
-    
+
     // Add additional attributes for debugging
     script.id = "midtrans-snap-script";
-    
+
     let loadTimeout: NodeJS.Timeout;
-    
+
     script.onload = () => {
       console.log("Script onload event fired");
       clearTimeout(loadTimeout);
-      
+
       // Give it a moment to initialize
       setTimeout(() => {
         console.log("Checking window.snap after script load...");
         console.log("window.snap exists:", !!window.snap);
         console.log("window.snap type:", typeof window.snap);
-        
+
         if (window.snap) {
           console.log("Midtrans Snap loaded and available");
           resolve();
@@ -240,7 +258,7 @@ function loadMidtransScript(): Promise<void> {
           console.log("Checking for alternative snap objects...");
           console.log("window.Snap:", typeof (window as any).Snap);
           console.log("window.midtrans:", typeof (window as any).midtrans);
-          
+
           // Try to find snap in alternative locations
           if ((window as any).Snap) {
             console.log("Found window.Snap, assigning to window.snap");
@@ -252,7 +270,7 @@ function loadMidtransScript(): Promise<void> {
         }
       }, 500);
     };
-    
+
     script.onerror = (error) => {
       console.error("Script onerror event fired:", error);
       clearTimeout(loadTimeout);
@@ -270,7 +288,7 @@ function loadMidtransScript(): Promise<void> {
     console.log("Document ready state:", document.readyState);
     console.log("Script src:", script.src);
     console.log("Script data-client-key:", script.getAttribute("data-client-key"));
-    
+
     document.body.appendChild(script);
     console.log("Script appended to body successfully");
   });
@@ -308,14 +326,16 @@ export const getUserSubscription = async (email: string) => {
     // Get the most recent successful payment intent using direct REST API
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    
+
     const response = await fetch(
-      `${supabaseUrl}/rest/v1/payment_intent?select=package_name,created_at,period,amount&email=eq.${encodeURIComponent(email)}&status=eq.success&order=created_at.desc&limit=1`,
+      `${supabaseUrl}/rest/v1/payment_intent?select=package_name,created_at,period,amount&email=eq.${encodeURIComponent(
+        email
+      )}&status=eq.success&order=created_at.desc&limit=1`,
       {
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
       }
     );
@@ -325,7 +345,7 @@ export const getUserSubscription = async (email: string) => {
     }
 
     const data = await response.json();
-    
+
     if (!data || data.length === 0) {
       return null;
     }
@@ -343,7 +363,7 @@ export async function recordPayment(
   membershipType: string,
   orderId: string,
   paymentData: any,
-  email?: string 
+  email?: string
 ) {
   try {
     const amount = paymentData.gross_amount || 0;
@@ -352,15 +372,17 @@ export async function recordPayment(
     const cleanMembershipType = membershipType.replace("pkg_", "");
 
     // Get email from multiple possible sources
-    const userEmail = email || 
-                     paymentData.email || 
-                     paymentData.custom_field2 || 
-                     paymentData.customer_details?.email || 
-                     "";
+    const userEmail =
+      email ||
+      paymentData.email ||
+      paymentData.custom_field2 ||
+      paymentData.customer_details?.email ||
+      "";
 
     // Get period from multiple possible sources
-    const period = paymentData.custom_field1 || 
-                  (membershipType.includes("yearly") ? "yearly" : "monthly");
+    const period =
+      paymentData.custom_field1 ||
+      (membershipType.includes("yearly") ? "yearly" : "monthly");
 
     // console.log("RECORD PAYMENT PARAMS:", {
     //   userId,
@@ -384,7 +406,7 @@ export async function recordPayment(
           harga: Number(amount),
           status: "success",
         });
-      
+
       if (error) {
         console.error("Direct database insert failed:", error);
         // Continue to API call as fallback
@@ -405,7 +427,9 @@ export async function recordPayment(
         userId,
         email: userEmail,
         packageId: membershipType,
-        packageName: `AI Model ${cleanMembershipType.charAt(0).toUpperCase() + cleanMembershipType.slice(1)}`,
+        packageName: `AI Model ${
+          cleanMembershipType.charAt(0).toUpperCase() + cleanMembershipType.slice(1)
+        }`,
         period,
         amount: Number(amount),
         orderId,
@@ -425,6 +449,57 @@ export async function recordPayment(
     return { ...result, method: "api" };
   } catch (error) {
     console.error("Payment recording error:", error);
+    throw error;
+  }
+}
+
+// Interface for payment intent matching the database schema
+export interface PaymentIntent {
+  id?: number;
+  email: string;
+  order_id: string;
+  package_id: string;
+  package_name: string;
+  period: "monthly" | "yearly";
+  amount: number;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Function to create a new payment intent
+export const createPaymentIntent = async (
+  email: string,
+  packageDetails: PackageDetails,
+  orderId: string
+): Promise<PaymentIntent> => {
+  try {
+    // Validate package_name to match constraint
+    let validPackageName = packageDetails.packageName;
+    if (!["free", "plus", "pro"].includes(validPackageName)) {
+      validPackageName = "free"; // Default to free if invalid
+    }
+
+    // Validate period to match constraint
+    let validPeriod = packageDetails.period;
+    if (!["monthly", "yearly"].includes(validPeriod)) {
+      validPeriod = "monthly"; // Default to monthly if invalid
+    }
+
+    const paymentIntent: PaymentIntent = {
+      email,
+      order_id: orderId,
+      package_id: packageDetails.packageId,
+      package_name: validPackageName,
+      period: validPeriod,
+      amount: packageDetails.price,
+      status: "pending",
+      created_at: new Date().toISOString(),
+    };
+
+    return paymentIntent;
+  } catch (error) {
+    console.error("Error creating payment intent:", error);
     throw error;
   }
 }

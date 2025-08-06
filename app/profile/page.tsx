@@ -370,56 +370,58 @@ export default function UserProfile() {
     }
   };
 
-  // Add function to fetch user payments with JWT auth
+  // Update fetchUserPayments function
   const fetchUserPayments = async () => {
     if (!user?.email) return;
-
+    
     setLoadingPayments(true);
+    
     try {
-      // Get JWT token if available
-      const token = jwtService.getToken();
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      // Use JWT auth if available, otherwise fall back to query parameter
-      const endpoint = token ? `/api/payments/user-intents` : `/api/payments/user-intents?email=${encodeURIComponent(user.email)}`;
-
-      const response = await fetch(endpoint, { headers });
-
+      const response = await fetch(`/api/payments/user-intents?email=${encodeURIComponent(user.email)}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
+        }
+      });
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch payment data");
+        throw new Error(`Error fetching payment history: ${response.status}`);
       }
-
-      const result = await response.json();
-
-      // Process and set payments data
-      if (result.data && Array.isArray(result.data)) {
-        setPayments(result.data);
-        // console.log(`Loaded ${result.data.length} payment records from payment_intent table`);
+      
+      const data = await response.json();
+      
+      if (data.success && Array.isArray(data.data)) {
+        // Map API response to match PaymentIntent type
+        setPayments(data.data.map((payment: any) => ({
+          id: payment.id,
+          email: payment.email,
+          order_id: payment.order_id,
+          package_id: payment.package_id,
+          package_name: payment.package_name || 'unknown',
+          period: payment.period || 'monthly',
+          amount: payment.amount,
+          status: payment.status || 'pending',
+          created_at: payment.created_at,
+          updated_at: payment.updated_at || null
+        })));
       } else {
-        console.warn("Unexpected payment data format:", result);
         setPayments([]);
       }
     } catch (error) {
-      console.error("Error fetching payment data:", error);
-      toast.error("Gagal memuat data transaksi");
-      setPayments([]);
+      console.error("Error fetching payment history:", error);
+      toast.error("Failed to load payment history", {
+        description: "Please try again later"
+      });
     } finally {
       setLoadingPayments(false);
     }
   };
 
-  // Fetch payments when billing tab is selected
+  // Load payment history when user changes
   useEffect(() => {
-    if (activeSetting === "billing" && user?.email) {
+    if (user?.email && activeSetting === "payments") {
       fetchUserPayments();
     }
-  }, [activeSetting, user?.email]);
+  }, [user, activeSetting]);
 
   // Add formatCurrency helper function
   const formatCurrency = (amount: number) => {
@@ -516,7 +518,7 @@ export default function UserProfile() {
   const sidebarItems = [
     { id: "general", label: "Umum", icon: User },
     { id: "security", label: "Keamanan", icon: Shield },
-    { id: "billing", label: "Transaksi", icon: CreditCard },
+    { id: "payments", label: "Transaksi", icon: CreditCard },
     { id: "settings", label: "Pengaturan", icon: Bolt },
   ];
 
@@ -529,7 +531,7 @@ export default function UserProfile() {
       label: "Keamanan",
       keywords: ["password", "kata sandi", "autentikasi", "keamanan", "login", "masuk", "verifikasi", "2fa"],
     },
-    billing: {
+    payments: {
       label: "Transaksi",
       keywords: ["pembayaran", "transaksi", "tagihan", "paket", "langganan", "invoice", "riwayat", "bayar"],
     },
@@ -648,6 +650,495 @@ export default function UserProfile() {
     return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${colorClass}`}>{label}</span>;
   }
 
+  // Add to your render section:
+  // ...existing code...
+
+  // Add payment history component 
+  const renderPaymentHistory = () => {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Payment History</h3>
+        
+        {loadingPayments ? (
+          <div className="py-8 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="py-8 text-center text-gray-500">
+            <p>No payment history found</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(payment.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-gray-900 capitalize">
+                        {payment.package_name}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
+                      {payment.period}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      Rp {Number(payment.amount).toLocaleString('id-ID')}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${payment.status === 'success' ? 'bg-green-100 text-green-800' : 
+                          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                          'bg-red-100 text-red-800'}`}>
+                        {payment.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Add to your settings content rendering
+  const renderSettingsContent = () => {
+    switch (activeSetting) {
+      case "general":
+        return (
+          <div className="space-y-6">
+            {/* Avatar Section */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+              <div className="p-6">
+                <h2 className="text-2xl font-semibold">Avatar</h2>
+                <p className="text-gray-400 text-sm mb-6">Klik tombol di bawah untuk mengganti avatar acak, lalu klik lagi untuk menyimpan ke profil Anda.</p>
+                <div className="flex flex-col items-start gap-4">
+                  <Avatar className="h-28 w-28 rounded-full border-4 border-teal-600 shadow-lg">
+                    <AvatarImage src={avatarUrl} alt={user.nama_lengkap || "User"} />
+                    <AvatarFallback className="bg-teal-600 text-white">{getInitials(user.nama_lengkap)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isAvatarChanged ? "default" : "outline"}
+                      className="rounded-xl flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-200 hover:text-black"
+                      onClick={async () => {
+                        if (isAvatarChanged) {
+                          // Use the dedicated function to handle avatar saving
+                          await handleSaveAvatar();
+                        } else {
+                          // Change avatar
+                          const url = generateAvatarUrl();
+                          setAvatarUrl(url);
+                          setIsAvatarChanged(true);
+                        }
+                      }}
+                      disabled={isSavingAvatar}
+                    >
+                      {isSavingAvatar ? (
+                        <>
+                          <Loader2 className="animate-spin w-4 h-4 mr-1" />
+                          Menyimpan...
+                        </>
+                      ) : isAvatarChanged ? (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Simpan Avatar
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4" />
+                          Ganti Avatar
+                        </>
+                      )}
+                    </Button>
+                    {/* Icon-only button to change avatar, only show if avatar has been changed */}
+                    {isAvatarChanged && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="rounded-full border border-gray-300 hover:bg-gray-200 hover:text-black"
+                        onClick={() => {
+                          const url = generateAvatarUrl();
+                          setAvatarUrl(url);
+                          setIsAvatarChanged(true);
+                        }}
+                        disabled={isSavingAvatar}
+                        aria-label="Ganti Avatar"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    {avatarSeed && (
+                      <>
+                        Seed: <span className="font-bold">{avatarSeed}</span>
+                      </>
+                    )}
+                    {isAvatarChanged && <span className="ml-2 text-teal-600 font-semibold">Belum disimpan</span>}
+                    {!isAvatarChanged && <span className="ml-2 text-green-600 font-semibold">Sudah disimpan</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border-t border-gray-200 p-4">
+                <p className="text-teal-600 font-semibold text-sm">Avatar bersifat opsional tapi sangat direkomendasikan.</p>
+              </div>
+            </div>
+
+            {/* Combined Profile Form */}
+            <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+              <form onSubmit={handleProfileUpdate}>
+                <div className="p-6">
+                  <h2 className="text-2xl font-semibold mb-6">Informasi Profil</h2>
+
+                  {/* Name Field */}
+                  <div className="mb-6">
+                    <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Nama Lengkap
+                    </label>
+                    <Input
+                      id="displayName"
+                      value={displayName}
+                      onChange={(e) => {
+                        setDisplayName(e.target.value);
+                        setFormErrors({ ...formErrors, nama_lengkap: "" });
+                      }}
+                      className="bg-white border-gray-200 rounded text-black"
+                      placeholder="Nama lengkap"
+                    />
+                    {formErrors.nama_lengkap && <p className="mt-1 text-sm text-red-500">{formErrors.nama_lengkap}</p>}
+                    <p className="mt-1 text-xs text-gray-400">Maksimal 32 karakter.</p>
+                  </div>
+
+                  {/* Phone Field with Country Code */}
+                  <div className="mb-6">
+                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                      Nomor Telepon
+                    </label>
+                    <div className="flex">
+                      {/* Country Code Dropdown */}
+                      <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" role="combobox" aria-expanded={countryOpen} className="w-[120px] justify-between border-gray-200 hover:bg-gray-50 hover:text-gray-900 rounded-r-none border-r-0 bg-white">
+                            {selectedCountry ? (
+                              <div className="flex items-center">
+                                <span className="mr-2 text-lg">{getFlagEmoji(selectedCountry.code)}</span>
+                                <span>{selectedCountry.dial_code}</span>
+                              </div>
+                            ) : (
+                              "Pilih"
+                            )}
+                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] border border-gray-200 bg-gray-50 rounded-xl p-0">
+                          <Command className="bg-gray-100 text-black rounded-xl">
+                            <CommandInput
+                              placeholder="Cari negara..."
+                              className="h-9 bg-gray-100"
+                              value={countrySearchQuery}
+                              onValueChange={(value) => {
+                                setCountrySearchQuery(value);
+                                // console.log(`Searching for: "${value}"`);
+                              }}
+                            />
+                            <CommandEmpty>Negara tidak ditemukan</CommandEmpty>
+                            <CommandGroup className="max-h-[300px] bg-gray-100 text-black overflow-y-auto">
+                              {filteredCountries.length > 0 ? (
+                                filteredCountries.map((country) => (
+                                  <CommandItem
+                                    key={country.code}
+                                    value={`${country.code}-${country.name}`}
+                                    onSelect={() => {
+                                      // console.log(`Selected country: ${country.name}`);
+                                      setSelectedCountry(country);
+                                      setCountryOpen(false);
+                                    }}
+                                    className="transition-all duration-200 ease-in-out hover:bg-teal-500"
+                                  >
+                                    <div className="flex items-center">
+                                      <span className="mr-2 text-lg">{getFlagEmoji(country.code)}</span>
+                                      <span className="mr-2">{country.name}</span>
+                                      <span className="text-gray-500 text-sm">{country.dial_code}</span>
+                                    </div>
+                                  </CommandItem>
+                                ))
+                              ) : (
+                                <div className="py-6 text-center text-gray-500">Tidak ada hasil yang sesuai</div>
+                              )}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Phone Number Input */}
+                      <Input
+                        id="phoneNumber"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          setFormErrors({ ...formErrors, nomor_telepon: "" });
+                        }}
+                        className="bg-white border-gray-200 rounded-l-none flex-1 text-black"
+                        placeholder={selectedCountry?.code === "ID" ? "81234567890" : "Phone number"}
+                      />
+                    </div>
+                    {formErrors.nomor_telepon && <p className="mt-1 text-sm text-red-500">{formErrors.nomor_telepon}</p>}
+                    <p className="mt-1 text-xs text-gray-400">{selectedCountry?.code === "ID" ? "Masukkan nomor tanpa kode negara atau awalan 0 (cth: 81234567890)." : "Masukkan nomor tanpa kode negara (cth: 7123456789)."}</p>
+                  </div>
+                  <Button type="submit" className="bg-teal-600 rounded-xl hover:bg-teal-700 text-white" disabled={!formChanged || isUpdating}>
+                    {isUpdating ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
+                    Simpan Perubahan
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      case "security":
+        return (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+            <h2 className="text-2xl font-semibold">Autentikasi</h2>
+            <p className="text-gray-400 text-sm">Pengaturan keamanan dan autentikasi akun Anda.</p>
+
+            <div className="mt-6 p-4 rounded-xl bg-gray-100 border border-gray-200">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-gray-200 rounded-full">
+                  <Shield className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Keamanan Akun</h3>
+                  <p className="text-gray-400 text-sm">Kami merekomendasikan untuk secara rutin memperbarui kata sandi dan mengaktifkan autentikasi dua faktor untuk keamanan yang lebih baik.</p>
+                  <Button className="mt-4 bg-teal-600 rounded-xl hover:bg-teal-700 text-white">Perbarui Pengaturan Keamanan</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case "payments":
+        return (
+          <div className="space-y-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+              <h2 className="text-2xl font-semibold mb-2">Transaksi</h2>
+              <p className="text-gray-400 text-sm mb-6">Riwayat transaksi pembayaran paket AI Anda dari tabel payment_intent.</p>
+
+              {/* Add filtering options above the payment table */}
+              <div className="flex flex-wrap items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Riwayat Transaksi</h3>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Filter:</span>
+                  <Select value={paymentFilter} onValueChange={(value) => setPaymentFilter(value)}>
+                    <SelectTrigger className="w-[140px] bg-white border-gray-200 text-sm rounded-xl">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua</SelectItem>
+                      <SelectItem value="success">Berhasil</SelectItem>
+                      <SelectItem value="pending">Menunggu</SelectItem>
+                      <SelectItem value="failed">Gagal</SelectItem>
+                      <SelectItem value="challenge">Perlu Verifikasi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {loadingPayments ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+                </div>
+              ) : filteredPayments.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200 overflow-hidden">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          ID
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Order ID
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tanggal
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Paket
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Periode
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Jumlah
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Terakhir Diupdate
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredPayments.map((payment) => (
+                        <tr key={payment.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.id}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span className="font-mono">{payment.order_id}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{format(new Date(payment.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{payment.package_name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{payment.period === "monthly" ? "Bulanan" : "Tahunan"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{formatCurrency(payment.amount)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(payment.status)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{payment.updated_at ? format(new Date(payment.updated_at), "dd MMM yyyy, HH:mm", { locale: id }) : "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
+                  <CreditCard className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak Ada Transaksi</h3>
+                  <p className="mt-1 text-sm text-gray-500">Anda belum memiliki transaksi pembayaran apa pun di tabel payment_intent.</p>
+                  <div className="mt-6">
+                    <Link href="/pricing">
+                      <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl">Lihat Paket</Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case "settings":
+        return (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+              {/* Kiri: Bahasa & Mode Tampilan */}
+              <div className="p-6 space-y-8 border-b md:border-b-0 md:border-r border-gray-200">
+                {/* Bahasa */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
+                    <Globe2 className="w-6 h-6" /> Pilih Bahasa
+                  </h3>
+                  <div className="flex gap-3">
+                    <Button
+                      variant={language === "id" ? "default" : "outline"}
+                      className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "id" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                      onClick={() => setLanguage("id")}
+                    >
+                      <Languages className="w-4 h-4" /> Indonesia
+                    </Button>
+                    <Button
+                      variant={language === "en" ? "default" : "outline"}
+                      className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "en" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                      onClick={() => setLanguage("en")}
+                    >
+                      <Languages className="w-4 h-4" /> English
+                    </Button>
+                  </div>
+                </div>
+                {/* Mode Tampilan */}
+                <div>
+                  <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
+                    <Sun className="w-6 h-6" /> Mode Tampilan
+                  </h3>
+                  <div className="flex gap-3">
+                    <Button
+                      variant={theme === "light" ? "default" : "outline"}
+                      className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "light" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                      onClick={() => setTheme("light")}
+                    >
+                      <Sun className="w-4 h-4" /> Light
+                    </Button>
+                    <Button
+                      variant={theme === "dark" ? "default" : "outline"}
+                      className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "dark" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                      onClick={() => setTheme("dark")}
+                    >
+                      <Moon className="w-4 h-4" /> Dark
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              {/* Kanan: Feedback & Tentang */}
+              <div className="p-6 space-y-8">
+                {/* Feedback & Dukungan */}
+                <div>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5" /> Feedback & Dukungan
+                  </h3>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setSendingFeedback(true);
+                      setTimeout(() => {
+                        toast.success("Feedback terkirim, terima kasih!");
+                        setFeedback("");
+                        setSendingFeedback(false);
+                      }, 1200);
+                    }}
+                    className="flex flex-col gap-2"
+                  >
+                    <textarea
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      className="border border-gray-300 rounded-xl p-3 text-sm resize-none"
+                      rows={3}
+                      placeholder="Ketik saran atau laporan masalah Anda di sini..."
+                      required
+                    />
+                    <Button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl" disabled={sendingFeedback || !feedback.trim()}>
+                      {sendingFeedback ? "Mengirim..." : "Kirim Feedback"}
+                    </Button>
+                  </form>
+                </div>
+                {/* Tentang Aplikasi */}
+                <div>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Info className="w-5 h-5" /> Tentang Aplikasi
+                  </h3>
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <div>
+                      Versi : <span className="font-semibold">1.0.0</span>
+                    </div>
+                    <div>
+                      Tim Pengembang: <span className="font-semibold">MechaMinds</span>
+                    </div>
+                    <div>
+                      Lisensi: <span className="font-semibold">Open Source (MIT)</span>
+                    </div>
+                    {/* T */}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case "payments":
+        return renderPaymentHistory();
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -750,421 +1241,7 @@ export default function UserProfile() {
                 </div>
               )}
 
-              {activeSetting === "general" && (
-                <div className="space-y-6">
-                  {/* Avatar Section */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                    <div className="p-6">
-                      <h2 className="text-2xl font-semibold">Avatar</h2>
-                      <p className="text-gray-400 text-sm mb-6">Klik tombol di bawah untuk mengganti avatar acak, lalu klik lagi untuk menyimpan ke profil Anda.</p>
-                      <div className="flex flex-col items-start gap-4">
-                        <Avatar className="h-28 w-28 rounded-full border-4 border-teal-600 shadow-lg">
-                          <AvatarImage src={avatarUrl} alt={user.nama_lengkap || "User"} />
-                          <AvatarFallback className="bg-teal-600 text-white">{getInitials(user.nama_lengkap)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={isAvatarChanged ? "default" : "outline"}
-                            className="rounded-xl flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-200 hover:text-black"
-                            onClick={async () => {
-                              if (isAvatarChanged) {
-                                // Use the dedicated function to handle avatar saving
-                                await handleSaveAvatar();
-                              } else {
-                                // Change avatar
-                                const url = generateAvatarUrl();
-                                setAvatarUrl(url);
-                                setIsAvatarChanged(true);
-                              }
-                            }}
-                            disabled={isSavingAvatar}
-                          >
-                            {isSavingAvatar ? (
-                              <>
-                                <Loader2 className="animate-spin w-4 h-4 mr-1" />
-                                Menyimpan...
-                              </>
-                            ) : isAvatarChanged ? (
-                              <>
-                                <Save className="w-4 h-4" />
-                                Simpan Avatar
-                              </>
-                            ) : (
-                              <>
-                                <RefreshCw className="w-4 h-4" />
-                                Ganti Avatar
-                              </>
-                            )}
-                          </Button>
-                          {/* Icon-only button to change avatar, only show if avatar has been changed */}
-                          {isAvatarChanged && (
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              className="rounded-full border border-gray-300 hover:bg-gray-200 hover:text-black"
-                              onClick={() => {
-                                const url = generateAvatarUrl();
-                                setAvatarUrl(url);
-                                setIsAvatarChanged(true);
-                              }}
-                              disabled={isSavingAvatar}
-                              aria-label="Ganti Avatar"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="mt-2 text-xs text-gray-500">
-                          {avatarSeed && (
-                            <>
-                              Seed: <span className="font-bold">{avatarSeed}</span>
-                            </>
-                          )}
-                          {isAvatarChanged && <span className="ml-2 text-teal-600 font-semibold">Belum disimpan</span>}
-                          {!isAvatarChanged && <span className="ml-2 text-green-600 font-semibold">Sudah disimpan</span>}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 border-t border-gray-200 p-4">
-                      <p className="text-teal-600 font-semibold text-sm">Avatar bersifat opsional tapi sangat direkomendasikan.</p>
-                    </div>
-                  </div>
-
-                  {/* Combined Profile Form */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                    <form onSubmit={handleProfileUpdate}>
-                      <div className="p-6">
-                        <h2 className="text-2xl font-semibold mb-6">Informasi Profil</h2>
-
-                        {/* Name Field */}
-                        <div className="mb-6">
-                          <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                            Nama Lengkap
-                          </label>
-                          <Input
-                            id="displayName"
-                            value={displayName}
-                            onChange={(e) => {
-                              setDisplayName(e.target.value);
-                              setFormErrors({ ...formErrors, nama_lengkap: "" });
-                            }}
-                            className="bg-white border-gray-200 rounded text-black"
-                            placeholder="Nama lengkap"
-                          />
-                          {formErrors.nama_lengkap && <p className="mt-1 text-sm text-red-500">{formErrors.nama_lengkap}</p>}
-                          <p className="mt-1 text-xs text-gray-400">Maksimal 32 karakter.</p>
-                        </div>
-
-                        {/* Phone Field with Country Code */}
-                        <div className="mb-6">
-                          <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                            Nomor Telepon
-                          </label>
-                          <div className="flex">
-                            {/* Country Code Dropdown */}
-                            <Popover open={countryOpen} onOpenChange={setCountryOpen}>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" aria-expanded={countryOpen} className="w-[120px] justify-between border-gray-200 hover:bg-gray-50 hover:text-gray-900 rounded-r-none border-r-0 bg-white">
-                                  {selectedCountry ? (
-                                    <div className="flex items-center">
-                                      <span className="mr-2 text-lg">{getFlagEmoji(selectedCountry.code)}</span>
-                                      <span>{selectedCountry.dial_code}</span>
-                                    </div>
-                                  ) : (
-                                    "Pilih"
-                                  )}
-                                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[300px] border border-gray-200 bg-gray-50 rounded-xl p-0">
-                                <Command className="bg-gray-100 text-black rounded-xl">
-                                  <CommandInput
-                                    placeholder="Cari negara..."
-                                    className="h-9 bg-gray-100"
-                                    value={countrySearchQuery}
-                                    onValueChange={(value) => {
-                                      setCountrySearchQuery(value);
-                                      // console.log(`Searching for: "${value}"`);
-                                    }}
-                                  />
-                                  <CommandEmpty>Negara tidak ditemukan</CommandEmpty>
-                                  <CommandGroup className="max-h-[300px] bg-gray-100 text-black overflow-y-auto">
-                                    {filteredCountries.length > 0 ? (
-                                      filteredCountries.map((country) => (
-                                        <CommandItem
-                                          key={country.code}
-                                          value={`${country.code}-${country.name}`}
-                                          onSelect={() => {
-                                            // console.log(`Selected country: ${country.name}`);
-                                            setSelectedCountry(country);
-                                            setCountryOpen(false);
-                                          }}
-                                          className="transition-all duration-200 ease-in-out hover:bg-teal-500"
-                                        >
-                                          <div className="flex items-center">
-                                            <span className="mr-2 text-lg">{getFlagEmoji(country.code)}</span>
-                                            <span className="mr-2">{country.name}</span>
-                                            <span className="text-gray-500 text-sm">{country.dial_code}</span>
-                                          </div>
-                                        </CommandItem>
-                                      ))
-                                    ) : (
-                                      <div className="py-6 text-center text-gray-500">Tidak ada hasil yang sesuai</div>
-                                    )}
-                                  </CommandGroup>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-
-                            {/* Phone Number Input */}
-                            <Input
-                              id="phoneNumber"
-                              value={phoneNumber}
-                              onChange={(e) => {
-                                setPhoneNumber(e.target.value);
-                                setFormErrors({ ...formErrors, nomor_telepon: "" });
-                              }}
-                              className="bg-white border-gray-200 rounded-l-none flex-1 text-black"
-                              placeholder={selectedCountry?.code === "ID" ? "81234567890" : "Phone number"}
-                            />
-                          </div>
-                          {formErrors.nomor_telepon && <p className="mt-1 text-sm text-red-500">{formErrors.nomor_telepon}</p>}
-                          <p className="mt-1 text-xs text-gray-400">{selectedCountry?.code === "ID" ? "Masukkan nomor tanpa kode negara atau awalan 0 (cth: 81234567890)." : "Masukkan nomor tanpa kode negara (cth: 7123456789)."}</p>
-                        </div>
-                        <Button type="submit" className="bg-teal-600 rounded-xl hover:bg-teal-700 text-white" disabled={!formChanged || isUpdating}>
-                          {isUpdating ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
-                          Simpan Perubahan
-                        </Button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
-
-              {activeSetting === "security" && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-                  <h2 className="text-2xl font-semibold">Autentikasi</h2>
-                  <p className="text-gray-400 text-sm">Pengaturan keamanan dan autentikasi akun Anda.</p>
-
-                  <div className="mt-6 p-4 rounded-xl bg-gray-100 border border-gray-200">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 bg-gray-200 rounded-full">
-                        <Shield className="w-5 h-5 text-teal-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-1">Keamanan Akun</h3>
-                        <p className="text-gray-400 text-sm">Kami merekomendasikan untuk secara rutin memperbarui kata sandi dan mengaktifkan autentikasi dua faktor untuk keamanan yang lebih baik.</p>
-                        <Button className="mt-4 bg-teal-600 rounded-xl hover:bg-teal-700 text-white">Perbarui Pengaturan Keamanan</Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Add the billing section */}
-              {activeSetting === "billing" && (
-                <div className="space-y-6">
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-                    <h2 className="text-2xl font-semibold mb-2">Transaksi</h2>
-                    <p className="text-gray-400 text-sm mb-6">Riwayat transaksi pembayaran paket AI Anda dari tabel payment_intent.</p>
-
-                    {/* Add filtering options above the payment table */}
-                    <div className="flex flex-wrap items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-gray-900">Riwayat Transaksi</h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">Filter:</span>
-                        <Select value={paymentFilter} onValueChange={(value) => setPaymentFilter(value)}>
-                          <SelectTrigger className="w-[140px] bg-white border-gray-200 text-sm rounded-xl">
-                            <SelectValue placeholder="Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Semua</SelectItem>
-                            <SelectItem value="success">Berhasil</SelectItem>
-                            <SelectItem value="pending">Menunggu</SelectItem>
-                            <SelectItem value="failed">Gagal</SelectItem>
-                            <SelectItem value="challenge">Perlu Verifikasi</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {loadingPayments ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-                      </div>
-                    ) : filteredPayments.length > 0 ? (
-                      <div className="overflow-x-auto rounded-xl border border-gray-200">
-                        <table className="min-w-full divide-y divide-gray-200 overflow-hidden">
-                          <thead className="bg-gray-100">
-                            <tr>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ID
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Order ID
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Tanggal
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Paket
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Periode
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Jumlah
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                              </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Terakhir Diupdate
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredPayments.map((payment) => (
-                              <tr key={payment.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.id}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  <span className="font-mono">{payment.order_id}</span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{format(new Date(payment.created_at), "dd MMM yyyy, HH:mm", { locale: id })}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{payment.package_name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{payment.period === "monthly" ? "Bulanan" : "Tahunan"}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{formatCurrency(payment.amount)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(payment.status)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{payment.updated_at ? format(new Date(payment.updated_at), "dd MMM yyyy, HH:mm", { locale: id }) : "-"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
-                        <CreditCard className="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak Ada Transaksi</h3>
-                        <p className="mt-1 text-sm text-gray-500">Anda belum memiliki transaksi pembayaran apa pun di tabel payment_intent.</p>
-                        <div className="mt-6">
-                          <Link href="/pricing">
-                            <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl">Lihat Paket</Button>
-                          </Link>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeSetting === "settings" && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                    {/* Kiri: Bahasa & Mode Tampilan */}
-                    <div className="p-6 space-y-8 border-b md:border-b-0 md:border-r border-gray-200">
-                      {/* Bahasa */}
-                      <div>
-                        <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
-                          <Globe2 className="w-6 h-6" /> Pilih Bahasa
-                        </h3>
-                        <div className="flex gap-3">
-                          <Button
-                            variant={language === "id" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "id" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setLanguage("id")}
-                          >
-                            <Languages className="w-4 h-4" /> Indonesia
-                          </Button>
-                          <Button
-                            variant={language === "en" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "en" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setLanguage("en")}
-                          >
-                            <Languages className="w-4 h-4" /> English
-                          </Button>
-                        </div>
-                      </div>
-                      {/* Mode Tampilan */}
-                      <div>
-                        <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
-                          <Sun className="w-6 h-6" /> Mode Tampilan
-                        </h3>
-                        <div className="flex gap-3">
-                          <Button
-                            variant={theme === "light" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "light" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setTheme("light")}
-                          >
-                            <Sun className="w-4 h-4" /> Light
-                          </Button>
-                          <Button
-                            variant={theme === "dark" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "dark" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setTheme("dark")}
-                          >
-                            <Moon className="w-4 h-4" /> Dark
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Kanan: Feedback & Tentang */}
-                    <div className="p-6 space-y-8">
-                      {/* Feedback & Dukungan */}
-                      <div>
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          <MessageCircle className="w-5 h-5" /> Feedback & Dukungan
-                        </h3>
-                        <form
-                          onSubmit={async (e) => {
-                            e.preventDefault();
-                            setSendingFeedback(true);
-                            setTimeout(() => {
-                              toast.success("Feedback terkirim, terima kasih!");
-                              setFeedback("");
-                              setSendingFeedback(false);
-                            }, 1200);
-                          }}
-                          className="flex flex-col gap-2"
-                        >
-                          <textarea
-                            value={feedback}
-                            onChange={(e) => setFeedback(e.target.value)}
-                            className="border border-gray-300 rounded-xl p-3 text-sm resize-none"
-                            rows={3}
-                            placeholder="Ketik saran atau laporan masalah Anda di sini..."
-                            required
-                          />
-                          <Button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl" disabled={sendingFeedback || !feedback.trim()}>
-                            {sendingFeedback ? "Mengirim..." : "Kirim Feedback"}
-                          </Button>
-                        </form>
-                      </div>
-                      {/* Tentang Aplikasi */}
-                      <div>
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          <Info className="w-5 h-5" /> Tentang Aplikasi
-                        </h3>
-                        <div className="text-sm text-gray-700 space-y-1">
-                          <div>
-                            Versi : <span className="font-semibold">1.0.0</span>
-                          </div>
-                          <div>
-                            Tim Pengembang: <span className="font-semibold">MechaMinds</span>
-                          </div>
-                          <div>
-                            Lisensi: <span className="font-semibold">Open Source (MIT)</span>
-                          </div>
-                          {/* T */}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {renderSettingsContent()}
             </div>
           </div>
         </div>

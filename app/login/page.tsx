@@ -386,15 +386,6 @@ function LoginForm() {
             </Button>
           </motion.div>
 
-          {/* Info text untuk One Tap */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-600">
-                💡 Jika Anda pernah login dengan Google sebelumnya, One Tap Sign-In akan muncul secara otomatis
-              </p>
-            </div>
-          )}
-
           {/* Divider - Only show if Google button is shown */}
           <div className="flex items-center mb-6">
             <div className="flex-1 border-t border-gray-300"></div>
