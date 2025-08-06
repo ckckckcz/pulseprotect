@@ -15,6 +15,7 @@ import { createAIPackagePayment, handleMidtransPayment, PackageDetails } from "@
 import { useAuth } from "@/context/auth-context"; // Use JWT auth context instead of supabase
 import { jwtService } from "@/lib/jwt-service";
 import { validateAndSavePromoCode, getLatestPromoCode, deletePromoCode } from "@/lib/pricing-code";
+import { useMidtransSnap } from "@/hooks/useMidtransSnap";
 
 type PlanType = "free" | "plus" | "pro";
 
@@ -80,6 +81,28 @@ const promoCodes: PromoCode[] = [
   },
 ];
 
+// Define a proper interface for payment details
+interface PaymentRequestDetails {
+  order_id: string;
+  amount: number;
+  item_name: string;
+  package_name: string;
+  period: string;
+  phone?: string;
+}
+
+// Define interfaces for Midtrans callback responses
+interface MidtransResult {
+  status_code: string;
+  status_message: string;
+  transaction_id: string;
+  order_id: string;
+  gross_amount: string;
+  payment_type: string;
+  transaction_time: string;
+  transaction_status: string;
+}
+
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -92,6 +115,8 @@ export default function PricingPage() {
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const [isPromoDialogOpen, setIsPromoDialogOpen] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [midtransError, setMidtransError] = useState<string | null>(null);
+  const [midtransStatus, setMidtransStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   const { toast } = useToast();
   const router = useRouter();
@@ -99,12 +124,79 @@ export default function PricingPage() {
   // Use JWT auth context instead of manual auth handling
   const { user: currentUser, loading: isAuthLoading } = useAuth();
 
+  // Add Midtrans Snap hook with better error handling
+  const { 
+    isLoading: isLoadingMidtrans, 
+    isReady: isMidtransReady, 
+    error: midtransLoadError,
+    retryCount 
+  } = useMidtransSnap({
+    onReady: () => {
+      console.log("✅ Midtrans Snap is ready to use");
+      setMidtransStatus('ready');
+    },
+    onError: (error) => {
+      console.error("❌ Midtrans Snap loading error:", error);
+      setMidtransStatus('error');
+      setMidtransError(error.message);
+    },
+    maxRetries: 3
+  });
+
+  // Effect to display Midtrans status changes
+  useEffect(() => {
+    if (midtransLoadError && retryCount >= 3) {
+      toast({
+        title: "Payment System Error",
+        description: "Failed to load payment system after multiple attempts. Please refresh the page or try again later.",
+        variant: "destructive",
+      });
+    }
+  }, [midtransLoadError, retryCount, toast]);
+
+  // Load Midtrans script explicitly when component mounts
+  useEffect(() => {
+    // Create a check to see if Midtrans is available globally first
+    const checkMidtransGlobal = () => {
+      if (typeof window !== 'undefined') {
+        if (window.snap) {
+          console.log("✅ Midtrans Snap detected on window object");
+          setMidtransStatus('ready');
+          return true;
+        }
+        
+        // Check if script tag exists
+        const scriptExists = !!document.querySelector('script[src*="snap.js"]');
+        console.log("Midtrans script tag exists:", scriptExists);
+        
+        return false;
+      }
+      return false;
+    };
+    
+    // Only proceed if Midtrans is not already available
+    if (!checkMidtransGlobal()) {
+      console.log("🔄 Midtrans not found, will initialize via hook");
+    }
+  }, []);
+
   // Update membership type when user data changes
   useEffect(() => {
     if (currentUser && currentUser.account_membership) {
       setActiveMembershipType(currentUser.account_membership as PlanType);
     }
   }, [currentUser]);
+
+  // Effect to display Midtrans errors
+  useEffect(() => {
+    if (midtransLoadError) {
+      toast({
+        title: "Payment System Error",
+        description: "Failed to load payment system. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  }, [midtransLoadError, toast]);
 
   // Test Midtrans loading on component mount
   useEffect(() => {
@@ -134,7 +226,18 @@ export default function PricingPage() {
 
   // Function to handle when user is not authenticated
   const promptLogin = () => {
-    // console.log("Prompting login - clearing any existing tokens first");
+    console.log("🚨 promptLogin triggered - Authentication check failed");
+    console.log("Current JWT token:", jwtService.getToken() || "No token found");
+    console.log("Is JWT authenticated:", jwtService.isAuthenticated());
+    if (currentUser) {
+      console.log("User context exists but JWT validation failed:", {
+        userId: currentUser.id,
+        email: currentUser.email,
+      });
+    } else {
+      console.log("No user found in context");
+    }
+    
     jwtService.clearTokens(); // Clear any invalid tokens
 
     toast({
@@ -187,6 +290,326 @@ export default function PricingPage() {
 
     setIsApplyingPromo(false);
   };
+
+  // Updated payment handler to use JWT authentication
+  const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("🔍 handlePayment initiated for package:", packageType);
+    console.log("Midtrans status:", midtransStatus);
+    
+    // Check if Midtrans is ready
+    if (midtransStatus !== 'ready' || !isMidtransReady) {
+      console.warn("⚠️ Midtrans Snap is not ready yet");
+      
+      // If still loading, show loading message
+      if (isLoadingMidtrans || midtransStatus === 'loading') {
+        toast({
+          title: "Payment System Loading",
+          description: "Payment system is still loading. Please wait a moment and try again.",
+          variant: "default",
+        });
+        return;
+      }
+      
+      // If error loading Midtrans, show error message
+      if (midtransLoadError || midtransStatus === 'error') {
+        toast({
+          title: "Payment System Error",
+          description: "Failed to load payment system. Please refresh the page or try again later.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Check JWT authentication first
+    const isJWTValid = jwtService.isAuthenticated();
+    console.log("JWT authentication check:", isJWTValid ? "✅ Valid" : "❌ Invalid");
+    console.log("Current user from context:", currentUser ? "Exists" : "Missing");
+    
+    // Only redirect to login if NOT authenticated
+    if (!isJWTValid || !currentUser || !currentUser.email) {
+      console.log("Authentication check failed:", {
+        isJWTValid,
+        hasUser: !!currentUser,
+        hasEmail: currentUser?.email ? true : false
+      });
+      promptLogin();
+      return;
+    }
+
+    setIsLoading(packageType);
+
+    try {
+      const userId = currentUser.id?.toString() || "";
+      const period: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
+
+      console.log("Building package details for payment...");
+      const packageDetails: PackageDetails = {
+        packageId: `pkg_${packageType}`,
+        packageName: packageType,
+        price: isYearly ? pricingPlans.find((p) => p.type === packageType)?.yearlyPrice || 0 : pricingPlans.find((p) => p.type === packageType)?.monthlyPrice || 0,
+        period,
+        ...(appliedPromo?.code && { promoCode: appliedPromo.code }),
+      };
+
+      // Apply promo if available
+      if (appliedPromo) {
+        packageDetails.price = getDiscountedPrice(packageDetails.price);
+        console.log("Applied promo discount:", appliedPromo.code, appliedPromo.discount + "%");
+      }
+
+      const customerInfo = {
+        firstName: currentUser.nama_lengkap || "User",
+        email: currentUser.email,
+        phone: currentUser.nomor_telepon || "",
+      };
+
+      console.log("Creating payment with:", { 
+        userId, 
+        packageType, 
+        finalPrice: packageDetails.price,
+        email: customerInfo.email 
+      });
+
+      // Create payment token via API
+      const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
+
+      console.log("Payment creation result:", paymentResult);
+      
+      if (!paymentResult.token) {
+        console.error("No token received from payment creation");
+        throw new Error("Invalid payment token received");
+      }
+
+      if (typeof window === "undefined") {
+        toast({
+          title: "Payment Error",
+          description: "Payment must be initiated from browser.",
+          variant: "destructive",
+        });
+        setIsLoading(null);
+        return;
+      }
+
+      // Check if window.snap exists before proceeding
+      console.log("Checking Midtrans Snap availability before showing popup...");
+      console.log("window.snap exists:", typeof window.snap !== "undefined");
+      
+      if (!window.snap) {
+        console.error("⚠️ Midtrans Snap is not available on window object!");
+        
+        // Try one more time to load Midtrans
+        toast({
+          title: "Initializing Payment System",
+          description: "Please wait while we initialize the payment system...",
+        });
+        
+        // Attempt to load the script directly
+        const midtransUrl = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js';
+        const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '';
+        
+        // Create and append the script
+        const script = document.createElement('script');
+        script.src = midtransUrl;
+        script.setAttribute('data-client-key', midtransClientKey);
+        script.id = 'midtrans-fallback-script';
+        script.async = true;
+        document.body.appendChild(script);
+        
+        // Wait for script to load
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Midtrans script loading timed out'));
+          }, 10000);
+          
+          script.onload = () => {
+            clearTimeout(timeout);
+            // Wait a bit for snap to initialize
+            setTimeout(() => {
+              if (window.snap) {
+                resolve();
+              } else {
+                reject(new Error('Midtrans Snap object not available after script load'));
+              }
+            }, 1000);
+          };
+          
+          script.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error('Failed to load Midtrans script'));
+          };
+        });
+        
+        if (!window.snap) {
+          throw new Error('Failed to initialize Midtrans Snap');
+        }
+      }
+
+      // Show Snap Midtrans popup
+      console.log("Showing Midtrans payment popup with token:", paymentResult.token);
+      
+      if (window.snap) {
+        await handleMidtransPayment(paymentResult.token, {
+          onSuccess: async (result) => {
+            console.log("Payment success callback received:", result);
+            try {
+              const statusResponse = await fetch("/api/payment/check-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: paymentResult.orderId }),
+              });
+
+              if (statusResponse.ok) {
+                const statusData = await statusResponse.json();
+                console.log("Payment status check result:", statusData);
+                if (statusData.status === "success") {
+                  toast({
+                    title: "Pembayaran Berhasil",
+                    description: "Terima kasih, pembayaran Anda berhasil dan membership telah diperbarui.",
+                  });
+                  setActiveMembershipType(packageType);
+                } else {
+                  toast({
+                    title: "Pembayaran Dikonfirmasi",
+                    description: "Pembayaran sedang diproses, mohon tunggu beberapa saat.",
+                  });
+                }
+              } else {
+                toast({
+                  title: "Pembayaran Berhasil",
+                  description: "Pembayaran berhasil, membership akan diperbarui segera.",
+                });
+              }
+            } catch (statusError) {
+              console.error("Error checking payment status:", statusError);
+              toast({
+                title: "Pembayaran Berhasil",
+                description: "Pembayaran berhasil, membership akan diperbarui segera.",
+              });
+            }
+            setIsLoading(null);
+            setTimeout(() => window.location.reload(), 3000);
+          },
+          onPending: (result) => {
+            console.log("Payment pending callback received:", result);
+            toast({
+              title: "Pembayaran Pending",
+              description: "Pembayaran Anda masih diproses.",
+            });
+            setIsLoading(null);
+          },
+          onError: (result) => {
+            console.error("Payment error callback received:", result);
+            toast({
+              title: "Pembayaran Gagal",
+              description: "Terjadi kesalahan saat pembayaran.",
+              variant: "destructive",
+            });
+            setIsLoading(null);
+          },
+          onClose: () => {
+            console.log("Payment popup closed by user");
+            setIsLoading(null);
+          },
+        });
+      } else {
+        throw new Error("Midtrans Snap is not available");
+      }
+    } catch (error) {
+      console.error("Error in handlePayment:", error);
+      if (error instanceof Error && error.message.includes("Authentication")) {
+        console.log("Authentication error detected, redirecting to login");
+        promptLogin();
+      } else {
+        toast({
+          title: "Error",
+          description: `Payment process failed: ${error instanceof Error ? error.message : String(error)}`,
+          variant: "destructive",
+        });
+      }
+      setIsLoading(null);
+    }
+  };
+
+  async function createPayment(paymentDetails: PaymentRequestDetails): Promise<any> {
+    try {
+      console.log("📊 Creating payment with details:", paymentDetails);
+      
+      // Get access token from JWT service
+      const accessToken = jwtService.getToken();
+      console.log("JWT token available:", !!accessToken);
+      
+      if (!accessToken) {
+        console.error("No access token available!");
+        throw new Error("Not authenticated. Please login first.");
+      }
+      
+      console.log("Making API request to /api/create-payment");
+      const response = await fetch("/api/create-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(paymentDetails),
+      });
+
+      console.log("API response status:", response.status);
+      const data = await response.json();
+      console.log("API response data:", data);
+
+      if (!response.ok) {
+        console.error("API returned error:", data.error);
+        throw new Error(data.error || "Payment creation failed");
+      }
+
+      // Check if window.snap exists before calling it
+      console.log("Checking Midtrans Snap availability...");
+      if (typeof window !== 'undefined') {
+        console.log("Window is defined");
+        console.log("window.snap exists:", !!window.snap);
+        
+        if (window.snap) {
+          console.log("Showing Midtrans payment popup with token:", data.token);
+          window.snap.pay(data.token, {
+            onSuccess: function(result: MidtransResult) {
+              console.log('Payment success:', result);
+              // Handle success here
+            },
+            onPending: function(result: MidtransResult) {
+              console.log('Payment pending:', result);
+              // Handle pending here
+            },
+            onError: function(result: MidtransResult) {
+              console.error('Payment error:', result);
+              // Handle error here
+            },
+            onClose: function() {
+              console.log('Customer closed the payment window');
+              // Handle customer closing the popup
+            },
+          });
+        } else {
+          console.error("Midtrans Snap not available on window!");
+          console.log("Checking for Midtrans script...");
+          console.log("Midtrans script loaded:", !!document.querySelector('script[src*="snap.js"]'));
+          console.log("All scripts on page:", Array.from(document.scripts).map(s => s.src));
+          throw new Error("Midtrans Snap is not available. Please try again later.");
+        }
+      } else {
+        console.error("Window is undefined - can't show payment popup");
+        throw new Error("Payment must be initiated from browser environment");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Payment error:", error);
+      throw error;
+    }
+  }
 
   // Function to remove applied promo
   const removePromo = async () => {
@@ -248,136 +671,6 @@ export default function PricingPage() {
     "Semua plugin dan ekstensi",
     "Dukungan prioritas 24/7",
   ];
-
-  // Updated payment handler to use JWT authentication
-  const handlePayment = async (e: React.MouseEvent, packageType: PlanType) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Check JWT authentication first
-    const isJWTValid = jwtService.isAuthenticated();
-    // Only redirect to login if NOT authenticated
-    if (!isJWTValid || !currentUser || !currentUser.email) {
-      promptLogin();
-      return;
-    }
-
-    setIsLoading(packageType);
-
-    try {
-      const userId = currentUser.id?.toString() || "";
-      const period: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
-
-      const packageDetails: PackageDetails = {
-        packageId: `pkg_${packageType}`,
-        packageName: packageType,
-        price: isYearly
-          ? pricingPlans.find((p) => p.type === packageType)?.yearlyPrice || 0
-          : pricingPlans.find((p) => p.type === packageType)?.monthlyPrice || 0,
-        period,
-        ...(appliedPromo?.code && { promoCode: appliedPromo.code }),
-      };
-
-      // Apply promo if available
-      if (appliedPromo) {
-        packageDetails.price = getDiscountedPrice(packageDetails.price);
-      }
-
-      const customerInfo = {
-        firstName: currentUser.nama_lengkap || "User",
-        email: currentUser.email,
-        phone: currentUser.nomor_telepon || "",
-      };
-
-      // Create payment token via API
-      const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
-
-      if (!paymentResult.token) {
-        console.error("No token received from payment creation");
-        throw new Error("Invalid payment token received");
-      }
-
-      if (typeof window === "undefined") {
-        toast({
-          title: "Payment Error",
-          description: "Payment must be initiated from browser.",
-          variant: "destructive",
-        });
-        setIsLoading(null);
-        return;
-      }
-
-      // Show Snap Midtrans popup
-      await handleMidtransPayment(paymentResult.token, {
-        onSuccess: async (result) => {
-          try {
-            const statusResponse = await fetch("/api/payment/check-status", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderId: paymentResult.orderId }),
-            });
-
-            if (statusResponse.ok) {
-              const statusData = await statusResponse.json();
-              if (statusData.status === "success") {
-                toast({
-                  title: "Pembayaran Berhasil",
-                  description: "Terima kasih, pembayaran Anda berhasil dan membership telah diperbarui.",
-                });
-                setActiveMembershipType(packageType);
-              } else {
-                toast({
-                  title: "Pembayaran Dikonfirmasi",
-                  description: "Pembayaran sedang diproses, mohon tunggu beberapa saat.",
-                });
-              }
-            } else {
-              toast({
-                title: "Pembayaran Berhasil",
-                description: "Pembayaran berhasil, membership akan diperbarui segera.",
-              });
-            }
-          } catch (statusError) {
-            toast({
-              title: "Pembayaran Berhasil",
-              description: "Pembayaran berhasil, membership akan diperbarui segera.",
-            });
-          }
-          setIsLoading(null);
-          setTimeout(() => window.location.reload(), 3000);
-        },
-        onPending: (result) => {
-          toast({
-            title: "Pembayaran Pending",
-            description: "Pembayaran Anda masih diproses.",
-          });
-          setIsLoading(null);
-        },
-        onError: (result) => {
-          toast({
-            title: "Pembayaran Gagal",
-            description: "Terjadi kesalahan saat pembayaran.",
-            variant: "destructive",
-          });
-          setIsLoading(null);
-        },
-        onClose: () => {
-          setIsLoading(null);
-        },
-      });
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("Authentication")) {
-        promptLogin();
-      } else {
-        toast({
-          title: "Error",
-          description: `Payment process failed: ${error instanceof Error ? error.message : String(error)}`,
-          variant: "destructive",
-        });
-      }
-      setIsLoading(null);
-    }
-  };
 
   return (
     <>
@@ -826,4 +1119,3 @@ export default function PricingPage() {
     </>
   );
 }
-                                    

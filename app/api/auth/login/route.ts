@@ -1,85 +1,128 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-export async function POST(request: Request) {
+const JWT_SECRET = process.env.JWT_SECRET as string;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET as string;
+const JWT_EXPIRY = '2h'; // 2 hours
+const REFRESH_EXPIRY = '7d'; // 7 days
+
+export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
-        { success: false, message: 'Email dan password wajib diisi' },
+        { error: 'Email and password are required' },
         { status: 400 }
       );
     }
 
-    // Get user from database
+    // Find user by email
     const { data: user, error } = await supabase
       .from('user')
       .select('*')
-      .eq('email', email.toLowerCase().trim())
-      .single();
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
 
-    if (error || !user) {
+    if (error) {
+      console.error('Error fetching user:', error);
       return NextResponse.json(
-        { success: false, message: 'Email atau password salah' },
-        { status: 401 }
-      );
-    }
-
-    // Check email verification
-    if (!user.verifikasi_email) {
-      return NextResponse.json(
-        { success: false, message: 'Email belum diverifikasi' },
-        { status: 401 }
-      );
-    }
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.kata_sandi);
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { success: false, message: 'Email atau password salah' },
-        { status: 401 }
-      );
-    }
-
-    // Generate JWT tokens
-    const jwtSecret = process.env.JWT_SECRET;
-    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
-
-    if (!jwtSecret || !jwtRefreshSecret) {
-      console.error('JWT secrets not configured');
-      return NextResponse.json(
-        { success: false, message: 'Server configuration error' },
+        { error: 'Authentication failed' },
         { status: 500 }
       );
     }
 
-    const payload = {
-      userId: user.id,
-      email: user.email,
-      role: user.role || 'user',
-    };
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      );
+    }
 
-    const accessToken = jwt.sign(payload, jwtSecret, { expiresIn: '2h' });
-    const refreshToken = jwt.sign(payload, jwtRefreshSecret, { expiresIn: '7d' });
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.kata_sandi);
+    if (!isValidPassword) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      );
+    }
 
-    // Remove sensitive data from user object
-    const { kata_sandi, verification_token, reset_password_token, ...userResponse } = user;
+    // Check if email is verified
+    if (user.verifikasi_email === false) {
+      return NextResponse.json(
+        {
+          error: 'Email not verified. Please check your email for verification link.',
+        },
+        { status: 403 }
+      );
+    }
+
+    // Generate JWT tokens
+    const accessToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role || 'user',
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRY }
+    );
+
+    const refreshToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        tokenType: 'refresh',
+      },
+      JWT_REFRESH_SECRET,
+      { expiresIn: REFRESH_EXPIRY }
+    );
+
+    // Get profile data if doctor or admin
+    let profileData = null;
+    if (user.role === 'dokter' || user.role === 'admin') {
+      const table = user.role === 'dokter' ? 'dokter' : 'admin';
+      const { data: profile } = await supabase
+        .from(table)
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (profile) {
+        profileData = profile;
+      }
+    }
+
+    // Filter out sensitive fields
+    const {
+      kata_sandi,
+      konfirmasi_kata_sandi,
+      verification_token,
+      verification_token_expires,
+      reset_password_token,
+      reset_password_expires,
+      ...safeUser
+    } = user;
+
+    // Add profile data if available
+    if (profileData) {
+      safeUser.profile = profileData;
+    }
+
+    console.log(`User ${user.id} (${user.email}) logged in successfully`);
 
     return NextResponse.json({
-      success: true,
+      user: safeUser,
       accessToken,
       refreshToken,
-      user: userResponse,
     });
-
-  } catch (error: any) {
-    console.error('Login API error:', error);
+  } catch (error) {
+    console.error('Login error:', error);
     return NextResponse.json(
-      { success: false, message: 'Terjadi kesalahan server' },
+      { error: 'Authentication failed' },
       { status: 500 }
     );
   }

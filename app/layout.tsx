@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
 import ClientLayout from "./clientLayout";
 import LocaleLayout from "./localeLayout";
+import MidtransScriptLoader from "@/components/MidtransScriptLoader";
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -45,7 +46,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" className="bg-white">
       <head>
-        {/* Script for Midtrans can be preloaded here */}
         <link 
           rel="icon" 
           type="image/png" 
@@ -66,11 +66,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://bam.nr-data.net" 
           crossOrigin="anonymous" 
         />
-        {/* <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"></link> */}
+        {/* MidtransScriptLoader will handle the script loading */}
       </head>
       <body className={inter.className}>
+        {/* Add the MidtransScriptLoader inside the body */}
+        <MidtransScriptLoader />
         <AuthProvider>
           <LocaleLayout>
             <ClientLayout>
@@ -82,4 +82,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

@@ -1,6 +1,7 @@
 "use client";
 
 import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
 
 interface JWTPayload {
   userId: number;
@@ -10,241 +11,173 @@ interface JWTPayload {
   iat: number;
 }
 
-interface TokenStorage {
-  accessToken: string;
-  refreshToken?: string;
-  expiresAt: number;
-}
-
-export class JWTService {
-  private static instance: JWTService;
-  private readonly ACCESS_TOKEN_KEY = 'pulseprotect_access_token';
-  private readonly REFRESH_TOKEN_KEY = 'pulseprotect_refresh_token';
-  private readonly TOKEN_EXPIRES_KEY = 'pulseprotect_token_expires';
-
-  static getInstance(): JWTService {
-    if (!JWTService.instance) {
-      JWTService.instance = new JWTService();
-    }
-    return JWTService.instance;
-  }
-
-  // Store JWT tokens securely
-  setTokens(accessToken: string, refreshToken?: string): void {
+// Enhanced JWT service with dual storage (localStorage + cookies)
+export const jwtService = {
+  // Storage keys
+  TOKEN_KEY: 'accessToken',
+  REFRESH_TOKEN_KEY: 'refreshToken',
+  
+  // Store tokens in both localStorage and cookies for better persistence
+  setTokens: (accessToken: string, refreshToken?: string) => {
+    console.log("🔐 Setting JWT tokens");
+    
     try {
-      if (typeof window === 'undefined') return;
-
-      const decoded = this.decodeToken(accessToken);
-      if (!decoded) {
-        throw new Error('Invalid token format');
+      // Store in localStorage for fast access
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('accessToken', accessToken);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
       }
-
-      const expiresAt = decoded.exp * 1000; // Convert to milliseconds
-
-      localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
-      localStorage.setItem(this.TOKEN_EXPIRES_KEY, expiresAt.toString());
+      
+      // Also store in cookies as a backup and for SSR
+      const decoded = jwtService.decodeToken(accessToken);
+      const expiryDate = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 3600000);
+      
+      // Calculate max age in days (for cookies) - max 30 days
+      const maxAgeDays = Math.min(
+        (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        30
+      );
+      
+      Cookies.set('jwt_access_token', accessToken, { 
+        expires: maxAgeDays, 
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
       
       if (refreshToken) {
-        localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+        Cookies.set('jwt_refresh_token', refreshToken, { 
+          expires: 30, // Refresh tokens typically last longer
+          path: '/',
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax'
+        });
       }
-
-      // console.log('JWT tokens stored successfully', {
-      //   userId: decoded.userId,
-      //   email: decoded.email,
-      //   expiresAt: new Date(expiresAt).toISOString()
-      // });
-    } catch (error) {
-      console.error('Error storing JWT tokens:', error);
-      this.clearTokens();
-    }
-  }
-
-  // Get access token
-  getAccessToken(): string | null {
-    try {
-      if (typeof window === 'undefined') return null;
-
-      const token = localStorage.getItem(this.ACCESS_TOKEN_KEY);
-      if (!token) return null;
-
-      // Check if token is expired
-      if (this.isTokenExpired(token)) {
-        // console.log('Access token expired, clearing tokens');
-        this.clearTokens();
-        return null;
-      }
-
-      return token;
-    } catch (error) {
-      console.error('Error getting access token:', error);
-      return null;
-    }
-  }
-
-  // Get refresh token
-  getRefreshToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
-  }
-
-  // Decode JWT token
-  decodeToken(token: string): JWTPayload | null {
-    try {
-      return jwtDecode<JWTPayload>(token);
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    }
-  }
-
-  // Check if token is expired
-  isTokenExpired(token: string): boolean {
-    try {
-      const decoded = this.decodeToken(token);
-      if (!decoded) return true;
-
-      const currentTime = Date.now() / 1000;
-      const bufferTime = 60; // 1 minute buffer
-
-      return decoded.exp <= (currentTime + bufferTime);
-    } catch (error) {
-      console.error('Error checking token expiration:', error);
-      return true;
-    }
-  }
-
-  // Get user info from token
-  getUserFromToken(): JWTPayload | null {
-    const token = this.getAccessToken();
-    if (!token) return null;
-    return this.decodeToken(token);
-  }
-
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    const token = this.getAccessToken();
-    return token !== null && !this.isTokenExpired(token);
-  }
-
-  // Clear all tokens
-  clearTokens(): void {
-    if (typeof window === 'undefined') return;
-    
-    localStorage.removeItem(this.ACCESS_TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-    localStorage.removeItem(this.TOKEN_EXPIRES_KEY);
-    
-    // console.log('JWT tokens cleared');
-  }
-
-  // Refresh access token
-  async refreshAccessToken(): Promise<string | null> {
-    try {
-      const refreshToken = this.getRefreshToken();
-      if (!refreshToken) {
-        // console.log('No refresh token available');
-        return null;
-      }
-
-      // console.log('Attempting to refresh access token...');
-
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      if (!response.ok) {
-        console.error('Token refresh failed:', response.status);
-        this.clearTokens();
-        return null;
-      }
-
-      const data = await response.json();
       
-      if (data.accessToken) {
-        this.setTokens(data.accessToken, data.refreshToken || refreshToken);
-        // console.log('Access token refreshed successfully');
-        return data.accessToken;
-      }
-
-      return null;
+      console.log("✅ JWT tokens set successfully");
+      return true;
     } catch (error) {
-      console.error('Error refreshing token:', error);
-      this.clearTokens();
-      return null;
+      console.error("❌ Error setting JWT tokens:", error);
+      return false;
     }
-  }
-
-  // Get authorization header
-  getAuthHeader(): Record<string, string> {
-    const token = this.getAccessToken();
-    if (!token) return {};
-    
-    return {
-      'Authorization': `Bearer ${token}`
-    };
-  }
-}
-
-// Export a simplified JWT service with necessary methods
-export const jwtService = {
-  setTokens: (accessToken: string, refreshToken: string) => {
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
   },
   
+  // Get token with fallback strategy
   getToken: () => {
-    return localStorage.getItem('accessToken');
+    console.log("🔍 JWT.getToken called");
+    let token = null;
+    
+    // Try localStorage first
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('accessToken');
+    }
+    
+    // If not in localStorage, try cookies
+    if (!token) {
+      token = Cookies.get('jwt_access_token') || null;
+      
+      // If found in cookies but not in localStorage, restore to localStorage
+      if (token && typeof window !== 'undefined') {
+        localStorage.setItem('accessToken', token);
+      }
+    }
+    
+    console.log("Token retrieved:", token ? `Yes (length: ${token.length})` : "No");
+    return token;
   },
   
-  // Add decodeToken method
+  // Also get refresh token with fallback strategy
+  getRefreshToken: () => {
+    let token = null;
+    
+    // Try localStorage first
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('refreshToken');
+    }
+    
+    // If not in localStorage, try cookies
+    if (!token) {
+      token = Cookies.get('jwt_refresh_token') || null;
+      
+      // If found in cookies but not in localStorage, restore to localStorage
+      if (token && typeof window !== 'undefined') {
+        localStorage.setItem('refreshToken', token);
+      }
+    }
+    
+    return token;
+  },
+  
   decodeToken: (token: string) => {
     try {
       return jwtDecode<JWTPayload>(token);
     } catch (error) {
-      console.error('Error decoding token:', error);
+      console.error('❌ Error decoding token:', error);
       return null;
     }
   },
   
-  // Add isAuthenticated method
   isAuthenticated: () => {
-    const token = localStorage.getItem('accessToken');
+    console.log("🔐 JWT.isAuthenticated called");
+    const token = jwtService.getToken();
+    console.log("Token exists:", !!token);
+    
     if (!token) return false;
     
     try {
       const decoded = jwtDecode<JWTPayload>(token);
       const currentTime = Date.now() / 1000;
-      return decoded.exp > currentTime;
+      const isValid = decoded.exp > currentTime;
+      
+      console.log("Token validation:", {
+        isValid,
+        currentTime: Math.floor(currentTime),
+        expiresAt: decoded.exp,
+        timeRemaining: Math.floor(decoded.exp - currentTime),
+        userEmail: decoded.email,
+        userId: decoded.userId,
+      });
+      
+      return isValid;
     } catch (error) {
-      console.error('Error checking authentication:', error);
+      console.error("🚨 Error checking authentication:", error);
       return false;
     }
   },
   
-  // Add getUserFromToken method
+  // Clear tokens from both localStorage and cookies
+  clearTokens: () => {
+    console.log("🧹 Clearing JWT tokens");
+    
+    // Clear from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+    }
+    
+    // Clear from cookies
+    Cookies.remove('jwt_access_token', { path: '/' });
+    Cookies.remove('jwt_refresh_token', { path: '/' });
+    
+    console.log("✅ JWT tokens cleared successfully");
+  },
+  
+  // Get user info from token
   getUserFromToken: () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jwtService.getToken();
     if (!token) return null;
     
     try {
-      return jwtDecode<JWTPayload>(token);
+      return jwtService.decodeToken(token);
     } catch (error) {
       console.error('Error getting user from token:', error);
       return null;
     }
   },
   
-  // Add clearTokens method
-  clearTokens: () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-  },
-  
-  // Add verifyToken method for server-side verification
+  // Verify token method for API routes
   verifyToken: (token: string) => {
     try {
       const decoded = jwtDecode<JWTPayload>(token);
@@ -261,9 +194,9 @@ export const jwtService = {
     }
   },
   
-  // Add getAuthHeader method to match the class implementation
+  // Get authorization header for API requests
   getAuthHeader: () => {
-    const token = localStorage.getItem('accessToken');
+    const token = jwtService.getToken();
     if (!token) return {};
     
     return {
@@ -271,11 +204,16 @@ export const jwtService = {
     };
   },
   
-  // Add refreshAccessToken method stub to match the class implementation
+  // Refresh access token 
   refreshAccessToken: async (): Promise<string | null> => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) return null;
+      console.log("🔄 Attempting to refresh access token");
+      const refreshToken = jwtService.getRefreshToken();
+      
+      if (!refreshToken) {
+        console.log("❌ No refresh token available");
+        return null;
+      }
       
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
@@ -284,26 +222,25 @@ export const jwtService = {
       });
       
       if (!response.ok) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        console.error("❌ Token refresh failed:", response.status);
+        jwtService.clearTokens();
         return null;
       }
       
       const data = await response.json();
+      
       if (data.accessToken) {
-        localStorage.setItem('accessToken', data.accessToken);
-        if (data.refreshToken) {
-          localStorage.setItem('refreshToken', data.refreshToken);
-        }
+        jwtService.setTokens(data.accessToken, data.refreshToken || refreshToken);
+        console.log("✅ Access token refreshed successfully");
         return data.accessToken;
       }
       
       return null;
     } catch (error) {
-      console.error('Error refreshing token:', error);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      console.error("❌ Error refreshing token:", error);
+      jwtService.clearTokens();
       return null;
     }
   }
 };
+
