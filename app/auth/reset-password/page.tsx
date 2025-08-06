@@ -213,7 +213,7 @@ function ResetPasswordForm() {
         throw new Error(data.error || "Gagal mengubah kata sandi.");
       }
 
-      console.log("Password reset successful");
+      // console.log("Password reset successful");
       setSuccess(true);
       
       // Clear input fields after success

@@ -26,14 +26,14 @@ export default function Navbar() {
   const authStateKey = user ? `user-${user.id}-${user.email}` : "no-user";
   
   // Debug logging
-  useEffect(() => {
-    console.log('Navbar: Auth state changed:', {
-      hasUser: !!user,
-      userEmail: user?.email,
-      loading,
-      authStateKey
-    });
-  }, [user, loading, authStateKey]);
+  // useEffect(() => {
+  //   console.log('Navbar: Auth state changed:', {
+  //     hasUser: !!user,
+  //     userEmail: user?.email,
+  //     loading,
+  //     authStateKey
+  //   });
+  // }, [user, loading, authStateKey]);
 
   // Hide navbar on scroll down, show on scroll up
   useEffect(() => {

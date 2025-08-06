@@ -501,7 +501,7 @@ export default function UserProfile() {
         throw new Error("ID pengguna tidak valid");
       }
 
-      console.log("Saving avatar for user ID:", userId, "with URL:", avatarUrl);
+      // console.log("Saving avatar for user ID:", userId, "with URL:", avatarUrl);
       await authService.updateUser(Number(userId), { foto_profile: avatarUrl });
       toast.success("Avatar berhasil disimpan!");
       await refreshUser();

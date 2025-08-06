@@ -24,23 +24,23 @@ if (typeof window === 'undefined') {
   if (!midtransConfig.isProduction) {
     // console.log('🏗️ SANDBOX MODE DETECTED');
     if (midtransConfig.serverKey && !midtransConfig.serverKey.startsWith('SB-Mid-server-')) {
-      console.warn('⚠️ Server key does not look like a sandbox key');
+      // console.warn('⚠️ Server key does not look like a sandbox key');
     }
     if (midtransConfig.clientKey && !midtransConfig.clientKey.startsWith('SB-Mid-client-')) {
-      console.warn('⚠️ Client key does not look like a sandbox key');
+      // console.warn('⚠️ Client key does not look like a sandbox key');
     }
   } else {
     // console.log('🚀 PRODUCTION MODE DETECTED');
   }
 
   if (!midtransConfig.serverKey) {
-    console.error('❌ MIDTRANS_SERVER_KEY is not set');
+    // console.error('❌ MIDTRANS_SERVER_KEY is not set');
   } else {
     // console.log('✅ MIDTRANS_SERVER_KEY is set');
   }
 
   if (!midtransConfig.clientKey) {
-    console.error('❌ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is not set');
+    // console.error('❌ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is not set');
   } else {
     // console.log('✅ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is set');
   }
@@ -50,13 +50,13 @@ if (typeof window === 'undefined') {
     if (midtransConfig.serverKey && midtransConfig.serverKey.startsWith('SB-Mid-server-')) {
       // console.log('✅ Sandbox server key format is correct');
     } else if (midtransConfig.serverKey) {
-      console.error('❌ Server key should start with "SB-Mid-server-" for sandbox');
+      // console.error('❌ Server key should start with "SB-Mid-server-" for sandbox');
     }
     
     if (midtransConfig.clientKey && midtransConfig.clientKey.startsWith('SB-Mid-client-')) {
       // console.log('✅ Sandbox client key format is correct');
     } else if (midtransConfig.clientKey) {
-      console.error('❌ Client key should start with "SB-Mid-client-" for sandbox');
+      // console.error('❌ Client key should start with "SB-Mid-client-" for sandbox');
     }
   }
 }
@@ -74,13 +74,13 @@ if (typeof window === 'undefined') {
       serverKey: midtransConfig.serverKey,
       clientKey: midtransConfig.clientKey, // Include clientKey for completeness
     });
-    console.log('✅ Midtrans Snap instance created successfully');
+    // console.log('✅ Midtrans Snap instance created successfully');
   } catch (error: any) {
-    console.error('❌ Failed to create Midtrans Snap instance:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-    });
+    // console.error('❌ Failed to create Midtrans Snap instance:', error);
+    // console.error('Error details:', {
+    //   message: error.message,
+    //   stack: error.stack,
+    // });
   }
 
   try {
@@ -90,13 +90,13 @@ if (typeof window === 'undefined') {
       serverKey: midtransConfig.serverKey,
       clientKey: midtransConfig.clientKey, // Include clientKey for completeness
     });
-    console.log('✅ Midtrans CoreApi instance created successfully');
+    // console.log('✅ Midtrans CoreApi instance created successfully');
   } catch (error: any) {
-    console.error('❌ Failed to create Midtrans CoreApi instance:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-    });
+    // console.error('❌ Failed to create Midtrans CoreApi instance:', error);
+    // console.error('Error details:', {
+    //   message: error.message,
+    //   stack: error.stack,
+    // });
   }
 }
 
@@ -128,22 +128,22 @@ export async function createPaymentToken(params: TransactionParams) {
   }
 
   try {
-    console.log('Creating Midtrans token with params:', JSON.stringify(params, null, 2));
+    // console.log('Creating Midtrans token with params:', JSON.stringify(params, null, 2));
     const transaction = await snap.createTransaction(params);
-    console.log('Midtrans token created successfully');
+    // console.log('Midtrans token created successfully');
 
     return {
       token: transaction.token,
       redirectUrl: transaction.redirect_url,
     };
   } catch (error: any) {
-    console.error('Error creating Midtrans token:', error);
-    console.error('Midtrans error details:', {
-      message: error.message,
-      httpStatusCode: error.httpStatusCode,
-      ApiResponse: error.ApiResponse,
-      stack: error.stack,
-    });
+    // console.error('Error creating Midtrans token:', error);
+    // console.error('Midtrans error details:', {
+    //   message: error.message,
+    //   httpStatusCode: error.httpStatusCode,
+    //   ApiResponse: error.ApiResponse,
+    //   stack: error.stack,
+    // });
     throw new Error(`Failed to create payment token: ${error.message}`);
   }
 }
@@ -154,13 +154,13 @@ export async function checkTransactionStatus(orderId: string) {
   }
 
   try {
-    console.log('Checking transaction status for order:', orderId);
+    // console.log('Checking transaction status for order:', orderId);
     const response = await coreApi.transaction.status(orderId);
-    console.log('Transaction status retrieved successfully');
+    // console.log('Transaction status retrieved successfully');
     return response;
   } catch (error: any) {
-    console.error('Error checking transaction status:', error);
-    console.error('Midtrans status error details:', error.ApiResponse || error.message);
+    // console.error('Error checking transaction status:', error);
+    // console.error('Midtrans status error details:', error.ApiResponse || error.message);
     throw new Error(`Failed to check transaction status: ${error.message}`);
   }
 }

@@ -12,9 +12,9 @@ export default function MidtransScriptLoader() {
         // Get access token from JWT service
         const token = jwtService.getToken();
         if (token) {
-          console.log("✅ JWT token found during MidtransScriptLoader initialization");
+          // console.log("✅ JWT token found during MidtransScriptLoader initialization");
         } else {
-          console.log("⚠️ No JWT token available during MidtransScriptLoader initialization");
+          // console.log("⚠️ No JWT token available during MidtransScriptLoader initialization");
         }
       }
     };
@@ -24,7 +24,7 @@ export default function MidtransScriptLoader() {
     
     // This will run after the script loads through the onLoad event
     const handleScriptLoad = () => {
-      console.log("✅ Midtrans script loaded successfully in client component");
+      // console.log("✅ Midtrans script loaded successfully in client component");
       if (typeof window !== 'undefined') {
         (window as any).__MIDTRANS_LOADED = true;
       }

@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       safeUser.profile = profileData;
     }
 
-    console.log(`User ${user.id} (${user.email}) logged in successfully`);
+    // console.log(`User ${user.id} (${user.email}) logged in successfully`);
 
     return NextResponse.json({
       user: safeUser,

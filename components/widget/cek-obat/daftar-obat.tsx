@@ -167,7 +167,7 @@ export default function DaftarObat() {
   }
 
   const handleBarcodeDetected = async (qrText: string) => {
-    console.log("📦 Data terdeteksi:", qrText)
+    // console.log("📦 Data terdeteksi:", qrText)
 
     const trimmed = qrText.trim()
 

@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             if (response.ok) {
               const userData = await response.json();
-              console.log("✅ User data loaded from API");
+              // console.log("✅ User data loaded from API");
               setUser(userData.user);
             } else {
               // API error - try to use minimal data from token
@@ -71,11 +71,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               });
             }
           } else {
-            console.log("❌ No user data in token");
+            // console.log("❌ No user data in token");
             jwtService.clearTokens();
           }
         } else {
-          console.log("❌ No valid JWT found during initialization");
+          // console.log("❌ No valid JWT found during initialization");
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Set user in state
         setUser(data.user);
         
-        console.log("✅ Login successful, user:", data.user.email);
+        // console.log("✅ Login successful, user:", data.user.email);
         return { success: true, user: data.user };
       } else {
         console.error("Login response missing tokens");
@@ -201,7 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshUser = async (): Promise<User | null> => {
     try {
       if (!jwtService.isAuthenticated()) {
-        console.log("❌ Cannot refresh user - not authenticated");
+        // console.log("❌ Cannot refresh user - not authenticated");
         return null;
       }
 

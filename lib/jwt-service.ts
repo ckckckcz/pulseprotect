@@ -19,7 +19,7 @@ export const jwtService = {
   
   // Store tokens in both localStorage and cookies for better persistence
   setTokens: (accessToken: string, refreshToken?: string) => {
-    console.log("🔐 Setting JWT tokens");
+    // console.log("🔐 Setting JWT tokens");
     
     try {
       // Store in localStorage for fast access
@@ -56,17 +56,17 @@ export const jwtService = {
         });
       }
       
-      console.log("✅ JWT tokens set successfully");
+      // console.log("✅ JWT tokens set successfully");
       return true;
     } catch (error) {
-      console.error("❌ Error setting JWT tokens:", error);
+      // console.error("❌ Error setting JWT tokens:", error);
       return false;
     }
   },
   
   // Get token with fallback strategy
   getToken: () => {
-    console.log("🔍 JWT.getToken called");
+    // console.log("🔍 JWT.getToken called");
     let token = null;
     
     // Try localStorage first
@@ -84,7 +84,7 @@ export const jwtService = {
       }
     }
     
-    console.log("Token retrieved:", token ? `Yes (length: ${token.length})` : "No");
+    // console.log("Token retrieved:", token ? `Yes (length: ${token.length})` : "No");
     return token;
   },
   
@@ -114,15 +114,15 @@ export const jwtService = {
     try {
       return jwtDecode<JWTPayload>(token);
     } catch (error) {
-      console.error('❌ Error decoding token:', error);
+      // console.error('❌ Error decoding token:', error);
       return null;
     }
   },
   
   isAuthenticated: () => {
-    console.log("🔐 JWT.isAuthenticated called");
+    // console.log("🔐 JWT.isAuthenticated called");
     const token = jwtService.getToken();
-    console.log("Token exists:", !!token);
+    // console.log("Token exists:", !!token);
     
     if (!token) return false;
     
@@ -131,25 +131,25 @@ export const jwtService = {
       const currentTime = Date.now() / 1000;
       const isValid = decoded.exp > currentTime;
       
-      console.log("Token validation:", {
-        isValid,
-        currentTime: Math.floor(currentTime),
-        expiresAt: decoded.exp,
-        timeRemaining: Math.floor(decoded.exp - currentTime),
-        userEmail: decoded.email,
-        userId: decoded.userId,
-      });
+      // console.log("Token validation:", {
+      //   isValid,
+      //   currentTime: Math.floor(currentTime),
+      //   expiresAt: decoded.exp,
+      //   timeRemaining: Math.floor(decoded.exp - currentTime),
+      //   userEmail: decoded.email,
+      //   userId: decoded.userId,
+      // });
       
       return isValid;
     } catch (error) {
-      console.error("🚨 Error checking authentication:", error);
+      // console.error("🚨 Error checking authentication:", error);
       return false;
     }
   },
   
   // Clear tokens from both localStorage and cookies
   clearTokens: () => {
-    console.log("🧹 Clearing JWT tokens");
+    // console.log("🧹 Clearing JWT tokens");
     
     // Clear from localStorage
     if (typeof window !== 'undefined') {
@@ -161,7 +161,7 @@ export const jwtService = {
     Cookies.remove('jwt_access_token', { path: '/' });
     Cookies.remove('jwt_refresh_token', { path: '/' });
     
-    console.log("✅ JWT tokens cleared successfully");
+    // console.log("✅ JWT tokens cleared successfully");
   },
   
   // Get user info from token
@@ -172,7 +172,7 @@ export const jwtService = {
     try {
       return jwtService.decodeToken(token);
     } catch (error) {
-      console.error('Error getting user from token:', error);
+      // console.error('Error getting user from token:', error);
       return null;
     }
   },
@@ -189,7 +189,7 @@ export const jwtService = {
       
       return decoded;
     } catch (error) {
-      console.error('Token verification failed:', error);
+      // console.error('Token verification failed:', error);
       throw error;
     }
   },
@@ -207,11 +207,11 @@ export const jwtService = {
   // Refresh access token 
   refreshAccessToken: async (): Promise<string | null> => {
     try {
-      console.log("🔄 Attempting to refresh access token");
+      // console.log("🔄 Attempting to refresh access token");
       const refreshToken = jwtService.getRefreshToken();
       
       if (!refreshToken) {
-        console.log("❌ No refresh token available");
+        // console.log("❌ No refresh token available");
         return null;
       }
       
@@ -222,7 +222,7 @@ export const jwtService = {
       });
       
       if (!response.ok) {
-        console.error("❌ Token refresh failed:", response.status);
+        // console.error("❌ Token refresh failed:", response.status);
         jwtService.clearTokens();
         return null;
       }
@@ -231,13 +231,13 @@ export const jwtService = {
       
       if (data.accessToken) {
         jwtService.setTokens(data.accessToken, data.refreshToken || refreshToken);
-        console.log("✅ Access token refreshed successfully");
+        // console.log("✅ Access token refreshed successfully");
         return data.accessToken;
       }
       
       return null;
     } catch (error) {
-      console.error("❌ Error refreshing token:", error);
+      // console.error("❌ Error refreshing token:", error);
       jwtService.clearTokens();
       return null;
     }

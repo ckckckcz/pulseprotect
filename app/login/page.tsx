@@ -41,7 +41,7 @@ function LoginForm() {
       if (googleClientId && googleClientId !== '' && googleClientId !== 'undefined') {
         initializeGoogleLogin()
           .then(() => {
-            console.log('Google login initialized successfully');
+            // console.log('Google login initialized successfully');
           })
           .catch(error => {
             console.error('Failed to initialize Google login:', error);
@@ -147,7 +147,7 @@ function LoginForm() {
       // Small delay to ensure any pending requests are cleared
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      console.log('Starting Google sign-in process...');
+      // console.log('Starting Google sign-in process...');
 
       // Trigger Google sign-in with comprehensive error handling
       const googleUser = await triggerGoogleSignIn();
@@ -156,7 +156,7 @@ function LoginForm() {
         throw new Error('Gagal mendapatkan informasi dari Google');
       }
 
-      console.log('Google user info received:', googleUser.email);
+      // console.log('Google user info received:', googleUser.email);
 
       // Try to login with existing user first (without additional info)
       try {
@@ -165,7 +165,7 @@ function LoginForm() {
         if (result.success) {
           if (result.isExistingUser) {
             // Existing user - manually update auth context and redirect
-            console.log('Existing Google user login successful, updating auth context');
+            // console.log('Existing Google user login successful, updating auth context');
             
             // Force refresh user in auth context
             if (typeof refreshUser === 'function') {
@@ -176,7 +176,7 @@ function LoginForm() {
             setTimeout(() => {
               const role = result.user.role || 'user';
               const homePath = getHomePathForRole(role);
-              console.log('Redirecting to:', homePath);
+              // console.log('Redirecting to:', homePath);
               router.push(homePath);
             }, 100);
             
@@ -189,11 +189,11 @@ function LoginForm() {
           }
         }
       } catch (loginError: any) {
-        console.log('Google login attempt result:', loginError.message);
+        // console.log('Google login attempt result:', loginError.message);
         
         // If error is about missing full name, show the form
         if (loginError.message && loginError.message.includes('Nama lengkap wajib diisi')) {
-          console.log('Showing Google user form for new user');
+          // console.log('Showing Google user form for new user');
           setGoogleUserInfo(googleUser);
           setShowGoogleUserForm(true);
           return;
@@ -247,7 +247,7 @@ function LoginForm() {
       );
 
       if (result.success) {
-        console.log('New Google user registration successful, updating auth context');
+        // console.log('New Google user registration successful, updating auth context');
         
         // Force refresh user in auth context
         if (typeof refreshUser === 'function') {
@@ -258,7 +258,7 @@ function LoginForm() {
         setTimeout(() => {
           const role = result.user.role || 'user';
           const homePath = getHomePathForRole(role);
-          console.log('Redirecting to:', homePath);
+          // console.log('Redirecting to:', homePath);
           router.push(homePath);
         }, 100);
       }

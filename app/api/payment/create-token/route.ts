@@ -76,7 +76,7 @@ export async function POST(request: Request) {
         clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
       });
       
-      console.log('Midtrans Snap instance created successfully');
+      // console.log('Midtrans Snap instance created successfully');
     } catch (initError: any) {
       console.error('Failed to initialize Midtrans Snap:', initError);
       console.error('Init error details:', {
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       }
     }
 
-    console.log("Using customer name:", customerDetails.first_name);
+    // console.log("Using customer name:", customerDetails.first_name);
 
     // Prepare transaction parameters with validation
     const transactionParams = {

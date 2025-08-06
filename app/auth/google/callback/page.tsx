@@ -68,9 +68,9 @@ export default function GoogleAuthCallback() {
           // Important: Make sure to store JWT tokens
           if (result.accessToken && result.refreshToken) {
             jwtService.setTokens(result.accessToken, result.refreshToken);
-            console.log("✅ JWT tokens set in callback");
+            // console.log("✅ JWT tokens set in callback");
           } else {
-            console.warn("⚠️ No JWT tokens received in Google callback");
+            // console.warn("⚠️ No JWT tokens received in Google callback");
           }
           
           setStatus('success');

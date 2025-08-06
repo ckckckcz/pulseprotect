@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     return isMatch;
   });
 
-  console.log('✅ Product found:', produk ? 'YES' : 'NO');
+  // console.log('✅ Product found:', produk ? 'YES' : 'NO');
 
   if (produk) {
     return new Response(

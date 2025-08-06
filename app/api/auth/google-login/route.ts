@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       ...safeUser 
     } = user;
 
-    console.log(`Google login successful for user ${user.id} (${user.email})`);
+    // console.log(`Google login successful for user ${user.id} (${user.email})`);
     
     return NextResponse.json({
       success: true,

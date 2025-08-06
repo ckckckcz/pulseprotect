@@ -381,10 +381,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const handleShare = (type: string) => {
     switch (type) {
       case "PDF":
-        console.log("Exporting to PDF...");
+        // console.log("Exporting to PDF...");
         break;
       case "Word":
-        console.log("Exporting to Word...");
+        // console.log("Exporting to Word...");
         break;
       case "Gmail":
         const subject = encodeURIComponent("Shared Chat Content");

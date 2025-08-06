@@ -101,71 +101,71 @@ export const handleMidtransPayment = async (
     onClose?: () => void;
   }
 ) => {
-  console.log(
-    "📣 handleMidtransPayment called with token:",
-    token ? token.substring(0, 10) + "..." : "null"
-  );
+  // console.log(
+  //   "📣 handleMidtransPayment called with token:",
+  //   token ? token.substring(0, 10) + "..." : "null"
+  // );
 
   // Enhanced checking for Midtrans availability
   if (typeof window === "undefined") {
-    console.error("❌ Window is undefined, cannot show payment popup");
+    // console.error("❌ Window is undefined, cannot show payment popup");
     throw new Error("Midtrans Snap is not available");
   }
 
   // Explicit check for window.snap
   if (!window.snap) {
-    console.error("❌ window.snap is not available!");
+    // console.error("❌ window.snap is not available!");
 
     // Final attempt to wait for snap to be available (might be in progress)
     let attempts = 0;
     const maxAttempts = 20; // Wait up to 10 seconds (20 * 500ms)
 
     while (!window.snap && attempts < maxAttempts) {
-      console.log(
-        `Waiting for Midtrans Snap to be available (attempt ${attempts + 1}/${maxAttempts})...`
-      );
+      // console.log(
+      //   `Waiting for Midtrans Snap to be available (attempt ${attempts + 1}/${maxAttempts})...`
+      // );
       await new Promise((resolve) => setTimeout(resolve, 500));
       attempts++;
     }
 
     if (!window.snap) {
-      console.error("❌ Midtrans Snap still not available after waiting");
+      // console.error("❌ Midtrans Snap still not available after waiting");
       throw new Error(
         "Midtrans Snap is not available after waiting. Please refresh the page and try again."
       );
     } else {
-      console.log("✅ Midtrans Snap became available after waiting");
+      // console.log("✅ Midtrans Snap became available after waiting");
     }
   }
 
-  console.log("✅ window.snap is available, proceeding with payment");
+  // console.log("✅ window.snap is available, proceeding with payment");
 
   return new Promise((resolve, reject) => {
     try {
       window.snap!.pay(token, {
         onSuccess: (result: any) => {
-          console.log("Payment success:", result);
+          // console.log("Payment success:", result);
           if (callbacks.onSuccess) callbacks.onSuccess(result);
           resolve(result);
         },
         onPending: (result: any) => {
-          console.log("Payment pending:", result);
+          // console.log("Payment pending:", result);
           if (callbacks.onPending) callbacks.onPending(result);
           resolve(result);
         },
         onError: (result: any) => {
-          console.error("Payment error:", result);
+          // console.error("Payment error:", result);
           if (callbacks.onError) callbacks.onError(result);
           reject(result);
         },
         onClose: () => {
-          console.log("Customer closed the payment popup");
+          // console.log("Customer closed the payment popup");
           if (callbacks.onClose) callbacks.onClose();
           reject(new Error("Payment popup closed"));
         },
       });
     } catch (error) {
-      console.error("Error handling Midtrans payment:", error);
+      // console.error("Error handling Midtrans payment:", error);
       reject(error);
     }
   });
@@ -173,10 +173,10 @@ export const handleMidtransPayment = async (
 
 function loadMidtransScript(): Promise<void> {
   return new Promise((resolve, reject) => {
-    console.log("=== LOADING MIDTRANS SCRIPT ===");
+    // console.log("=== LOADING MIDTRANS SCRIPT ===");
 
     if (typeof window === "undefined") {
-      console.error("Window is undefined - cannot load script");
+      // console.error("Window is undefined - cannot load script");
       reject(
         new Error(
           "Window not defined - script loading must be done client-side"
@@ -187,7 +187,7 @@ function loadMidtransScript(): Promise<void> {
 
     // Check if script is already loaded
     if (window.snap) {
-      console.log("Midtrans Snap already loaded");
+      // console.log("Midtrans Snap already loaded");
       resolve();
       return;
     }
@@ -195,15 +195,15 @@ function loadMidtransScript(): Promise<void> {
     // Check if script tag already exists
     const existingScript = document.querySelector('script[src*="snap.js"]');
     if (existingScript) {
-      console.log("Midtrans script tag already exists, waiting for load...");
+      // console.log("Midtrans script tag already exists, waiting for load...");
 
       // Wait a bit and check again
       setTimeout(() => {
         if (window.snap) {
-          console.log("Midtrans Snap loaded from existing script");
+          // console.log("Midtrans Snap loaded from existing script");
           resolve();
         } else {
-          console.log("Existing script didn't load snap, removing and retrying...");
+          // console.log("Existing script didn't load snap, removing and retrying...");
           existingScript.remove();
           loadMidtransScript().then(resolve).catch(reject);
         }
@@ -216,20 +216,20 @@ function loadMidtransScript(): Promise<void> {
       process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL ||
       "https://app.sandbox.midtrans.com/snap/snap.js";
 
-    console.log("Environment variables:");
-    console.log(
-      "- NEXT_PUBLIC_MIDTRANS_CLIENT_KEY:",
-      clientKey ? `${clientKey.substring(0, 20)}...` : "Missing"
-    );
-    console.log("- NEXT_PUBLIC_MIDTRANS_SNAP_URL:", snapUrl);
+    // console.log("Environment variables:");
+    // console.log(
+    //   "- NEXT_PUBLIC_MIDTRANS_CLIENT_KEY:",
+    //   clientKey ? `${clientKey.substring(0, 20)}...` : "Missing"
+    // );
+    // console.log("- NEXT_PUBLIC_MIDTRANS_SNAP_URL:", snapUrl);
 
     if (!clientKey) {
-      console.error("Missing NEXT_PUBLIC_MIDTRANS_CLIENT_KEY");
+      // console.error("Missing NEXT_PUBLIC_MIDTRANS_CLIENT_KEY");
       reject(new Error("Missing Midtrans client key"));
       return;
     }
 
-    console.log("Creating script element...");
+    // console.log("Creating script element...");
     const script = document.createElement("script");
     script.src = snapUrl;
     script.setAttribute("data-client-key", clientKey);
@@ -241,27 +241,27 @@ function loadMidtransScript(): Promise<void> {
     let loadTimeout: NodeJS.Timeout;
 
     script.onload = () => {
-      console.log("Script onload event fired");
+      // console.log("Script onload event fired");
       clearTimeout(loadTimeout);
 
       // Give it a moment to initialize
       setTimeout(() => {
-        console.log("Checking window.snap after script load...");
-        console.log("window.snap exists:", !!window.snap);
-        console.log("window.snap type:", typeof window.snap);
+        // console.log("Checking window.snap after script load...");
+        // console.log("window.snap exists:", !!window.snap);
+        // console.log("window.snap type:", typeof window.snap);
 
         if (window.snap) {
-          console.log("Midtrans Snap loaded and available");
+          // console.log("Midtrans Snap loaded and available");
           resolve();
         } else {
-          console.error("Script loaded but window.snap is still not available");
-          console.log("Checking for alternative snap objects...");
-          console.log("window.Snap:", typeof (window as any).Snap);
-          console.log("window.midtrans:", typeof (window as any).midtrans);
+          // console.error("Script loaded but window.snap is still not available");
+          // console.log("Checking for alternative snap objects...");
+          // console.log("window.Snap:", typeof (window as any).Snap);
+          // console.log("window.midtrans:", typeof (window as any).midtrans);
 
           // Try to find snap in alternative locations
           if ((window as any).Snap) {
-            console.log("Found window.Snap, assigning to window.snap");
+            // console.log("Found window.Snap, assigning to window.snap");
             window.snap = (window as any).Snap;
             resolve();
           } else {
@@ -272,25 +272,25 @@ function loadMidtransScript(): Promise<void> {
     };
 
     script.onerror = (error) => {
-      console.error("Script onerror event fired:", error);
+      // console.error("Script onerror event fired:", error);
       clearTimeout(loadTimeout);
-      console.error("Failed to load Midtrans script from:", snapUrl);
+      // console.error("Failed to load Midtrans script from:", snapUrl);
       reject(new Error(`Failed to load Midtrans script: ${error}`));
     };
 
     // Set a timeout for script loading
     loadTimeout = setTimeout(() => {
-      console.error("Script loading timeout after 10 seconds");
+      // console.error("Script loading timeout after 10 seconds");
       reject(new Error("Script loading timeout"));
     }, 10000);
 
-    console.log("Appending script to document body...");
-    console.log("Document ready state:", document.readyState);
-    console.log("Script src:", script.src);
-    console.log("Script data-client-key:", script.getAttribute("data-client-key"));
+    // console.log("Appending script to document body...");
+    // console.log("Document ready state:", document.readyState);
+    // console.log("Script src:", script.src);
+    // console.log("Script data-client-key:", script.getAttribute("data-client-key"));
 
     document.body.appendChild(script);
-    console.log("Script appended to body successfully");
+    // console.log("Script appended to body successfully");
   });
 }
 
@@ -313,7 +313,7 @@ export const checkPaymentStatus = async (orderId: string) => {
 
     return await response.json();
   } catch (error) {
-    console.error("Error checking payment status:", error);
+    // console.error("Error checking payment status:", error);
     throw error;
   }
 };
@@ -384,15 +384,6 @@ export async function recordPayment(
       paymentData.custom_field1 ||
       (membershipType.includes("yearly") ? "yearly" : "monthly");
 
-    // console.log("RECORD PAYMENT PARAMS:", {
-    //   userId,
-    //   membershipType,
-    //   orderId,
-    //   amount,
-    //   userEmail,
-    //   period,
-    // });
-
     // Try to record payment directly to database first
     try {
       const { error } = await supabase
@@ -408,14 +399,13 @@ export async function recordPayment(
         });
 
       if (error) {
-        console.error("Direct database insert failed:", error);
+        // console.error("Direct database insert failed:", error);
         // Continue to API call as fallback
       } else {
-        // console.log("Payment recorded directly to database");
         return { success: true, method: "direct" };
       }
     } catch (dbError) {
-      console.error("Error in direct database recording:", dbError);
+      // console.error("Error in direct database recording:", dbError);
       // Continue to API call
     }
 
@@ -440,15 +430,14 @@ export async function recordPayment(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Failed to record payment via API:", errorText);
+      // console.error("Failed to record payment via API:", errorText);
       throw new Error(`API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
-    // console.log("Payment record API result:", result);
     return { ...result, method: "api" };
   } catch (error) {
-    console.error("Payment recording error:", error);
+    // console.error("Payment recording error:", error);
     throw error;
   }
 }
@@ -499,8 +488,16 @@ export const createPaymentIntent = async (
 
     return paymentIntent;
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    // console.error("Error creating payment intent:", error);
     throw error;
+  }
+}
+
+declare global {
+  interface Window {
+    snap?: {
+      pay: (token: string, options: any) => void;
+    };
   }
 }
 

@@ -39,9 +39,9 @@ export default function BarcodeScanner({ onDetected, onClose }: { onDetected: (r
 
           if (result && active) {
             const scannedBarcode = result.getText().trim();
-            console.log("✅ Barcode ditemukan:", scannedBarcode);
-            console.log("📝 Barcode type:", typeof scannedBarcode);
-            console.log("📏 Barcode length:", scannedBarcode.length);
+            // console.log("✅ Barcode ditemukan:", scannedBarcode);
+            // console.log("📝 Barcode type:", typeof scannedBarcode);
+            // console.log("📏 Barcode length:", scannedBarcode.length);
             
             // Stop scanner immediately
             active = false;
@@ -52,7 +52,7 @@ export default function BarcodeScanner({ onDetected, onClose }: { onDetected: (r
             // Trigger callback immediately
             try {
               onDetected(scannedBarcode);
-              console.log("🎯 Callback triggered successfully");
+              // console.log("🎯 Callback triggered successfully");
             } catch (error) {
               console.error("❌ Error in onDetected callback:", error);
             }

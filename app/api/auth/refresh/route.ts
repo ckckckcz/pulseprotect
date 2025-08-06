@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: REFRESH_EXPIRY }
     );
 
-    console.log(`Refreshed tokens for user ${user.id} (${user.email})`);
+    // console.log(`Refreshed tokens for user ${user.id} (${user.email})`);
 
     return NextResponse.json({
       success: true,

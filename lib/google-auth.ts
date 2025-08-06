@@ -18,13 +18,13 @@ export const GOOGLE_CONFIG = {
 // Validate Google configuration
 function validateGoogleConfig(): boolean {
   if (!GOOGLE_CONFIG.clientId || GOOGLE_CONFIG.clientId === 'undefined' || GOOGLE_CONFIG.clientId === '') {
-    console.error('Google Client ID is not configured');
+    // console.error('Google Client ID is not configured');
     return false;
   }
   
   // Check if client ID looks valid (should be a long string ending with .apps.googleusercontent.com)
   if (!GOOGLE_CONFIG.clientId.includes('.apps.googleusercontent.com')) {
-    console.error('Google Client ID format is invalid');
+    // console.error('Google Client ID format is invalid');
     return false;
   }
   
@@ -68,7 +68,7 @@ export const initializeGoogleLogin = (): Promise<void> => {
         isInitialized = true;
         return resolve();
       } catch (error) {
-        console.error('Error initializing Google SDK:', error);
+        // console.error('Error initializing Google SDK:', error);
         return reject(error);
       }
     }
@@ -119,7 +119,7 @@ export const triggerGoogleSignIn = (): Promise<any> => {
 
     // Check if there's already an active request
     if (activeRequest) {
-      console.log('Google sign-in already in progress, waiting for completion...');
+      // console.log('Google sign-in already in progress, waiting for completion...');
       try {
         const result = await activeRequest;
         return resolve(result);
@@ -167,7 +167,7 @@ export const triggerGoogleSignIn = (): Promise<any> => {
 
         // Try redirect flow approach first - this avoids COOP issues
         try {
-          console.log("Using redirect flow for Google authentication");
+          // console.log("Using redirect flow for Google authentication");
           
           // Create a unique state parameter to verify the response
           const state = Math.random().toString(36).substring(2);
@@ -192,18 +192,18 @@ export const triggerGoogleSignIn = (): Promise<any> => {
           // Since we're redirecting, we won't get to this point in the current execution
           // But just in case something goes wrong:
           setTimeout(() => {
-            console.log("Redirect failed to initiate, trying popup as fallback");
+            // console.log("Redirect failed to initiate, trying popup as fallback");
             tryPopupFlow();
           }, 1000);
           
         } catch (redirectError) {
-          console.error("Redirect flow failed:", redirectError);
+          // console.error("Redirect flow failed:", redirectError);
           tryPopupFlow();
         }
         
         // Popup flow as fallback
         function tryPopupFlow() {
-          console.log("Attempting popup authentication flow");
+          // console.log("Attempting popup authentication flow");
           
           try {
             const client = (window as any).google.accounts.oauth2.initTokenClient({
@@ -216,7 +216,7 @@ export const triggerGoogleSignIn = (): Promise<any> => {
     
                 try {
                   if (response.error) {
-                    console.error('Google OAuth error:', response.error);
+                    // console.error('Google OAuth error:', response.error);
                     return rejectRequest(new Error(response.error_description || 'Google authentication error'));
                   }
     
@@ -236,10 +236,10 @@ export const triggerGoogleSignIn = (): Promise<any> => {
                   }
     
                   const userInfo = await userInfoResponse.json();
-                  console.log('Google user info retrieved successfully');
+                  // console.log('Google user info retrieved successfully');
                   resolveRequest(userInfo);
                 } catch (error: any) {
-                  console.error('Error processing Google response:', error);
+                  // console.error('Error processing Google response:', error);
                   rejectRequest(new Error(error.message || 'Error processing Google response'));
                 }
               },
@@ -248,13 +248,13 @@ export const triggerGoogleSignIn = (): Promise<any> => {
                 credentialRequestPending = false;
                 activeRequest = null;
                 
-                console.error('Google OAuth error callback:', error);
+                // console.error('Google OAuth error callback:', error);
                 
                 if (error.type === 'popup_closed') {
                   rejectRequest(new Error('Google sign-in dibatalkan'));
                 } else if (error.type === 'popup_failed_to_open') {
                   // If popup fails due to COOP, fall back to redirect flow
-                  console.log('Popup failed due to browser restrictions, falling back to redirect');
+                  // console.log('Popup failed due to browser restrictions, falling back to redirect');
                   
                   // Create a unique state parameter
                   const state = Math.random().toString(36).substring(2);
@@ -283,7 +283,7 @@ export const triggerGoogleSignIn = (): Promise<any> => {
               prompt: 'select_account',
             });
           } catch (popupError) {
-            console.error("Popup flow failed:", popupError);
+            // console.error("Popup flow failed:", popupError);
             credentialRequestPending = false;
             activeRequest = null;
             rejectRequest(new Error('Failed to initialize Google authentication'));
@@ -293,7 +293,7 @@ export const triggerGoogleSignIn = (): Promise<any> => {
         credentialRequestPending = false;
         activeRequest = null;
         
-        console.error('Google sign-in setup error:', error);
+        // console.error('Google sign-in setup error:', error);
         rejectRequest(new Error(error.message || 'Terjadi kesalahan saat Google sign-in'));
       }
     });
@@ -355,10 +355,10 @@ export function initializeOneTap(): Promise<void> {
               verified_email: credential.email_verified,
             };
 
-            console.log('One Tap login successful:', userInfo);
+            // console.log('One Tap login successful:', userInfo);
             
           } catch (error) {
-            console.error('One Tap callback error:', error);
+            // console.error('One Tap callback error:', error);
           }
         },
         auto_select: false,
@@ -369,13 +369,13 @@ export function initializeOneTap(): Promise<void> {
 
       (window as any).google.accounts.id.prompt((notification: any) => {
         if (notification.isNotDisplayed()) {
-          console.log('One Tap tidak ditampilkan:', notification.getNotDisplayedReason());
+          // console.log('One Tap tidak ditampilkan:', notification.getNotDisplayedReason());
           reject(new Error('One Tap tidak dapat ditampilkan'));
         } else if (notification.isSkippedMoment()) {
-          console.log('One Tap dilewati:', notification.getSkippedReason());
+          // console.log('One Tap dilewati:', notification.getSkippedReason());
           reject(new Error('One Tap dilewati'));
         } else if (notification.isDismissedMoment()) {
-          console.log('One Tap dibatalkan:', notification.getDismissedReason());
+          // console.log('One Tap dibatalkan:', notification.getDismissedReason());
           reject(new Error('One Tap dibatalkan'));
         } else {
           resolve();
@@ -383,7 +383,7 @@ export function initializeOneTap(): Promise<void> {
       });
 
     } catch (error: any) {
-      console.error('One Tap initialization error:', error);
+      // console.error('One Tap initialization error:', error);
       reject(error);
     }
   });
@@ -393,9 +393,9 @@ export function disableOneTap(): void {
   if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
     try {
       (window as any).google.accounts.id.disableAutoSelect();
-      console.log('One Tap disabled');
+      // console.log('One Tap disabled');
     } catch (error) {
-      console.error('Error disabling One Tap:', error);
+      // console.error('Error disabling One Tap:', error);
     }
   }
 }
@@ -409,7 +409,7 @@ export const resetGoogleAuthState = () => {
   credentialRequestPending = false;
   activeRequest = null;
   oneTapDisabled = false;
-  console.log('Google auth state reset');
+  // console.log('Google auth state reset');
 };
 
 // Get current state for debugging

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       const result = await authService.resetPassword(token, newPassword);
       
       if (result) {
-        console.log("Password reset completed successfully");
+        // console.log("Password reset completed successfully");
         return NextResponse.json({ 
           success: true,
           message: "Kata sandi berhasil diubah"

@@ -132,7 +132,7 @@ export default function PricingPage() {
     retryCount 
   } = useMidtransSnap({
     onReady: () => {
-      console.log("✅ Midtrans Snap is ready to use");
+      // console.log("✅ Midtrans Snap is ready to use");
       setMidtransStatus('ready');
     },
     onError: (error) => {
@@ -160,14 +160,14 @@ export default function PricingPage() {
     const checkMidtransGlobal = () => {
       if (typeof window !== 'undefined') {
         if (window.snap) {
-          console.log("✅ Midtrans Snap detected on window object");
+          // console.log("✅ Midtrans Snap detected on window object");
           setMidtransStatus('ready');
           return true;
         }
         
         // Check if script tag exists
         const scriptExists = !!document.querySelector('script[src*="snap.js"]');
-        console.log("Midtrans script tag exists:", scriptExists);
+        // console.log("Midtrans script tag exists:", scriptExists);
         
         return false;
       }
@@ -176,7 +176,7 @@ export default function PricingPage() {
     
     // Only proceed if Midtrans is not already available
     if (!checkMidtransGlobal()) {
-      console.log("🔄 Midtrans not found, will initialize via hook");
+      // console.log("🔄 Midtrans not found, will initialize via hook");
     }
   }, []);
 
@@ -226,16 +226,16 @@ export default function PricingPage() {
 
   // Function to handle when user is not authenticated
   const promptLogin = () => {
-    console.log("🚨 promptLogin triggered - Authentication check failed");
-    console.log("Current JWT token:", jwtService.getToken() || "No token found");
-    console.log("Is JWT authenticated:", jwtService.isAuthenticated());
+    // console.log("🚨 promptLogin triggered - Authentication check failed");
+    // console.log("Current JWT token:", jwtService.getToken() || "No token found");
+    // console.log("Is JWT authenticated:", jwtService.isAuthenticated());
     if (currentUser) {
-      console.log("User context exists but JWT validation failed:", {
-        userId: currentUser.id,
-        email: currentUser.email,
-      });
+      // console.log("User context exists but JWT validation failed:", {
+      //   userId: currentUser.id,
+      //   email: currentUser.email,
+      // });
     } else {
-      console.log("No user found in context");
+      // console.log("No user found in context");
     }
     
     jwtService.clearTokens(); // Clear any invalid tokens
@@ -296,8 +296,8 @@ export default function PricingPage() {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log("🔍 handlePayment initiated for package:", packageType);
-    console.log("Midtrans status:", midtransStatus);
+    // console.log("🔍 handlePayment initiated for package:", packageType);
+    // console.log("Midtrans status:", midtransStatus);
     
     // Check if Midtrans is ready
     if (midtransStatus !== 'ready' || !isMidtransReady) {
@@ -326,8 +326,8 @@ export default function PricingPage() {
     
     // Check JWT authentication first
     const isJWTValid = jwtService.isAuthenticated();
-    console.log("JWT authentication check:", isJWTValid ? "✅ Valid" : "❌ Invalid");
-    console.log("Current user from context:", currentUser ? "Exists" : "Missing");
+    // console.log("JWT authentication check:", isJWTValid ? "✅ Valid" : "❌ Invalid");
+    // console.log("Current user from context:", currentUser ? "Exists" : "Missing");
     
     // Only redirect to login if NOT authenticated
     if (!isJWTValid || !currentUser || !currentUser.email) {
@@ -346,7 +346,7 @@ export default function PricingPage() {
       const userId = currentUser.id?.toString() || "";
       const period: "monthly" | "yearly" = isYearly ? "yearly" : "monthly";
 
-      console.log("Building package details for payment...");
+      // console.log("Building package details for payment...");
       const packageDetails: PackageDetails = {
         packageId: `pkg_${packageType}`,
         packageName: packageType,
@@ -358,7 +358,7 @@ export default function PricingPage() {
       // Apply promo if available
       if (appliedPromo) {
         packageDetails.price = getDiscountedPrice(packageDetails.price);
-        console.log("Applied promo discount:", appliedPromo.code, appliedPromo.discount + "%");
+        // console.log("Applied promo discount:", appliedPromo.code, appliedPromo.discount + "%");
       }
 
       const customerInfo = {
@@ -377,7 +377,7 @@ export default function PricingPage() {
       // Create payment token via API
       const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
 
-      console.log("Payment creation result:", paymentResult);
+      // console.log("Payment creation result:", paymentResult);
       
       if (!paymentResult.token) {
         console.error("No token received from payment creation");
@@ -395,8 +395,8 @@ export default function PricingPage() {
       }
 
       // Check if window.snap exists before proceeding
-      console.log("Checking Midtrans Snap availability before showing popup...");
-      console.log("window.snap exists:", typeof window.snap !== "undefined");
+      // console.log("Checking Midtrans Snap availability before showing popup...");
+      // console.log("window.snap exists:", typeof window.snap !== "undefined");
       
       if (!window.snap) {
         console.error("⚠️ Midtrans Snap is not available on window object!");
@@ -449,12 +449,12 @@ export default function PricingPage() {
       }
 
       // Show Snap Midtrans popup
-      console.log("Showing Midtrans payment popup with token:", paymentResult.token);
+      // console.log("Showing Midtrans payment popup with token:", paymentResult.token);
       
       if (window.snap) {
         await handleMidtransPayment(paymentResult.token, {
           onSuccess: async (result) => {
-            console.log("Payment success callback received:", result);
+            // console.log("Payment success callback received:", result);
             try {
               const statusResponse = await fetch("/api/payment/check-status", {
                 method: "POST",
@@ -464,7 +464,7 @@ export default function PricingPage() {
 
               if (statusResponse.ok) {
                 const statusData = await statusResponse.json();
-                console.log("Payment status check result:", statusData);
+                // console.log("Payment status check result:", statusData);
                 if (statusData.status === "success") {
                   toast({
                     title: "Pembayaran Berhasil",
@@ -494,7 +494,7 @@ export default function PricingPage() {
             setTimeout(() => window.location.reload(), 3000);
           },
           onPending: (result) => {
-            console.log("Payment pending callback received:", result);
+            // console.log("Payment pending callback received:", result);
             toast({
               title: "Pembayaran Pending",
               description: "Pembayaran Anda masih diproses.",
@@ -511,7 +511,7 @@ export default function PricingPage() {
             setIsLoading(null);
           },
           onClose: () => {
-            console.log("Payment popup closed by user");
+            // console.log("Payment popup closed by user");
             setIsLoading(null);
           },
         });
@@ -521,7 +521,7 @@ export default function PricingPage() {
     } catch (error) {
       console.error("Error in handlePayment:", error);
       if (error instanceof Error && error.message.includes("Authentication")) {
-        console.log("Authentication error detected, redirecting to login");
+        // console.log("Authentication error detected, redirecting to login");
         promptLogin();
       } else {
         toast({
@@ -536,18 +536,18 @@ export default function PricingPage() {
 
   async function createPayment(paymentDetails: PaymentRequestDetails): Promise<any> {
     try {
-      console.log("📊 Creating payment with details:", paymentDetails);
+      // console.log("📊 Creating payment with details:", paymentDetails);
       
       // Get access token from JWT service
       const accessToken = jwtService.getToken();
-      console.log("JWT token available:", !!accessToken);
+      // console.log("JWT token available:", !!accessToken);
       
       if (!accessToken) {
         console.error("No access token available!");
         throw new Error("Not authenticated. Please login first.");
       }
       
-      console.log("Making API request to /api/create-payment");
+      // console.log("Making API request to /api/create-payment");
       const response = await fetch("/api/create-payment", {
         method: "POST",
         headers: {
@@ -557,9 +557,9 @@ export default function PricingPage() {
         body: JSON.stringify(paymentDetails),
       });
 
-      console.log("API response status:", response.status);
+      // console.log("API response status:", response.status);
       const data = await response.json();
-      console.log("API response data:", data);
+      // console.log("API response data:", data);
 
       if (!response.ok) {
         console.error("API returned error:", data.error);
@@ -567,20 +567,20 @@ export default function PricingPage() {
       }
 
       // Check if window.snap exists before calling it
-      console.log("Checking Midtrans Snap availability...");
+      // console.log("Checking Midtrans Snap availability...");
       if (typeof window !== 'undefined') {
-        console.log("Window is defined");
-        console.log("window.snap exists:", !!window.snap);
+        // console.log("Window is defined");
+        // console.log("window.snap exists:", !!window.snap);
         
         if (window.snap) {
-          console.log("Showing Midtrans payment popup with token:", data.token);
+          // console.log("Showing Midtrans payment popup with token:", data.token);
           window.snap.pay(data.token, {
             onSuccess: function(result: MidtransResult) {
-              console.log('Payment success:', result);
+              // console.log('Payment success:', result);
               // Handle success here
             },
             onPending: function(result: MidtransResult) {
-              console.log('Payment pending:', result);
+              // console.log('Payment pending:', result);
               // Handle pending here
             },
             onError: function(result: MidtransResult) {
@@ -588,15 +588,15 @@ export default function PricingPage() {
               // Handle error here
             },
             onClose: function() {
-              console.log('Customer closed the payment window');
+              // console.log('Customer closed the payment window');
               // Handle customer closing the popup
             },
           });
         } else {
           console.error("Midtrans Snap not available on window!");
-          console.log("Checking for Midtrans script...");
-          console.log("Midtrans script loaded:", !!document.querySelector('script[src*="snap.js"]'));
-          console.log("All scripts on page:", Array.from(document.scripts).map(s => s.src));
+          // console.log("Checking for Midtrans script...");
+          // console.log("Midtrans script loaded:", !!document.querySelector('script[src*="snap.js"]'));
+          // console.log("All scripts on page:", Array.from(document.scripts).map(s => s.src));
           throw new Error("Midtrans Snap is not available. Please try again later.");
         }
       } else {
