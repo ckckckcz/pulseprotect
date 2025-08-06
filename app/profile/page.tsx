@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, Info, RefreshCw, Sun, Moon, MessageCircle, Bolt, LogOut, Globe2, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth, UserData } from "@/context/auth-context";
+import { useAuth } from "@/context/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -18,6 +18,13 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
+// Define UserData type locally since it's not exported from auth-context
+interface UserData {
+  id?: string | number;
+  nama_lengkap?: string;
+  email?: string;
+  [key: string]: any; // Allow for other properties that might be accessed
+}
 // Define a type for the user with status
 type UserWithStatus = UserData & {
   id?: string | number;
