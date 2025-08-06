@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient";
 import bcrypt from "bcryptjs";
 import { emailService } from './emailService';
+import { jwtService } from './jwt-service';
 import Cookies from 'js-cookie';
 import { disableOneTap, resetGoogleAuthState } from './google-auth';
 
@@ -205,10 +206,31 @@ export const authService = {
         this.saveUserSession(data.user);
         console.log('Google login successful, user session saved');
         
+        // Explicitly ensure JWT tokens are saved - critical step!
+        if (data.accessToken) {
+          if (jwtService && typeof jwtService.setTokens === 'function') {
+            console.log('Setting JWT tokens from Google login response');
+            jwtService.setTokens(data.accessToken, data.refreshToken || null);
+          } else {
+            console.error('JWT service not available to set tokens!');
+            // Fallback: try to set tokens directly
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('accessToken', data.accessToken);
+              if (data.refreshToken) {
+                localStorage.setItem('refreshToken', data.refreshToken);
+              }
+            }
+          }
+        } else {
+          console.warn('No JWT tokens in Google login response!');
+        }
+        
         return {
           success: true,
           user: data.user,
-          isExistingUser: data.isExistingUser
+          isExistingUser: data.isExistingUser,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken
         };
       }
 

@@ -2,9 +2,26 @@
 
 import { useEffect } from "react";
 import Script from "next/script";
+import { jwtService } from "@/lib/jwt-service";
 
 export default function MidtransScriptLoader() {
   useEffect(() => {
+    // Check if we have JWT tokens in cookies but not in localStorage (after page refresh)
+    const syncTokenFromCookies = () => {
+      if (typeof window !== 'undefined') {
+        // Get access token from JWT service
+        const token = jwtService.getToken();
+        if (token) {
+          console.log("✅ JWT token found during MidtransScriptLoader initialization");
+        } else {
+          console.log("⚠️ No JWT token available during MidtransScriptLoader initialization");
+        }
+      }
+    };
+
+    // Run once on mount
+    syncTokenFromCookies();
+    
     // This will run after the script loads through the onLoad event
     const handleScriptLoad = () => {
       console.log("✅ Midtrans script loaded successfully in client component");

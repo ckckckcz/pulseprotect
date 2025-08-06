@@ -165,93 +165,136 @@ export const triggerGoogleSignIn = (): Promise<any> => {
           rejectRequest(new Error('Timeout: Login Google memakan waktu terlalu lama. Silakan coba lagi.'));
         }, 30000); // 30 second timeout
 
-        // Use OAuth2 popup method to avoid FedCM conflicts
-        const client = (window as any).google.accounts.oauth2.initTokenClient({
-          client_id: clientId,
-          scope: 'email profile openid',
-          callback: async (response: any) => {
-            clearTimeout(timeoutId);
-            credentialRequestPending = false;
-            activeRequest = null;
-
-            try {
-              if (response.error) {
-                console.error('Google OAuth error:', response.error);
-                return rejectRequest(new Error(response.error_description || 'Google authentication error'));
-              }
-
-              if (!response.access_token) {
-                return rejectRequest(new Error('Tidak mendapat akses token dari Google'));
-              }
-
-              // Get user info using access token
-              const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: {
-                  Authorization: `Bearer ${response.access_token}`,
-                },
-              });
-
-              if (!userInfoResponse.ok) {
-                return rejectRequest(new Error('Gagal mendapatkan informasi pengguna dari Google'));
-              }
-
-              const userInfo = await userInfoResponse.json();
-              console.log('Google user info retrieved successfully');
-              resolveRequest(userInfo);
-            } catch (error: any) {
-              console.error('Error processing Google response:', error);
-              rejectRequest(new Error(error.message || 'Error processing Google response'));
-            }
-          },
-          error_callback: (error: any) => {
-            clearTimeout(timeoutId);
-            credentialRequestPending = false;
-            activeRequest = null;
-            
-            console.error('Google OAuth error callback:', error);
-            
-            if (error.type === 'popup_closed') {
-              rejectRequest(new Error('Google sign-in dibatalkan'));
-            } else if (error.type === 'popup_failed_to_open') {
-              rejectRequest(new Error('Popup Google sign-in diblokir. Pastikan popup tidak diblokir di browser Anda.'));
-            } else {
-              rejectRequest(new Error(error.message || 'Terjadi kesalahan saat Google sign-in'));
-            }
-          },
-        });
-
-        // Small delay to ensure any previous requests are fully cleared
-        setTimeout(() => {
+        // Try redirect flow approach first - this avoids COOP issues
+        try {
+          console.log("Using redirect flow for Google authentication");
+          
+          // Create a unique state parameter to verify the response
+          const state = Math.random().toString(36).substring(2);
+          localStorage.setItem('google_auth_state', state);
+          
+          // Build the authorization URL
+          const redirectUri = window.location.origin + '/auth/google/callback';
+          const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+          authUrl.searchParams.append('client_id', clientId!);
+          authUrl.searchParams.append('redirect_uri', redirectUri);
+          authUrl.searchParams.append('response_type', 'token');
+          authUrl.searchParams.append('scope', 'email profile openid');
+          authUrl.searchParams.append('state', state);
+          authUrl.searchParams.append('prompt', 'select_account');
+          
+          // Redirect to Google auth
+          window.location.href = authUrl.toString();
+          
+          // Clear timeout since we're redirecting
+          clearTimeout(timeoutId);
+          
+          // Since we're redirecting, we won't get to this point in the current execution
+          // But just in case something goes wrong:
+          setTimeout(() => {
+            console.log("Redirect failed to initiate, trying popup as fallback");
+            tryPopupFlow();
+          }, 1000);
+          
+        } catch (redirectError) {
+          console.error("Redirect flow failed:", redirectError);
+          tryPopupFlow();
+        }
+        
+        // Popup flow as fallback
+        function tryPopupFlow() {
+          console.log("Attempting popup authentication flow");
+          
           try {
-            // Request access token with popup
+            const client = (window as any).google.accounts.oauth2.initTokenClient({
+              client_id: clientId!,
+              scope: 'email profile openid',
+              callback: async (response: any) => {
+                clearTimeout(timeoutId);
+                credentialRequestPending = false;
+                activeRequest = null;
+    
+                try {
+                  if (response.error) {
+                    console.error('Google OAuth error:', response.error);
+                    return rejectRequest(new Error(response.error_description || 'Google authentication error'));
+                  }
+    
+                  if (!response.access_token) {
+                    return rejectRequest(new Error('Tidak mendapat akses token dari Google'));
+                  }
+    
+                  // Get user info using access token
+                  const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                    headers: {
+                      Authorization: `Bearer ${response.access_token}`,
+                    },
+                  });
+    
+                  if (!userInfoResponse.ok) {
+                    return rejectRequest(new Error('Gagal mendapatkan informasi pengguna dari Google'));
+                  }
+    
+                  const userInfo = await userInfoResponse.json();
+                  console.log('Google user info retrieved successfully');
+                  resolveRequest(userInfo);
+                } catch (error: any) {
+                  console.error('Error processing Google response:', error);
+                  rejectRequest(new Error(error.message || 'Error processing Google response'));
+                }
+              },
+              error_callback: (error: any) => {
+                clearTimeout(timeoutId);
+                credentialRequestPending = false;
+                activeRequest = null;
+                
+                console.error('Google OAuth error callback:', error);
+                
+                if (error.type === 'popup_closed') {
+                  rejectRequest(new Error('Google sign-in dibatalkan'));
+                } else if (error.type === 'popup_failed_to_open') {
+                  // If popup fails due to COOP, fall back to redirect flow
+                  console.log('Popup failed due to browser restrictions, falling back to redirect');
+                  
+                  // Create a unique state parameter
+                  const state = Math.random().toString(36).substring(2);
+                  localStorage.setItem('google_auth_state', state);
+                  
+                  // Build the auth URL
+                  const redirectUri = window.location.origin + '/auth/google/callback';
+                  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+                  authUrl.searchParams.append('client_id', clientId!);
+                  authUrl.searchParams.append('redirect_uri', redirectUri);
+                  authUrl.searchParams.append('response_type', 'token');
+                  authUrl.searchParams.append('scope', 'email profile openid');
+                  authUrl.searchParams.append('state', state);
+                  authUrl.searchParams.append('prompt', 'select_account');
+                  
+                  // Redirect to Google auth
+                  window.location.href = authUrl.toString();
+                } else {
+                  rejectRequest(new Error(error.message || 'Terjadi kesalahan saat Google sign-in'));
+                }
+              },
+            });
+            
+            // Request access token with iframe/popup
             client.requestAccessToken({
               prompt: 'select_account',
             });
-          } catch (requestError: any) {
-            clearTimeout(timeoutId);
+          } catch (popupError) {
+            console.error("Popup flow failed:", popupError);
             credentialRequestPending = false;
             activeRequest = null;
-            
-            console.error('Error requesting Google access token:', requestError);
-            rejectRequest(new Error('Gagal memulai proses Google sign-in'));
+            rejectRequest(new Error('Failed to initialize Google authentication'));
           }
-        }, 100);
-
+        }
       } catch (error: any) {
         credentialRequestPending = false;
         activeRequest = null;
         
         console.error('Google sign-in setup error:', error);
-        
-        if (error.message?.includes('popup')) {
-          rejectRequest(new Error('Popup Google sign-in diblokir atau gagal dibuka. Pastikan popup tidak diblokir di browser Anda.'));
-        } else if (error.message?.includes('NetworkError')) {
-          rejectRequest(new Error('Terjadi masalah jaringan dengan Google. Periksa koneksi internet Anda.'));
-        } else if (error.message?.includes('NotAllowedError')) {
-          rejectRequest(new Error('Google sign-in sedang diproses. Silakan tunggu sebentar dan coba lagi'));
-        } else {
-          rejectRequest(new Error(error.message || 'Terjadi kesalahan saat Google sign-in'));
-        }
+        rejectRequest(new Error(error.message || 'Terjadi kesalahan saat Google sign-in'));
       }
     });
 

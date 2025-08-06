@@ -21,23 +21,31 @@ export const metadata: Metadata = {
       "https://d2f3dnusg0rbp7.cloudfront.net " +
       "https://pay.google.com " +
       "https://js-agent.newrelic.com " +
-      "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" +
+      "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4 " +
+      "https://accounts.google.com " +
+      "https://apis.google.com " +
+      "https://*.googleusercontent.com " +
       "https://bam.nr-data.net " +
       "https://*.midtrans.com; " +
       "connect-src 'self' " +
       "https://app.sandbox.midtrans.com " +
       "https://api.sandbox.midtrans.com " +
       "https://js-agent.newrelic.com " +
+      "https://accounts.google.com " +
+      "https://www.googleapis.com " +
+      "https://apis.google.com " +
       "https://bam.nr-data.net " +
       "https://*.midtrans.com; " +
       "frame-src 'self' " +
       "https://app.sandbox.midtrans.com " +
+      "https://accounts.google.com " +
       "https://*.midtrans.com; " +
       "img-src 'self' data: https: blob:; " +
       "style-src 'self' 'unsafe-inline'; " +
       "font-src 'self' data:;",
-    "Cross-Origin-Embedder-Policy": "require-corp",
-    "Cross-Origin-Opener-Policy": "same-origin",
+    // Change COOP to unsafe-none to allow popups to communicate properly
+    "Cross-Origin-Opener-Policy": "unsafe-none",
+    "Cross-Origin-Embedder-Policy": "credentialless",
     "Cross-Origin-Resource-Policy": "cross-origin"
   }
 }

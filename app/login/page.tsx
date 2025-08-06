@@ -132,6 +132,14 @@ function LoginForm() {
         throw new Error('Google login belum dikonfigurasi. Silakan gunakan login email/password.');
       }
 
+      // Store current path to redirect back after auth
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        const searchParams = new URLSearchParams(window.location.search);
+        const redirectPath = searchParams.get('redirect') || '/';
+        sessionStorage.setItem('returnTo', redirectPath);
+      }
+
       // Disable One Tap and reset state before showing manual login popup
       disableOneTap();
       resetGoogleAuthState();
@@ -184,7 +192,7 @@ function LoginForm() {
         console.log('Google login attempt result:', loginError.message);
         
         // If error is about missing full name, show the form
-        if (loginError.message.includes('Nama lengkap wajib diisi')) {
+        if (loginError.message && loginError.message.includes('Nama lengkap wajib diisi')) {
           console.log('Showing Google user form for new user');
           setGoogleUserInfo(googleUser);
           setShowGoogleUserForm(true);
@@ -199,17 +207,17 @@ function LoginForm() {
       console.error('Google login error:', error);
       
       // Handle specific error types with better messages
-      if (error.message.includes('sedang diproses')) {
+      if (error.message?.includes('sedang diproses')) {
         setError('Google sign-in sedang diproses. Silakan tunggu sebentar dan coba lagi.');
-      } else if (error.message.includes('diblokir') || error.message.includes('popup')) {
+      } else if (error.message?.includes('diblokir') || error.message?.includes('popup')) {
         setError('Popup Google sign-in diblokir. Pastikan popup tidak diblokir di browser Anda dan coba lagi.');
-      } else if (error.message.includes('NetworkError') || error.message.includes('jaringan')) {
+      } else if (error.message?.includes('NetworkError') || error.message?.includes('jaringan')) {
         setError('Terjadi masalah jaringan dengan Google. Periksa koneksi internet Anda dan coba lagi.');
-      } else if (error.message.includes('dibatalkan')) {
+      } else if (error.message?.includes('dibatalkan')) {
         setError('Google sign-in dibatalkan. Silakan coba lagi jika Anda ingin melanjutkan.');
-      } else if (error.message.includes('Timeout')) {
+      } else if (error.message?.includes('Timeout')) {
         setError('Login Google timeout. Periksa koneksi internet Anda dan coba lagi.');
-      } else if (error.message.includes('belum dikonfigurasi')) {
+      } else if (error.message?.includes('belum dikonfigurasi')) {
         setError('Google authentication saat ini tidak tersedia. Silakan gunakan login email/password.');
       } else {
         setError(error.message || 'Terjadi kesalahan saat login dengan Google. Silakan coba lagi atau gunakan login email/password.');  
