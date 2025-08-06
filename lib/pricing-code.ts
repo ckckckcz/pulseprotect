@@ -1,190 +1,149 @@
-import { supabase } from './supabase';
+"use client";
 
-export interface PromoCode {
+interface PromoCode {
   code: string;
   discount: number;
   description: string;
 }
 
-// Available promo codes - hardcoded for now
-// In a production app, these would come from a database
 const availablePromoCodes: PromoCode[] = [
   {
-    code: 'mechaminds',
+    code: "mechaminds",
     discount: 10,
-    description: 'Diskon 10% untuk komunitas MechaMinds',
+    description: "Diskon 10% untuk komunitas MechaMinds",
   },
   {
-    code: 'smksuhat',
+    code: "smksuhat",
     discount: 40,
-    description: 'Diskon 40% untuk SMK Suhat',
+    description: "Diskon 40% untuk SMK Suhat",
   },
   {
-    code: 'indonesiaemas',
+    code: "indonesiaemas",
     discount: 20,
-    description: 'Diskon 20% untuk Indonesia Emas',
+    description: "Diskon 20% untuk Indonesia Emas",
   },
 ];
 
-/**
- * Validates a promo code and saves it to the database if valid
- */
-export const validateAndSavePromoCode = async (
+// Save promo code for a user
+export async function validateAndSavePromoCode(
   email: string,
   code: string
-): Promise<PromoCode | null> => {
+): Promise<PromoCode | null> {
   try {
-    // First check if code is valid
-    const normalizedCode = code.trim().toLowerCase();
-    const promoCode = availablePromoCodes.find(
-      p => p.code.toLowerCase() === normalizedCode
+    // Find if code exists
+    const foundPromo = availablePromoCodes.find(
+      (promo) => promo.code.toLowerCase() === code.toLowerCase()
     );
 
-    if (!promoCode) {
-      console.log(`Invalid promo code: ${code}`);
+    if (!foundPromo) {
       return null;
     }
 
-    // Check if user has already used this code - using direct REST API
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    // Save to server
+    const response = await fetch("/api/promo-codes/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        code: foundPromo.code,
+      }),
+    });
 
-    const checkResponse = await fetch(
-      `${supabaseUrl}/rest/v1/used_promo_codes?select=kode_promo&email=eq.${encodeURIComponent(
-        email
-      )}&kode_promo=eq.${encodeURIComponent(normalizedCode)}`,
-      {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=representation',
-        },
-      }
+    if (!response.ok) {
+      console.error("Failed to save promo code:", response.statusText);
+      return null;
+    }
+
+    // Save locally too
+    localStorage.setItem(
+      `promo_code_${email}`,
+      JSON.stringify({
+        ...foundPromo,
+        timestamp: Date.now(),
+      })
     );
 
-    if (!checkResponse.ok) {
-      throw new Error(`Failed to check promo code: ${checkResponse.status}`);
-    }
-
-    const existingCodes = await checkResponse.json();
-
-    if (existingCodes && existingCodes.length > 0) {
-      console.log(`User ${email} has already used promo code ${normalizedCode}`);
-      return promoCode; // Return the code anyway if it was already used by this user
-    }
-
-    // Save the promo code usage with direct REST API
-    const insertResponse = await fetch(
-      `${supabaseUrl}/rest/v1/used_promo_codes`,
-      {
-        method: 'POST',
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=representation',
-        },
-        body: JSON.stringify({
-          email,
-          kode_promo: normalizedCode,
-        }),
-      }
-    );
-
-    if (!insertResponse.ok) {
-      throw new Error(`Failed to save promo code: ${insertResponse.status}`);
-    }
-
-    console.log(`Successfully applied promo code ${normalizedCode} for ${email}`);
-    return promoCode;
+    return foundPromo;
   } catch (error) {
-    console.error('Error in validateAndSavePromoCode:', error);
+    console.error("Error saving promo code:", error);
     return null;
   }
-};
+}
 
-/**
- * Gets the latest promo code used by a user
- */
-export const getLatestPromoCode = async (
-  email: string
-): Promise<PromoCode | null> => {
+// Get the latest promo code for a user
+export async function getLatestPromoCode(email: string): Promise<PromoCode | null> {
   try {
-    // Get the latest promo code used by the user - using direct REST API
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/used_promo_codes?select=kode_promo&email=eq.${encodeURIComponent(
-        email
-      )}&order=created_at.desc&limit=1`,
-      {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
+    // Try to get from local storage first
+    const localPromo = localStorage.getItem(`promo_code_${email}`);
+    if (localPromo) {
+      const parsed = JSON.parse(localPromo);
+      // Check if it's not too old (e.g., not older than 24 hours)
+      if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+        return {
+          code: parsed.code,
+          discount: parsed.discount,
+          description: parsed.description,
+        };
       }
+    }
+
+    // If not in local storage or too old, fetch from server
+    const response = await fetch(
+      `/api/promo-codes/get?email=${encodeURIComponent(email)}`
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get promo codes: ${response.status}`);
+      return null;
     }
 
     const data = await response.json();
 
-    if (!data || data.length === 0) {
+    if (!data.promoCode) {
       return null;
     }
 
-    // Find the promo code details
-    const promoCode = availablePromoCodes.find(
-      p => p.code.toLowerCase() === data[0].kode_promo.toLowerCase()
+    // Save to local storage
+    localStorage.setItem(
+      `promo_code_${email}`,
+      JSON.stringify({
+        code: data.promoCode.code,
+        discount: data.promoCode.discount,
+        description: data.promoCode.description,
+        timestamp: Date.now(),
+      })
     );
 
-    return promoCode || null;
+    return {
+      code: data.promoCode.code,
+      discount: data.promoCode.discount,
+      description: data.promoCode.description,
+    };
   } catch (error) {
-    console.error('Error in getLatestPromoCode:', error);
+    console.error("Error getting promo code:", error);
     return null;
   }
-};
+}
 
-/**
- * Deletes a promo code usage for a user
- */
-export const deletePromoCode = async (
-  email: string,
-  code: string
-): Promise<boolean> => {
+// Delete promo code for a user
+export async function deletePromoCode(email: string, code: string): Promise<boolean> {
   try {
-    const normalizedCode = code.trim().toLowerCase();
+    // Remove from local storage
+    localStorage.removeItem(`promo_code_${email}`);
 
-    // Delete promo code using direct REST API
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    // Also delete from server (you'd need to implement this API endpoint)
+    const response = await fetch("/api/promo-codes/delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, code }),
+    });
 
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/used_promo_codes?email=eq.${encodeURIComponent(
-        email
-      )}&kode_promo=eq.${encodeURIComponent(normalizedCode)}`,
-      {
-        method: 'DELETE',
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to delete promo code: ${response.status}`);
-    }
-
-    return true;
+    return response.ok;
   } catch (error) {
-    console.error('Error in deletePromoCode:', error);
+    console.error("Error deleting promo code:", error);
     return false;
   }
-};
+}
