@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useState, useEffect, useMemo } from "react";
 import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, Info, RefreshCw, Sun, Moon, MessageCircle, Bolt, LogOut, Globe2, Languages } from "lucide-react";
