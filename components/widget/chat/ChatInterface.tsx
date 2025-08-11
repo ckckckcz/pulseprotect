@@ -1433,7 +1433,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
           <div className="space-y-6">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center overflow-hidden">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center
+                ${
+                  activeMembershipType === "pro"
+                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border border-amber-300"
+                    : activeMembershipType === "plus"
+                    ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
+                    : ""
+                }
+              `}
+                style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
+              >
                 {avatarUrl ? (
                   <img src={avatarUrl || "/placeholder.svg"} alt={user?.nama_lengkap || "User"} className="w-full border-2 border-teal-500 h-full object-cover rounded-full" />
                 ) : (
@@ -1442,7 +1453,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </div>
               <div>
                 <div className="text-sm font-medium">{user?.email || "User"}</div>
-                <div className="text-xs text-gray-400">Free Plan</div>
+                <div className="text-xs text-gray-400">{activeMembershipType === "pro" ? "Pro Plan" : activeMembershipType === "plus" ? "Plus Plan" : "Free Plan"}</div>
               </div>
             </div>
 
@@ -1463,17 +1474,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <Clock className="w-4 h-4" />
                 <span>Riwayat Chat</span>
               </Button>
-              <Link href="/" className="flex items-center justify-start h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
-                <Button className="gap-3">
-                  <House className="w-4 h-4" />
-                  <span>Home</span>
-                </Button>
-              </Link>
-              <Button variant="outline" className="w-full flex items-center justify-start gap-2 h-14 bg-red-600 border-red-200 text-white hover:bg-red-700 hover:border-red-300 rounded-xl" onClick={handleLogout}>
-                <DoorOpen className="w-4 h-4" />
-                <span>Keluar</span>
-              </Button>
             </div>
+            <Link href="/" className="flex items-center justify-start h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
+              <Button className="gap-3">
+                <House className="w-4 h-4" />
+                <span>Home</span>
+              </Button>
+            </Link>
           </div>
         </motion.div>
 
