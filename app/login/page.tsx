@@ -122,6 +122,12 @@ function LoginForm() {
     }
   }
 
+  function refreshAfterGoogleLogin() {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("refreshAfterGoogleLogin", "1");
+    }
+  }
+
   const handleGoogleLogin = async () => {
     try {
       setError("");
@@ -177,7 +183,9 @@ function LoginForm() {
               const role = result.user.role || 'user';
               const homePath = getHomePathForRole(role);
               // console.log('Redirecting to:', homePath);
+              refreshAfterGoogleLogin(); // Set flag sebelum redirect
               router.push(homePath);
+              setTimeout(() => {}, 600); // (opsional: delay kosong, bisa dihapus)
             }, 100);
             
             return;
@@ -259,7 +267,9 @@ function LoginForm() {
           const role = result.user.role || 'user';
           const homePath = getHomePathForRole(role);
           // console.log('Redirecting to:', homePath);
+          refreshAfterGoogleLogin(); // Set flag sebelum redirect
           router.push(homePath);
+          setTimeout(() => {}, 600); // (opsional: delay kosong, bisa dihapus)
         }, 100);
       }
     } catch (error: any) {

@@ -10,8 +10,8 @@ import MidtransScriptLoader from "@/components/MidtransScriptLoader";
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Smart City",
-  description: "Smart City Management System",
+  title: "Pulse Protect",
+  description: "Pulse Protect Management System",
   other: {
     "Content-Security-Policy": 
       "default-src 'self'; " +

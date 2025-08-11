@@ -430,6 +430,16 @@ export default function HomePage() {
   }
   const [latestMembershipType, setLatestMembershipType] = useState<string>("free");
 
+  // Tambahkan useEffect untuk auto-refresh setelah login Google
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (sessionStorage.getItem("refreshAfterGoogleLogin") === "1") {
+        sessionStorage.removeItem("refreshAfterGoogleLogin");
+        window.location.reload();
+      }
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden scroll-smooth">
       <Navbar />
