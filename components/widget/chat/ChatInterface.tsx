@@ -58,6 +58,7 @@ const models = [
   { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
 ];
 
+
 interface ChatActionsProps {
   textContent: string;
   onRegenerate?: () => void;
