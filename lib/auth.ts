@@ -313,7 +313,6 @@ export const authService = {
             
             // If we only have the cookie but not localStorage data, rebuild localStorage
             if (!storedUser && sessionData.userId) {
-              // Try to get full user data from cookie or return minimal data
               return {
                 id: sessionData.userId,
                 email: sessionData.email,

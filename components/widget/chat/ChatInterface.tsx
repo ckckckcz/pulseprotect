@@ -4,7 +4,7 @@ import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authService } from "@/lib/auth";
+import { authService } from "@/src/services/authService";
 import { aiService, type AIModel, type Message } from "@/src/services/aiService";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -44,7 +44,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
-import Cookies from "js-cookie";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -58,6 +57,7 @@ const models = [
   { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM", requiredMembership: "plus" },
   { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
 ];
+
 
 interface ChatActionsProps {
   textContent: string;
@@ -328,67 +328,21 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     "room-1": { name: "Chat 1", messages: [] },
   });
 
+  // Helper: Save chatRooms to localStorage
+  // (localStorage logic dihapus, chat statis)
+
   // Check authentication on component mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log("🔐 Starting authentication check...");
-
-        // Import the JWT-aware auth functions
-        const { getCurrentUser, refreshUserSession, hasJwtTokens } = await import("@/lib/auth-service");
-
-        // Check for tokens in both localStorage and cookies
-        const accessToken = localStorage.getItem("accessToken");
-        const cookieAccessToken = Cookies.get("jwt_access_token");
-
-        console.log("📋 Token sources check:", {
-          "localStorage token exists": !!accessToken,
-          "cookie token exists": !!cookieAccessToken,
-        });
-
-        // If we have tokens but they're not in both places, sync them
-        if (cookieAccessToken && !accessToken) {
-          console.log("🔄 Syncing token from cookie to localStorage");
-          localStorage.setItem("accessToken", cookieAccessToken);
-        } else if (accessToken && !cookieAccessToken) {
-          console.log("🔄 Syncing token from localStorage to cookie");
-          Cookies.set("jwt_access_token", accessToken, { path: "/" });
+        const currentUser = await authService.getCurrentUser();
+        if (!currentUser) {
+          router.push("/login");
+          return;
         }
-
-        // Check if we have any tokens using the helper function
-        if (hasJwtTokens()) {
-          console.log("🔑 Found token, attempting to validate user session");
-
-          // Try to get user data
-          let currentUser = getCurrentUser();
-
-          // If no user from regular getCurrentUser, try the forced refresh approach
-          if (!currentUser) {
-            console.log("⚠️ No user data from standard getCurrentUser, attempting forced refresh");
-            currentUser = await refreshUserSession();
-          }
-
-          if (currentUser) {
-            console.log("✅ Authentication successful:", {
-              userId: currentUser.id,
-              email: currentUser.email,
-              role: currentUser.role,
-            });
-            setUser(currentUser);
-            setIsAuthChecking(false);
-            return;
-          } else {
-            console.log("❌ Failed to get user data despite having tokens");
-          }
-        } else {
-          console.log("🚫 No authentication tokens found");
-        }
-
-        // No valid token or user data, redirect to login
-        console.log("🔀 Redirecting to login page");
-        router.push("/login");
+        setUser(currentUser);
       } catch (error) {
-        console.error("🛑 Auth check error:", error);
+        console.error("Auth check error:", error);
         router.push("/login");
       } finally {
         setIsAuthChecking(false);
