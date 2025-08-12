@@ -414,24 +414,52 @@ export const authService = {
     }
   },
 
-  logout() {
+  async logout() {
     if (typeof window !== 'undefined') {
       try {
-        // Clear localStorage
+        // 1. Clear all localStorage items related to auth
         localStorage.removeItem('user');
         localStorage.removeItem('sessionTimestamp');
         localStorage.removeItem('sessionExpiry');
+        localStorage.removeItem('userSession');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('google_auth_state');
         
-        // Clear cookies using js-cookie
+        // 2. Clear all cookies related to auth
         Cookies.remove('user-session', { path: '/' });
+        Cookies.remove('jwt_access_token', { path: '/' });
+        Cookies.remove('jwt_refresh_token', { path: '/' });
         
-        // Disable Google One Tap and reset auth state for next login
+        // 3. Also try to clear Supabase session if it exists
+        if (supabase && supabase.auth) {
+          try {
+            await supabase.auth.signOut();
+          } catch (e) {
+            console.error('Error clearing Supabase session:', e);
+          }
+        }
+        
+        // 4. Disable Google One Tap and reset auth state
         disableOneTap();
         resetGoogleAuthState();
         
-        console.log('User session cleared and Google auth state reset');
+        // 5. Trigger storage events to update UI across tabs
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'user',
+          newValue: null,
+          storageArea: localStorage
+        }));
+        
+        // 6. Force reload the page to clear any in-memory state
+        window.location.reload();
+        
+        console.log('User session completely cleared');
       } catch (error) {
         console.error('Error clearing session:', error);
+        // As a last resort, still try to reload
+        window.location.reload();
       }
     }
   },
