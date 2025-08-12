@@ -1,14 +1,14 @@
 "use client";
 
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
 import Cookies from 'js-cookie';
 
-interface JWTPayload {
-  userId: number;
-  email: string;
-  role: string;
-  exp: number;
-  iat: number;
+// Define a custom interface that extends the base JwtPayload
+interface CustomJWTPayload extends JwtPayload {
+  userId?: number;
+  email?: string;
+  role?: string;
+  // exp and iat are already in JwtPayload but may be undefined
 }
 
 // Enhanced JWT service with dual storage (localStorage + cookies)
@@ -32,7 +32,10 @@ export const jwtService = {
       
       // Also store in cookies as a backup and for SSR
       const decoded = jwtService.decodeToken(accessToken);
-      const expiryDate = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 3600000);
+      // Use optional chaining and provide default value if exp is undefined
+      const expiryDate = decoded?.exp 
+        ? new Date(decoded.exp * 1000) 
+        : new Date(Date.now() + 3600000);
       
       // Calculate max age in days (for cookies) - max 30 days
       const maxAgeDays = Math.min(
@@ -110,9 +113,9 @@ export const jwtService = {
     return token;
   },
   
-  decodeToken: (token: string) => {
+  decodeToken: (token: string): CustomJWTPayload | null => {
     try {
-      return jwtDecode<JWTPayload>(token);
+      return jwtDecode<CustomJWTPayload>(token);
     } catch (error) {
       // console.error('❌ Error decoding token:', error);
       return null;
@@ -127,8 +130,15 @@ export const jwtService = {
     if (!token) return false;
     
     try {
-      const decoded = jwtDecode<JWTPayload>(token);
+      const decoded = jwtDecode<CustomJWTPayload>(token);
       const currentTime = Date.now() / 1000;
+      
+      // Add null check for exp property
+      if (!decoded.exp) {
+        // console.error("Token missing expiration");
+        return false;
+      }
+      
       const isValid = decoded.exp > currentTime;
       
       // console.log("Token validation:", {
@@ -178,12 +188,12 @@ export const jwtService = {
   },
   
   // Verify token method for API routes
-  verifyToken: (token: string) => {
+  verifyToken: (token: string): CustomJWTPayload => {
     try {
-      const decoded = jwtDecode<JWTPayload>(token);
+      const decoded = jwtDecode<CustomJWTPayload>(token);
       const currentTime = Date.now() / 1000;
       
-      if (decoded.exp <= currentTime) {
+      if (!decoded.exp || decoded.exp <= currentTime) {
         throw new Error('Token expired');
       }
       

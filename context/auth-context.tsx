@@ -14,6 +14,16 @@ interface User {
   [key: string]: any; // For additional user properties
 }
 
+// Definisikan tipe untuk payload JWT dengan lebih jelas
+interface JWTPayload {
+  userId?: number;
+  email?: string;
+  role?: string;
+  account_membership?: string;
+  exp?: number;
+  iat?: number;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -41,9 +51,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Check if JWT is valid
         if (jwtService.isAuthenticated()) {
           // Get user info from token
-          const tokenData = jwtService.getUserFromToken();
+          const tokenData = jwtService.getUserFromToken() as JWTPayload | null;
           
-          if (tokenData) {
+          if (tokenData && tokenData.userId && tokenData.email) {
             // Fetch full user data from API
             const authHeader = jwtService.getAuthHeader();
             const headers: HeadersInit = {};
@@ -52,26 +62,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               headers.Authorization = authHeader.Authorization;
             }
             
-            const response = await fetch('/api/user/me', {
-              headers,
-            });
-            
-            if (response.ok) {
-              const userData = await response.json();
-              // console.log("✅ User data loaded from API");
-              setUser(userData.user);
-            } else {
-              // API error - try to use minimal data from token
-              console.warn("⚠️ Failed to get user data from API, using token data");
+            try {
+              const response = await fetch('/api/user/me', {
+                headers,
+              });
+              
+              if (response.ok) {
+                const userData = await response.json();
+                console.log("✅ User data loaded from API");
+                setUser(userData.user);
+              } else {
+                // API error - try to use minimal data from token
+                console.warn("⚠️ Failed to get user data from API, using token data");
+                // Pastikan semua properti yang required ada
+                setUser({
+                  id: tokenData.userId,
+                  email: tokenData.email,
+                  nama_lengkap: tokenData.email.split('@')[0] || 'User',
+                  role: tokenData.role || 'user',
+                  account_membership: tokenData.account_membership || 'free',
+                });
+              }
+            } catch (apiError) {
+              console.error("Error fetching user data:", apiError);
+              // Fallback jika API gagal
               setUser({
                 id: tokenData.userId,
                 email: tokenData.email,
-                nama_lengkap: tokenData.email.split('@')[0],
+                nama_lengkap: tokenData.email.split('@')[0] || 'User',
                 role: tokenData.role || 'user',
+                account_membership: tokenData.account_membership || 'free',
               });
             }
           } else {
-            // console.log("❌ No user data in token");
+            // console.log("❌ No valid user data in token");
             jwtService.clearTokens();
           }
         } else {
