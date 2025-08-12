@@ -4,7 +4,7 @@ import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authService } from "@/src/services/authService";
+import { authService } from "@/lib/auth";
 import { aiService, type AIModel, type Message } from "@/src/services/aiService";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
