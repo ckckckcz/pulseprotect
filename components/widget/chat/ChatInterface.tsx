@@ -312,7 +312,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [reportDetails, setReportDetails] = useState("");
 
   // Avatar URL state
-  const [avatarUrl, setAvatarUrl] = useState("");
 
   // Image upload states
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -698,6 +697,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   };
 
   // Update avatar URL when user data changes
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
   useEffect(() => {
     if (user?.foto_profile) {
       setAvatarUrl(user.foto_profile);
@@ -869,7 +869,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         {/* User Profile */}
         <div className="p-4 border-t border-gray-200 relative" ref={profileMenuRef}>
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}>
-            <div
+            {/* <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
                 ${
                   activeMembershipType === "pro"
@@ -886,12 +886,12 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               ) : (
                 <span className="text-sm font-medium text-white">{user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}</span>
               )}
-            </div>
+            </div> */}
             {isSidebarExpanded && (
               <>
                 <div className="flex-1 overflow-hidden">
                   <div className="text-sm font-medium truncate">{user?.email || "User"}</div>
-                  <div className="text-xs text-gray-400">{activeMembershipType === "pro" ? "Pro Plan" : activeMembershipType === "plus" ? "Plus Plan" : "Free Plan"}</div>
+                  {/* <div className="text-xs text-gray-400">{activeMembershipType === "pro" ? "Pro Plan" : activeMembershipType === "plus" ? "Plus Plan" : "Free Plan"}</div> */}
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transform transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""}`} />
               </>
@@ -1434,7 +1434,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
           <div className="space-y-6">
             <div className="flex items-center space-x-3 mb-4">
-              <div
+              {/* <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center
                 ${
                   activeMembershipType === "pro"
@@ -1451,10 +1451,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 ) : (
                   <span className="text-sm font-medium text-white">{user?.nama_lengkap ? user.nama_lengkap[0].toUpperCase() : "U"}</span>
                 )}
-              </div>
+              </div> */}
               <div>
                 <div className="text-sm font-medium">{user?.email || "User"}</div>
-                <div className="text-xs text-gray-400">{activeMembershipType === "pro" ? "Pro Plan" : activeMembershipType === "plus" ? "Plus Plan" : "Free Plan"}</div>
+                {/* <div className="text-xs text-gray-400">{activeMembershipType === "pro" ? "Pro Plan" : activeMembershipType === "plus" ? "Plus Plan" : "Free Plan"}</div> */}
               </div>
             </div>
 
