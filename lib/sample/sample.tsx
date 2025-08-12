@@ -1,7 +1,7 @@
 "use client";
 
 import Cookies from "js-cookie";
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
 import bcrypt from "bcryptjs";
 
@@ -107,6 +107,7 @@ export const authService = {
     }
   },
 
+  // Function to save user session data to localStorage and cookies
   saveUserSession(userData: any) {
     if (typeof window !== "undefined") {
       console.log("Saving user session for:", userData.email);
@@ -168,34 +169,13 @@ export const authService = {
   // Function to logout
   logout() {
     if (typeof window !== "undefined") {
-      console.log("Logging out user and clearing all session data");
-
-      // Clear all localStorage items
       localStorage.removeItem("userSession");
       localStorage.removeItem("user");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
-      localStorage.removeItem("sessionTimestamp");
-      localStorage.removeItem("sessionExpiry");
-      localStorage.removeItem("google_auth_state");
-      localStorage.removeItem("userSession");
-
-      // Clear all cookies related to authentication
       Cookies.remove("user-session", { path: "/" });
       Cookies.remove("jwt_access_token", { path: "/" });
       Cookies.remove("jwt_refresh_token", { path: "/" });
-
-      // Dispatch storage event to update UI across tabs
-      window.dispatchEvent(new Event("storage"));
-      window.dispatchEvent(
-        new StorageEvent("storage", {
-          key: "user",
-          newValue: null,
-          storageArea: localStorage,
-        })
-      );
-
-      console.log("All session data cleared successfully");
     }
   },
 
@@ -325,20 +305,7 @@ export const authService = {
             };
 
             // Save this minimal session data
-            if (typeof window !== "undefined") {
-              localStorage.setItem("userSession", JSON.stringify(sessionData));
-              localStorage.setItem(
-                "user",
-                JSON.stringify({
-                  id: sessionData.id,
-                  email: sessionData.email,
-                  nama_lengkap: sessionData.nama_lengkap,
-                  role: sessionData.role,
-                  account_membership: sessionData.account_membership,
-                  foto_profile: sessionData.foto_profile,
-                })
-              );
-            }
+            this.saveUserSession(sessionData);
           }
         } catch (e) {
           console.error("Error decoding JWT token:", e);
@@ -367,39 +334,8 @@ export const authService = {
         sessionData.sessionExpires = now + SESSION_DURATION * 1000;
       }
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("userSession", JSON.stringify(sessionData));
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            id: sessionData.id,
-            email: sessionData.email,
-            nama_lengkap: sessionData.nama_lengkap,
-            role: sessionData.role,
-            account_membership: sessionData.account_membership || "free",
-            foto_profile: sessionData.foto_profile,
-          })
-        );
-
-        // Update cookie as well
-        Cookies.set(
-          "user-session",
-          JSON.stringify({
-            userId: sessionData.id,
-            email: sessionData.email,
-            nama_lengkap: sessionData.nama_lengkap,
-            role: sessionData.role,
-            account_membership: sessionData.account_membership || "free",
-            foto_profile: sessionData.foto_profile,
-            expires: new Date(sessionData.sessionExpires).toISOString(),
-          }),
-          {
-            expires: SESSION_DURATION / (60 * 60 * 24), // Convert seconds to days
-            path: "/",
-            sameSite: "lax",
-          }
-        );
-      }
+      // Save updated session
+      this.saveUserSession(sessionData);
 
       console.log("Returning valid session for:", sessionData.email);
       return sessionData;
@@ -538,38 +474,7 @@ export const authService = {
                 };
 
                 // Save session
-                if (typeof window !== "undefined") {
-                  localStorage.setItem("userSession", JSON.stringify(sessionData));
-                  localStorage.setItem(
-                    "user",
-                    JSON.stringify({
-                      id: user.id,
-                      email: user.email,
-                      nama_lengkap: user.nama_lengkap,
-                      role: user.role,
-                      account_membership: user.account_membership || "free",
-                      foto_profile: user.foto_profile,
-                    })
-                  );
-
-                  Cookies.set(
-                    "user-session",
-                    JSON.stringify({
-                      userId: user.id,
-                      email: user.email,
-                      nama_lengkap: user.nama_lengkap,
-                      role: user.role,
-                      account_membership: user.account_membership || "free",
-                      foto_profile: user.foto_profile,
-                      expires: new Date(sessionExpiry).toISOString(),
-                    }),
-                    {
-                      expires: SESSION_DURATION / (60 * 60 * 24),
-                      path: "/",
-                      sameSite: "lax",
-                    }
-                  );
-                }
+                this.saveUserSession(sessionData);
 
                 return sessionData;
               }
@@ -601,38 +506,7 @@ export const authService = {
       };
 
       // Save updated session
-      if (typeof window !== "undefined") {
-        localStorage.setItem("userSession", JSON.stringify(refreshedSession));
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            id: refreshedSession.id,
-            email: refreshedSession.email,
-            nama_lengkap: refreshedSession.nama_lengkap,
-            role: refreshedSession.role,
-            account_membership: refreshedSession.account_membership,
-            foto_profile: refreshedSession.foto_profile,
-          })
-        );
-
-        Cookies.set(
-          "user-session",
-          JSON.stringify({
-            userId: refreshedSession.id,
-            email: refreshedSession.email,
-            nama_lengkap: refreshedSession.nama_lengkap,
-            role: refreshedSession.role,
-            account_membership: refreshedSession.account_membership,
-            foto_profile: refreshedSession.foto_profile,
-            expires: new Date(refreshedSession.sessionExpires).toISOString(),
-          }),
-          {
-            expires: SESSION_DURATION / (60 * 60 * 24),
-            path: "/",
-            sameSite: "lax",
-          }
-        );
-      }
+      this.saveUserSession(refreshedSession);
 
       console.log("Session refreshed successfully for:", refreshedSession.email);
       return refreshedSession;

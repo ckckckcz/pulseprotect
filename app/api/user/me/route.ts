@@ -28,16 +28,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token payload' }, { status: 401 });
     }
     
-    // Get user data
+    // Get user data with all fields explicitly selected
     const { data: user, error } = await supabase
       .from('user')
-      .select('*')
+      .select(`
+        id, 
+        email, 
+        nama_lengkap, 
+        nomor_telepon, 
+        tanggal_lahir, 
+        role, 
+        foto_profile, 
+        account_membership, 
+        status, 
+        verifikasi_email, 
+        email_confirmed_at, 
+        created_at, 
+        updated_at
+      `)
       .eq('id', decoded.userId)
       .single();
       
     if (error || !user) {
+      console.error('User fetch error:', error);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+    
+    console.log('User data retrieved:', {
+      id: user.id,
+      email: user.email,
+      foto_profile: user.foto_profile ? 'exists' : 'not set',
+      account_membership: user.account_membership || 'free'
+    });
     
     // Get profile data if doctor or admin
     let profileData = null;
@@ -54,26 +76,42 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Filter out sensitive data
-    const { 
-      kata_sandi, 
-      konfirmasi_kata_sandi,
-      verification_token,
-      verification_token_expires,
-      reset_password_token,
-      reset_password_expires,
-      ...safeUser 
-    } = user;
+    // Ensure membership type is included (default to 'free' if not set)
+    const membership = user.account_membership || 'free';
+    
+    // Create response object with all necessary fields
+    const userData = {
+      id: user.id,
+      email: user.email,
+      nama_lengkap: user.nama_lengkap,
+      nomor_telepon: user.nomor_telepon,
+      tanggal_lahir: user.tanggal_lahir,
+      role: user.role,
+      foto_profile: user.foto_profile,
+      account_membership: membership,
+      status: user.status,
+      verifikasi_email: user.verifikasi_email,
+      email_confirmed_at: user.email_confirmed_at,
+      created_at: user.created_at,
+      updated_at: user.updated_at
+    };
     
     // Add profile data if available
     if (profileData) {
-      safeUser.profile = profileData;
+      userData.foto_profile = profileData;
     }
     
-    return NextResponse.json({ user: safeUser });
+    return NextResponse.json({ 
+      user: userData,
+      membership: membership, // Include membership explicitly at top level too
+      currentTime: new Date().toISOString()
+    });
     
   } catch (error) {
     console.error('Error fetching user data:', error);
-    return NextResponse.json({ error: 'Failed to fetch user data' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to fetch user data', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
