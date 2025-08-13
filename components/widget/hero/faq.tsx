@@ -96,16 +96,6 @@ export default function FAQ() {
               <span className="text-teal-600 cardo">bertanya.</span>
             </motion.h2>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="text-gray-600 mb-8"
-            >
-              Jawaban cepat untuk pertanyaan yang Anda miliki. Tidak menemukan yang Anda cari?
-            </motion.p>
-
             {/* Video YouTube */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
