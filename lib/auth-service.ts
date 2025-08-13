@@ -100,19 +100,24 @@ export async function loginWithCredentials(email: string, password: string) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('userSession', JSON.stringify(sessionData));
       
-      // Set cookie using js-cookie for better cross-browser compatibility
-      Cookies.set('user-session', JSON.stringify({
-        userId: user.id,
-        email: user.email,
-        nama_lengkap: user.nama_lengkap,
-        role: user.role,
-        foto_profile: user.foto_profile,
-        expires: new Date(sessionExpiry).toISOString()
-      }), { 
-        expires: SESSION_DURATION / (60 * 60 * 24), // Convert seconds to days
-        path: '/',
-        sameSite: 'lax'
-      });
+      // Set cookie only if JWT exists; otherwise ensure removal
+      const accessToken = localStorage.getItem('accessToken') || Cookies.get('jwt_access_token');
+      if (accessToken) {
+        Cookies.set('user-session', JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          nama_lengkap: user.nama_lengkap,
+          role: user.role,
+          foto_profile: user.foto_profile,
+          expires: new Date(sessionExpiry).toISOString()
+        }), { 
+          expires: SESSION_DURATION / (60 * 60 * 24), // Convert seconds to days
+          path: '/',
+          sameSite: 'lax'
+        });
+      } else {
+        try { Cookies.remove('user-session', { path: '/' }); } catch {}
+      }
     }
 
     return { success: true, user: sessionData };
@@ -126,11 +131,40 @@ export async function loginWithCredentials(email: string, password: string) {
 export function logout() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('userSession');
+    localStorage.removeItem('user');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    Cookies.remove('user-session', { path: '/' });
-    Cookies.remove('jwt_access_token', { path: '/' });
-    Cookies.remove('jwt_refresh_token', { path: '/' });
+    localStorage.removeItem('sessionTimestamp');
+    localStorage.removeItem('sessionExpiry');
+    localStorage.removeItem('google_auth_state');
+
+    // Robust cookie clearing across domain/path variations
+    const cookieNames = ['user-session', 'jwt_access_token', 'jwt_refresh_token'] as const;
+    const hostname = window.location.hostname;
+    const hostParts = hostname.split('.');
+    const domainCandidates = [
+      undefined,
+      hostname,
+      hostParts.length > 1 ? `.${hostname}` : undefined,
+      hostParts.length >= 2 ? `.${hostParts.slice(-2).join('.')}` : undefined,
+    ].filter(Boolean) as string[];
+
+    for (const name of cookieNames) {
+      try {
+        // Standard removal
+        Cookies.remove(name, { path: '/' });
+        // Try with domain variants
+        domainCandidates.forEach((domain) => {
+          try {
+            Cookies.remove(name, { path: '/', domain });
+            // Fallback hard-expire via document.cookie
+            document.cookie = `${name}=; Max-Age=0; path=/; domain=${domain}`;
+          } catch {}
+        });
+        // Also attempt without domain via document.cookie
+        document.cookie = `${name}=; Max-Age=0; path=/`;
+      } catch {}
+    }
   }
 }
 
@@ -223,6 +257,13 @@ export function checkSession(): UserSession | null {
           // Save this minimal session data
           if (typeof window !== 'undefined') {
             localStorage.setItem('userSession', JSON.stringify(sessionData));
+            // Also persist minimal 'user' for UI convenience
+            localStorage.setItem('user', JSON.stringify({
+              id: sessionData.id,
+              email: sessionData.email,
+              nama_lengkap: sessionData.nama_lengkap,
+              role: sessionData.role,
+            }));
           }
         }
       } catch (e) {

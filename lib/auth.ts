@@ -180,10 +180,33 @@ export const authService = {
       localStorage.removeItem("google_auth_state");
       localStorage.removeItem("userSession");
 
-      // Clear all cookies related to authentication
-      Cookies.remove("user-session", { path: "/" });
-      Cookies.remove("jwt_access_token", { path: "/" });
-      Cookies.remove("jwt_refresh_token", { path: "/" });
+      // Robust cookie clearing for multiple domain/path combos
+      const cookieNames = ["user-session", "jwt_access_token", "jwt_refresh_token"] as const;
+      const hostname = window.location.hostname;
+      const hostParts = hostname.split(".");
+      const domainCandidates = [
+        undefined,
+        hostname,
+        hostParts.length > 1 ? `.${hostname}` : undefined,
+        hostParts.length >= 2 ? `.${hostParts.slice(-2).join('.')}` : undefined,
+      ].filter(Boolean) as string[];
+
+      for (const name of cookieNames) {
+        try {
+          // Standard removal
+          Cookies.remove(name, { path: "/" });
+          // Try with domain variants
+          domainCandidates.forEach((domain) => {
+            try {
+              Cookies.remove(name, { path: "/", domain });
+              // Hard-expire via document.cookie as a fallback
+              document.cookie = `${name}=; Max-Age=0; path=/; domain=${domain}`;
+            } catch {}
+          });
+          // Also attempt without domain via document.cookie
+          document.cookie = `${name}=; Max-Age=0; path=/`;
+        } catch {}
+      }
 
       // Dispatch storage event to update UI across tabs
       window.dispatchEvent(new Event("storage"));
@@ -381,24 +404,28 @@ export const authService = {
           })
         );
 
-        // Update cookie as well
-        Cookies.set(
-          "user-session",
-          JSON.stringify({
-            userId: sessionData.id,
-            email: sessionData.email,
-            nama_lengkap: sessionData.nama_lengkap,
-            role: sessionData.role,
-            account_membership: sessionData.account_membership || "free",
-            foto_profile: sessionData.foto_profile,
-            expires: new Date(sessionData.sessionExpires).toISOString(),
-          }),
-          {
-            expires: SESSION_DURATION / (60 * 60 * 24), // Convert seconds to days
-            path: "/",
-            sameSite: "lax",
-          }
-        );
+        // Update cookie only if JWT exists; otherwise ensure removal
+        if (accessToken) {
+          Cookies.set(
+            "user-session",
+            JSON.stringify({
+              userId: sessionData.id,
+              email: sessionData.email,
+              nama_lengkap: sessionData.nama_lengkap,
+              role: sessionData.role,
+              account_membership: sessionData.account_membership || "free",
+              foto_profile: sessionData.foto_profile,
+              expires: new Date(sessionData.sessionExpires).toISOString(),
+            }),
+            {
+              expires: SESSION_DURATION / (60 * 60 * 24),
+              path: "/",
+              sameSite: "lax",
+            }
+          );
+        } else {
+          try { Cookies.remove("user-session", { path: "/" }); } catch {}
+        }
       }
 
       console.log("Returning valid session for:", sessionData.email);

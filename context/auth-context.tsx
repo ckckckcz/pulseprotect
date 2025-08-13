@@ -3,6 +3,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { jwtService } from '@/lib/jwt-service';
+import { authService } from '@/lib/auth';
 
 // Auth types
 interface User {
@@ -133,6 +134,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Store tokens
         jwtService.setTokens(data.accessToken, data.refreshToken);
         
+        // Persist session cookie and localStorage immediately upon login
+        try {
+          authService.saveUserSession({
+            id: data.user?.id,
+            email: data.user?.email,
+            nama_lengkap: data.user?.nama_lengkap || (data.user?.email ? data.user.email.split('@')[0] : 'User'),
+            role: data.user?.role || 'user',
+            account_membership: data.user?.account_membership || 'free',
+            foto_profile: data.user?.foto_profile,
+            // sessionExpires will be auto-computed inside saveUserSession if not provided
+          });
+        } catch (e) {
+          console.warn('Warning: failed to persist user-session on login', e);
+        }
+
         // Set user in state
         setUser(data.user);
         
@@ -189,6 +205,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Store tokens
         jwtService.setTokens(data.accessToken, data.refreshToken);
         
+        // Ensure user-session cookie is set on Google login too
+        try {
+          authService.saveUserSession({
+            id: data.user?.id,
+            email: data.user?.email,
+            nama_lengkap: data.user?.nama_lengkap || (data.user?.email ? data.user.email.split('@')[0] : 'User'),
+            role: data.user?.role || 'user',
+            account_membership: data.user?.account_membership || 'free',
+            foto_profile: data.user?.foto_profile,
+          });
+        } catch (e) {
+          console.warn('Warning: failed to persist user-session on Google login', e);
+        }
+
         // Set user in state
         setUser(data.user);
         

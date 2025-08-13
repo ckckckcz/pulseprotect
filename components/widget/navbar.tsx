@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/lib/supabase"; // pastikan import supabase
 import { disableOneTap, resetGoogleAuthState } from '@/lib/google-auth';
+import { authService } from "@/lib/auth";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -84,6 +85,8 @@ export default function Navbar() {
         // Disable One Tap and reset Google auth state before logging out
         disableOneTap();
         resetGoogleAuthState();
+        // Clear all auth artifacts (cookies + localStorage)
+        authService.logout();
         await logout();
       }
     } catch (error) {

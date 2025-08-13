@@ -290,7 +290,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: Date }) => {
   useEffect(() => {
     const calculateTimeLeft = () => {
       const difference = targetDate.getTime() - new Date().getTime();
-      
+
       if (difference > 0) {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -359,7 +359,7 @@ export default function HomePage() {
   })
   const [registrationStatus, setRegistrationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string>('');
-  
+
   // Target date for release: August 24, 2025
   const releaseDate = new Date(2025, 7, 24); // Month is 0-indexed, so 7 = August
 
@@ -386,10 +386,10 @@ export default function HomePage() {
   const handleEarlyAccess = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email) return;
-    
+
     setRegistrationStatus('loading');
     setErrorMessage('');
-    
+
     try {
       // Call the API to handle database storage and email sending
       const response = await fetch('/api/early-access', {
@@ -399,29 +399,29 @@ export default function HomePage() {
         },
         body: JSON.stringify({ email }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         setErrorMessage(data.error || 'Gagal mendaftar');
         throw new Error(data.error || 'Failed to register');
       }
-      
+
       // Show success feedback
       setRegistrationStatus('success');
       triggerConfetti();
       setEmail("");
-      
+
       // Close modal after success
       setTimeout(() => {
         setShowAIModal(false);
         setRegistrationStatus('idle');
       }, 3000);
-      
+
     } catch (error) {
       console.error("Error registering for early access:", error);
       setRegistrationStatus('error');
-      
+
       // Reset after error
       setTimeout(() => {
         setRegistrationStatus('idle');
@@ -497,7 +497,7 @@ export default function HomePage() {
           >
             Lindungi Masyarakat dari{" "}
             <span className="text-teal-600 relative cardo italic">
-              JAWIR
+              Obat Palsu
               {/* <div className="absolute -bottom-0 left-0 right-0 h-1 bg-teal-100 rounded-full -z-10"></div> */}
             </span>
             <br />
@@ -529,7 +529,7 @@ export default function HomePage() {
                 {t('early_access_button')}
               </Button>
             </div>
-            
+
             {/* Add countdown timer below button */}
             <CountdownTimer targetDate={releaseDate} />
           </motion.div>
@@ -560,7 +560,7 @@ export default function HomePage() {
       >
         <About />
       </motion.div>
-      
+
       {/* Services Section */}
       <motion.div
         initial="hidden"
@@ -671,7 +671,7 @@ export default function HomePage() {
               >
                 <div className="text-center mb-6">
                   <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Construction className="w-7 h-7 text-teal-600"/>
+                    <Construction className="w-7 h-7 text-teal-600" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">AI Dalam Pengembangan</h3>
                   <p className="text-gray-600">Pengembangan AI masih dalam development, daftarkan email anda disini untuk mendapatkan akses awal!</p>
