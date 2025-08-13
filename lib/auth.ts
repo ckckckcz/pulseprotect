@@ -165,6 +165,35 @@ export const authService = {
     }
   },
 
+  async validateResetToken(token: string): Promise<string> {
+    try {
+      // Validate input
+      if (!token) {
+        throw new Error('Token reset kata sandi tidak valid');
+      }
+
+      // Use Supabase's verifyOtp to validate the reset token
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'recovery',
+      });
+
+      if (error) {
+        console.error('Supabase token validation error:', error);
+        throw new Error('Token tidak valid atau telah kedaluwarsa');
+      }
+
+      if (!data.user || !data.user.email) {
+        throw new Error('Tidak dapat menemukan email pengguna untuk token ini');
+      }
+
+      return data.user.email;
+    } catch (error: any) {
+      console.error('Validate reset token error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat memvalidasi token');
+    }
+  },
+
   async verifyEmail(email: string) {
     try {
       // Validate email
