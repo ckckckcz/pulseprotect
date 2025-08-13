@@ -165,6 +165,31 @@ export const authService = {
     }
   },
 
+  async verifyEmail(email: string) {
+    try {
+      // Validate email
+      if (!email || !email.includes('@')) {
+        throw new Error('Email tidak valid');
+      }
+
+      // Update the verifikasi_email field in the user table
+      const { error } = await supabase
+        .from('user')
+        .update({ verifikasi_email: true })
+        .eq('email', email.toLowerCase().trim());
+
+      if (error) {
+        console.error('Error updating email verification status:', error);
+        throw new Error('Gagal memperbarui status verifikasi email: ' + error.message);
+      }
+
+      return { success: true, message: 'Email berhasil diverifikasi' };
+    } catch (error: any) {
+      console.error('Verify email error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat memverifikasi email');
+    }
+  },
+
   saveUserSession(userData: any) {
     if (typeof window !== "undefined") {
       console.log("Saving user session for:", userData.email);
