@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { authService } from "@/lib/auth"
-import { useAuth } from "@/context/auth-context"
 import Celebration from "@/components/widget/celebration-confetti"
 
 function VerifyEmailContent() {
@@ -16,9 +15,7 @@ function VerifyEmailContent() {
   const token = searchParams?.get("token") || ""
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
   const [message, setMessage] = useState("")
-  const [userInfo, setUserInfo] = useState<any>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const { login } = useAuth()
 
   useEffect(() => {
     if (!token) {
@@ -32,7 +29,6 @@ function VerifyEmailContent() {
         const result = await authService.verifyEmail(token)
         setStatus("success")
         setMessage("Email berhasil diverifikasi!")
-        setUserInfo(result.user)
       } catch (error: any) {
         setStatus("error")
         setMessage(error.message || "Gagal memverifikasi email")
@@ -43,11 +39,9 @@ function VerifyEmailContent() {
   }, [token])
 
   const handleLogin = async () => {
-    if (!userInfo?.email) return
-
     setIsLoggingIn(true)
     try {
-      router.push(`/login?email=${encodeURIComponent(userInfo.email)}`)
+      router.push(`/login`)
     } catch (error) {
       console.error("Auto-login error:", error)
       router.push("/login")
@@ -87,13 +81,7 @@ function VerifyEmailContent() {
         {status === "loading" ? "Mohon tunggu, sedang memverifikasi email Anda." : message}
       </p>
 
-      {userInfo && (
-        <div className="mb-8">
-          <p className="text-gray-700">
-            Selamat datang, <span className="font-semibold">{userInfo.nama_lengkap}</span>!
-          </p>
-        </div>
-      )}
+      {/* Removed user-specific greeting since verifyEmail does not return user data */}
 
       {status !== "loading" && (
         <div className="space-y-4">
