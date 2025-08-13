@@ -715,9 +715,8 @@ export default function UserProfile() {
                     <button
                       key={item.id}
                       onClick={() => setActiveSetting(item.id)}
-                      className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
-                        activeSetting === item.id ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white" : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
-                      }`}
+                      className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${activeSetting === item.id ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white" : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
+                        }`}
                     >
                       <item.icon className="mr-3 h-5 w-5" />
                       {item.label}
@@ -744,9 +743,8 @@ export default function UserProfile() {
                     <button
                       key={item.id}
                       onClick={() => setActiveSetting(item.id)}
-                      className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${
-                        activeSetting === item.id ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white" : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
-                      }`}
+                      className={`w-full flex items-center px-3 py-2 text-left rounded-md transition-colors ${activeSetting === item.id ? "bg-teal-600 hover:bg-teal-700 rounded-xl text-white" : "text-gray-700 rounded-xl hover:bg-gray-100 hover:text-black"
+                        }`}
                     >
                       <item.icon className="mr-3 h-5 w-5" />
                       {item.label}
@@ -1026,8 +1024,8 @@ export default function UserProfile() {
                         <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
                       </div>
                     ) : filteredPayments.length > 0 ? (
-                      <div className="overflow-x-auto rounded-xl border border-gray-200">
-                        <table className="min-w-full divide-y divide-gray-200 overflow-hidden">
+                      <div className="w-full overflow-x-auto rounded-xl border border-gray-200">
+                        <table className=" divide-y divide-gray-200 overflow-hidden">
                           <thead className="bg-gray-100">
                             <tr>
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1051,9 +1049,6 @@ export default function UserProfile() {
                               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                               </th>
-                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Terakhir Diupdate
-                              </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -1068,7 +1063,6 @@ export default function UserProfile() {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{payment.period === "monthly" ? "Bulanan" : "Tahunan"}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{formatCurrency(payment.amount)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(payment.status)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{payment.updated_at ? format(new Date(payment.updated_at), "dd MMM yyyy, HH:mm", { locale: id }) : "-"}</td>
                               </tr>
                             ))}
                           </tbody>
