@@ -107,6 +107,64 @@ export const authService = {
     }
   },
 
+  async forgotPassword(email: string) {
+    try {
+      // Validate email
+      if (!email || !email.includes('@')) {
+        throw new Error('Email tidak valid');
+      }
+
+      // Use Supabase's resetPasswordForEmail method
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        console.error('Supabase reset password error:', error);
+        throw new Error('Gagal mengirim email reset kata sandi');
+      }
+
+      return { success: true, message: 'Email reset kata sandi telah dikirim' };
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat memproses permintaan reset kata sandi');
+    }
+  },
+
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      // Validate inputs
+      if (!token || !newPassword) {
+        throw new Error('Token dan kata sandi baru diperlukan');
+      }
+
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        console.error('Supabase password reset error:', error);
+        throw new Error('Gagal mengubah kata sandi: ' + error.message);
+      }
+
+      // Update the user's password in the user table (if needed)
+      const { error: updateError } = await supabase
+        .from('user')
+        .update({ kata_sandi: await bcrypt.hash(newPassword, 10) })
+        .eq('id', data.user?.id);
+
+      if (updateError) {
+        console.error('Error updating password in user table:', updateError);
+        throw new Error('Gagal memperbarui kata sandi di database');
+      }
+
+      return { success: true, message: 'Kata sandi berhasil diubah' };
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat mengubah kata sandi');
+    }
+  },
+
   saveUserSession(userData: any) {
     if (typeof window !== "undefined") {
       console.log("Saving user session for:", userData.email);
@@ -201,11 +259,11 @@ export const authService = {
               Cookies.remove(name, { path: "/", domain });
               // Hard-expire via document.cookie as a fallback
               document.cookie = `${name}=; Max-Age=0; path=/; domain=${domain}`;
-            } catch {}
+            } catch { }
           });
           // Also attempt without domain via document.cookie
           document.cookie = `${name}=; Max-Age=0; path=/`;
-        } catch {}
+        } catch { }
       }
 
       // Dispatch storage event to update UI across tabs
@@ -424,7 +482,7 @@ export const authService = {
             }
           );
         } else {
-          try { Cookies.remove("user-session", { path: "/" }); } catch {}
+          try { Cookies.remove("user-session", { path: "/" }); } catch { }
         }
       }
 
