@@ -811,10 +811,16 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     fetchMembership();
   }, [user]);
 
+  const getRequiredMembership = (modelId: string): "free" | "plus" | "pro" => {
+    const model = models.find((m) => m.id === modelId);
+    return (model?.requiredMembership as "free" | "plus" | "pro") || "free";
+  };
+
   const isModelUnlocked = (modelId: string) => {
+    const required = getRequiredMembership(modelId);
     if (activeMembershipType === "pro") return true;
-    if (activeMembershipType === "plus") return modelId === "google-gemini" || modelId === "deepseek-v3";
-    return modelId === "google-gemini";
+    if (activeMembershipType === "plus") return required === "free" || required === "plus";
+    return required === "free";
   };
 
   // Update avatar URL when user data changes

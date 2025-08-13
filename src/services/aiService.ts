@@ -17,7 +17,7 @@ const modelMapping: Record<AIModel, string> = {
   'google-gemini': 'google/gemma-3-27b-it:free',
   'deepseek-v3': 'deepseek/deepseek-chat-v3-0324:free',
   'mistral-small-24b': 'mistralai/mistral-small-3.2-24b-instruct:free',
-  'bakekok': process.env.VERTEX_AI_MODEL_ID || 'gemini-1.5-pro',
+  'bakekok': 'mistralai/mistral-small-3.2-24b-instruct:free',
 };
 
 // Check if model is from Vertex AI
