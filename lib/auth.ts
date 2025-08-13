@@ -8,6 +8,13 @@ import bcrypt from "bcryptjs";
 // Session duration in seconds (2 hours)
 const SESSION_DURATION = 2 * 60 * 60;
 
+export interface RegisterData {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+}
+
 export interface UserSession {
   id: number;
   email: string;
@@ -194,166 +201,119 @@ export const authService = {
     }
   },
 
-  async register({
-    email,
-    password,
-    fullName,
-    phone,
-  }: {
-    email: string;
-    password: string;
-    fullName: string;
-    phone?: string;
-  }) {
+  async register({ email, password, fullName, phone }: RegisterData) {
     try {
-      // Validate inputs
-      if (!email || !email.includes('@')) {
-        throw new Error('Email tidak valid');
-      }
-      if (!password || password.length < 8) {
-        throw new Error('Kata sandi harus minimal 8 karakter');
-      }
-      if (!fullName || !fullName.trim()) {
-        throw new Error('Nama lengkap wajib diisi');
-      }
-
-      // Check if email already exists
-      const { data: existingUser, error: checkError } = await supabase
-        .from('user')
-        .select('email')
-        .eq('email', email.toLowerCase().trim())
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking existing user:', checkError);
-        throw new Error('Gagal memeriksa ketersediaan email');
-      }
-
-      if (existingUser) {
-        throw new Error('Email sudah terdaftar');
-      }
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Sign up user with Supabase
-      const { data, error } = await supabase.auth.signUp({
-        email: email.toLowerCase().trim(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-            phone: phone?.trim() || null,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`, // Adjust to your verification callback route
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
+          phone,
+          account_membership: 'free', // Set default membership for new users
+        }),
+
       });
 
-      if (error) {
-        console.error('Supabase sign-up error:', error);
-        if (error.message.includes('User already registered')) {
-          throw new Error('Email sudah terdaftar');
-        }
-        throw new Error('Gagal mendaftar: ' + error.message);
+      // Read the response body once
+      const responseBody = await response.text();
+
+      let data;
+      try {
+        data = JSON.parse(responseBody);
+      } catch (parseError) {
+        throw new Error(responseBody || 'Terjadi kesalahan saat mendaftar');
+      }
+      if (!response.ok) {
+        throw new Error(data.error || 'Terjadi kesalahan saat mendaftar');
       }
 
-      if (!data.user) {
-        throw new Error('Gagal membuat akun pengguna');
-      }
-
-      // Insert user data into custom user table
-      const { error: insertError } = await supabase
-        .from('user')
-        .insert({
-          id: data.user.id,
-          email: email.toLowerCase().trim(),
-          nama_lengkap: fullName.trim(),
-          nomor_telepon: phone?.trim() || null,
-          kata_sandi: hashedPassword,
-          role: 'user', // Default role, adjust as needed
-          verifikasi_email: false, // Email verification required
-          account_membership: 'free', // Default membership, adjust as needed
-          status: 'active', // Default status, adjust as needed
-          foto_profile: null, // Default, adjust as needed
-        });
-
-      if (insertError) {
-        console.error('Error inserting user into user table:', insertError);
-        throw new Error('Gagal menyimpan data pengguna: ' + insertError.message);
-      }
-
-      return {
-        success: true,
-        message: 'Pendaftaran berhasil, silakan verifikasi email Anda',
-        user: {
-          id: data.user.id,
-          email: email.toLowerCase().trim(),
-          nama_lengkap: fullName.trim(),
-          role: 'user',
-          account_membership: 'free',
-          sessionExpires: Date.now() + SESSION_DURATION * 1000,
-          lastActivity: Date.now(),
-          foto_profile: null,
-        },
-      };
+      return data;
     } catch (error: any) {
-      console.error('Register error:', error);
+      console.error('Registration error:', error);
       throw new Error(error.message || 'Terjadi kesalahan saat mendaftar');
     }
+
   },
 
   async resendVerification(email: string) {
     try {
-      // Validate email
-      if (!email || !email.includes('@')) {
-        throw new Error('Email tidak valid');
-      }
-
-      // Resend verification email using Supabase
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email.toLowerCase().trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`, // Adjust to your verification callback route
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      });
-
-      if (error) {
-        console.error('Supabase resend verification error:', error);
-        throw new Error('Gagal mengirim ulang email verifikasi: ' + error.message);
+        body: JSON.stringify({ email })
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal mengirim ulang email verifikasi')
       }
-
-      return { success: true, message: 'Email verifikasi telah dikirim ulang' };
+      return { success: true }
     } catch (error: any) {
-      console.error('Resend verification error:', error);
-      throw new Error(error.message || 'Terjadi kesalahan saat mengirim ulang email verifikasi');
+      console.error("Resend verification error:", error)
+      throw new Error(error.message || "Gagal mengirim ulang email verifikasi")
+
     }
+
   },
 
-  async verifyEmail(email: string) {
+  async verifyEmail(token: string) {
     try {
-      // Validate email
-      if (!email || !email.includes('@')) {
-        throw new Error('Email tidak valid');
+      // Find user with the verification token
+      const { data: user, error: findError } = await supabase
+        .from("user")
+        .select("*")
+        .eq("verification_token", token)
+        .single();
+      if (findError || !user) {
+        throw new Error("Token verifikasi tidak valid");
+      }
+      // Check if token is expired
+      const now = new Date();
+      const tokenExpiry = new Date(user.verification_token_expires);
+
+      if (now > tokenExpiry) {
+        throw new Error("Token verifikasi sudah kedaluwarsa");
+      }
+      // Check if already verified
+      if (user.verifikasi_email) {
+        throw new Error("Email sudah diverifikasi sebelumnya");
+      }
+      // Update user verification status
+      const { error: updateError } = await supabase
+        .from("user")
+        .update({
+          verifikasi_email: true,
+          status: "success",
+          email_confirmed_at: new Date().toISOString(),
+          verification_token: null,
+          verification_token_expires: null
+        })
+        .eq("id", user.id);
+      if (updateError) {
+        console.error("Verification update error:", updateError);
+        throw new Error("Gagal memverifikasi email");
       }
 
-      // Update the verifikasi_email field in the user table
-      const { error } = await supabase
-        .from('user')
-        .update({ verifikasi_email: true })
-        .eq('email', email.toLowerCase().trim());
-
-      if (error) {
-        console.error('Error updating email verification status:', error);
-        throw new Error('Gagal memperbarui status verifikasi email: ' + error.message);
-      }
-
-      return { success: true, message: 'Email berhasil diverifikasi' };
+      return { 
+        success: true, 
+        user: {
+          id: user.id,
+          email: user.email,
+          nama_lengkap: user.nama_lengkap
+        }
+      };
     } catch (error: any) {
-      console.error('Verify email error:', error);
-      throw new Error(error.message || 'Terjadi kesalahan saat memverifikasi email');
+      console.error("Email verification error:", error);
+      throw new Error(error.message || "Terjadi kesalahan saat verifikasi email");
     }
   },
+
+
 
   saveUserSession(userData: any) {
     if (typeof window !== "undefined") {
