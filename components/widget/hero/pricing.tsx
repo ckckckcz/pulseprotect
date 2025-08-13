@@ -125,11 +125,11 @@ export default function PricingPage() {
   const { user: currentUser, loading: isAuthLoading } = useAuth();
 
   // Add Midtrans Snap hook with better error handling
-  const { 
-    isLoading: isLoadingMidtrans, 
-    isReady: isMidtransReady, 
+  const {
+    isLoading: isLoadingMidtrans,
+    isReady: isMidtransReady,
     error: midtransLoadError,
-    retryCount 
+    retryCount
   } = useMidtransSnap({
     onReady: () => {
       // console.log("✅ Midtrans Snap is ready to use");
@@ -164,16 +164,16 @@ export default function PricingPage() {
           setMidtransStatus('ready');
           return true;
         }
-        
+
         // Check if script tag exists
         const scriptExists = !!document.querySelector('script[src*="snap.js"]');
         // console.log("Midtrans script tag exists:", scriptExists);
-        
+
         return false;
       }
       return false;
     };
-    
+
     // Only proceed if Midtrans is not already available
     if (!checkMidtransGlobal()) {
       // console.log("🔄 Midtrans not found, will initialize via hook");
@@ -237,7 +237,7 @@ export default function PricingPage() {
     } else {
       // console.log("No user found in context");
     }
-    
+
     jwtService.clearTokens(); // Clear any invalid tokens
 
     toast({
@@ -266,7 +266,7 @@ export default function PricingPage() {
     try {
       // First check if the promo code is valid without making API calls
       const foundPromo = await validateAndSavePromoCode(currentUser.email, promoCode);
-      
+
       if (foundPromo) {
         setAppliedPromo(foundPromo);
         setPromoCode("");
@@ -292,23 +292,23 @@ export default function PricingPage() {
     } catch (error) {
       // Handle any unexpected errors gracefully
       // console.error("Error applying promo code:", error);
-      
+
       // Last resort fallback - check directly against available promo codes
       const { checkPromoCode } = await import("@/lib/pricing-code");
       const directPromo = checkPromoCode(promoCode);
-      
+
       if (directPromo) {
         setAppliedPromo(directPromo);
         setPromoCode("");
         setIsPromoDialogOpen(false);
         setShowCelebration(true);
-        
+
         toast({
           title: "Kode Promo Berhasil Diterapkan! 🎉",
           description: `${directPromo.description} - Hemat ${directPromo.discount}%`,
           duration: 5000,
         });
-        
+
         setTimeout(() => {
           setShowCelebration(false);
         }, 4000);
@@ -332,11 +332,11 @@ export default function PricingPage() {
 
     // console.log("🔍 handlePayment initiated for package:", packageType);
     // console.log("Midtrans status:", midtransStatus);
-    
+
     // Check if Midtrans is ready
     if (midtransStatus !== 'ready' || !isMidtransReady) {
       console.warn("⚠️ Midtrans Snap is not ready yet");
-      
+
       // If still loading, show loading message
       if (isLoadingMidtrans || midtransStatus === 'loading') {
         toast({
@@ -346,7 +346,7 @@ export default function PricingPage() {
         });
         return;
       }
-      
+
       // If error loading Midtrans, show error message
       if (midtransLoadError || midtransStatus === 'error') {
         toast({
@@ -357,12 +357,12 @@ export default function PricingPage() {
         return;
       }
     }
-    
+
     // Check JWT authentication first
     const isJWTValid = jwtService.isAuthenticated();
     // console.log("JWT authentication check:", isJWTValid ? "✅ Valid" : "❌ Invalid");
     // console.log("Current user from context:", currentUser ? "Exists" : "Missing");
-    
+
     // Only redirect to login if NOT authenticated
     if (!isJWTValid || !currentUser || !currentUser.email) {
       console.log("Authentication check failed:", {
@@ -401,18 +401,18 @@ export default function PricingPage() {
         phone: currentUser.nomor_telepon || "",
       };
 
-      console.log("Creating payment with:", { 
-        userId, 
-        packageType, 
+      console.log("Creating payment with:", {
+        userId,
+        packageType,
         finalPrice: packageDetails.price,
-        email: customerInfo.email 
+        email: customerInfo.email
       });
 
       // Create payment token via API
       const paymentResult = await createAIPackagePayment(userId, packageDetails, customerInfo);
 
       // console.log("Payment creation result:", paymentResult);
-      
+
       if (!paymentResult.token) {
         console.error("No token received from payment creation");
         throw new Error("Invalid payment token received");
@@ -431,20 +431,20 @@ export default function PricingPage() {
       // Check if window.snap exists before proceeding
       // console.log("Checking Midtrans Snap availability before showing popup...");
       // console.log("window.snap exists:", typeof window.snap !== "undefined");
-      
+
       if (!window.snap) {
         console.error("⚠️ Midtrans Snap is not available on window object!");
-        
+
         // Try one more time to load Midtrans
         toast({
           title: "Initializing Payment System",
           description: "Please wait while we initialize the payment system...",
         });
-        
+
         // Attempt to load the script directly
         const midtransUrl = process.env.NEXT_PUBLIC_MIDTRANS_SNAP_URL || 'https://app.sandbox.midtrans.com/snap/snap.js';
         const midtransClientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '';
-        
+
         // Create and append the script
         const script = document.createElement('script');
         script.src = midtransUrl;
@@ -452,13 +452,13 @@ export default function PricingPage() {
         script.id = 'midtrans-fallback-script';
         script.async = true;
         document.body.appendChild(script);
-        
+
         // Wait for script to load
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => {
             reject(new Error('Midtrans script loading timed out'));
           }, 10000);
-          
+
           script.onload = () => {
             clearTimeout(timeout);
             // Wait a bit for snap to initialize
@@ -470,13 +470,13 @@ export default function PricingPage() {
               }
             }, 1000);
           };
-          
+
           script.onerror = () => {
             clearTimeout(timeout);
             reject(new Error('Failed to load Midtrans script'));
           };
         });
-        
+
         if (!window.snap) {
           throw new Error('Failed to initialize Midtrans Snap');
         }
@@ -484,7 +484,7 @@ export default function PricingPage() {
 
       // Show Snap Midtrans popup
       // console.log("Showing Midtrans payment popup with token:", paymentResult.token);
-      
+
       if (window.snap) {
         await handleMidtransPayment(paymentResult.token, {
           onSuccess: async (result) => {
@@ -571,16 +571,16 @@ export default function PricingPage() {
   async function createPayment(paymentDetails: PaymentRequestDetails): Promise<any> {
     try {
       // console.log("📊 Creating payment with details:", paymentDetails);
-      
+
       // Get access token from JWT service
       const accessToken = jwtService.getToken();
       // console.log("JWT token available:", !!accessToken);
-      
+
       if (!accessToken) {
         console.error("No access token available!");
         throw new Error("Not authenticated. Please login first.");
       }
-      
+
       // console.log("Making API request to /api/create-payment");
       const response = await fetch("/api/create-payment", {
         method: "POST",
@@ -605,23 +605,23 @@ export default function PricingPage() {
       if (typeof window !== 'undefined') {
         // console.log("Window is defined");
         // console.log("window.snap exists:", !!window.snap);
-        
+
         if (window.snap) {
           // console.log("Showing Midtrans payment popup with token:", data.token);
           window.snap.pay(data.token, {
-            onSuccess: function(result: MidtransResult) {
+            onSuccess: function (result: MidtransResult) {
               // console.log('Payment success:', result);
               // Handle success here
             },
-            onPending: function(result: MidtransResult) {
+            onPending: function (result: MidtransResult) {
               // console.log('Payment pending:', result);
               // Handle pending here
             },
-            onError: function(result: MidtransResult) {
+            onError: function (result: MidtransResult) {
               console.error('Payment error:', result);
               // Handle error here
             },
-            onClose: function() {
+            onClose: function () {
               // console.log('Customer closed the payment window');
               // Handle customer closing the popup
             },
@@ -906,113 +906,35 @@ export default function PricingPage() {
         {appliedPromo ? (
           <AnimatePresence>
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: -20 }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-                duration: 0.4,
-              }}
-              className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 rounded-2xl border border-emerald-200/60 shadow-lg hover:shadow-xl transition-all duration-300"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
             >
-              {/* Animated background pattern */}
-              <div className="absolute inset-0 opacity-30">
-                <motion.div
-                  animate={{
-                    backgroundPosition: ["0% 0%", "100% 100%"],
-                  }}
-                  transition={{
-                    duration: 20,
-                    repeat: Number.POSITIVE_INFINITY,
-                    repeatType: "reverse",
-                  }}
-                  className="w-full h-full bg-gradient-to-r from-emerald-100/50 via-transparent to-teal-100/50"
-                  style={{
-                    backgroundSize: "200% 200%",
-                  }}
-                />
-              </div>
-
-              <div className="relative p-6">
-                {/* Header with enhanced styling */}
-                <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="flex items-center gap-3 mb-4">
-                  <motion.div whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.95 }} className="relative p-2.5 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl shadow-sm">
-                    <Check className="h-5 w-5 text-emerald-700" />
-                    <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }} className="absolute -top-1 -right-1">
-                      <Sparkles className="h-3 w-3 text-emerald-500" />
-                    </motion.div>
-                  </motion.div>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900 tracking-tight">Promo Active!</h3>
-                    <p className="text-sm text-emerald-700 font-medium">Discount applied successfully</p>
+                    <h3 className="font-semibold text-gray-900 text-lg">Promo Digunakan</h3>
+                    <p className="text-sm text-gray-500 mt-1">Code: {appliedPromo.code}</p>
                   </div>
-                </motion.div>
-
-                {/* Enhanced promo code display */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="relative bg-white/80 backdrop-blur-sm rounded-xl p-5 border border-white/60 shadow-sm hover:shadow-md transition-all duration-300"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        {/* <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={promoCode}
-                      className="cursor-pointer"
-                    >
-                      <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm px-3 py-1.5 shadow-sm transition-all duration-200">
-                        <Gift className="h-3 w-3 mr-1" />
-                        {appliedPromo.code.toUpperCase()}
-                      </Badge>
-                    </motion.div> */}
-
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }} className="flex items-center gap-1">
-                          <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">-{appliedPromo.discount}%</span>
-                          <span className="text-sm text-gray-500 font-medium">OFF</span>
-                        </motion.div>
-                      </div>
-
-                      <p className="text-sm text-gray-600 leading-relaxed mb-2">{appliedPromo.description}</p>
-
-                      {/* {appliedPromo.expiresAt && (
-                    <p className="text-xs text-gray-500 font-medium">
-                      Expires: {new Date(appliedPromo.expiresAt).toLocaleDateString()}
-                    </p>
-                  )} */}
-                      <p className="text-xs text-gray-500 font-medium">Expires: 01-01-2004</p>
-                    </div>
-
-                    <div className="flex flex-col gap-2 ml-4">
-                      {/* <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={copyPromoCode}
-                      className="text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 p-2 h-auto transition-colors duration-200"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </motion.div> */}
-                    </div>
+                  <div className="flex items-center justify-center w-10 h-10 bg-teal-50 rounded-full">
+                    <Check className="h-5 w-5 text-teal-600" />
                   </div>
+                </div>
 
-                  {/* Progress indicator for discount */}
-                </motion.div>
+                <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-3xl font-bold text-gray-900">{appliedPromo.discount}%</span>
+                    <span className="text-sm font-medium text-gray-600">OFF</span>
+                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed">{appliedPromo.description}</p>
+                </div>
 
-                {/* Subtle call-to-action */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="mt-4 text-center">
-                  <p className="text-xs text-gray-500 font-medium">🎉 You're saving big with this exclusive offer!</p>
-                </motion.div>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="px-2 py-1 bg-teal-100 text-teal-700 rounded-xl font-medium">Active</span>
+                </div>
               </div>
-
-              {/* Decorative corner accent */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-200/40 to-transparent rounded-bl-full" />
             </motion.div>
           </AnimatePresence>
         ) : (
@@ -1052,10 +974,10 @@ export default function PricingPage() {
                       <AnimatePresence mode="wait">
                         {appliedPromo ? (
                           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4">
-                            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <div className="w-16 h-16 bg-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
                               <Check className="h-8 w-8 text-white" />
                             </div>
-                            <p className="text-green-400 font-medium">Kode promo berhasil diterapkan!</p>
+                            <p className="text-teal-400 font-medium">Kode promo berhasil diterapkan!</p>
                             <p className="text-gray-300 text-sm mt-1">Kode: {appliedPromo}</p>
                           </motion.div>
                         ) : (
