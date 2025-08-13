@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, User, DoorOpen, Zap, Crown, Stethoscope } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/lib/supabase"; // pastikan import supabase
 import { disableOneTap, resetGoogleAuthState } from '@/lib/google-auth';
+import Logo from "@/public/logo.png";
 import { authService } from "@/lib/auth";
 
 export default function Navbar() {
@@ -199,7 +201,7 @@ export default function Navbar() {
         <div className="px-1 flex justify-between items-center">
           {/* Logo */}
           <Link href="/" className="inline-flex items-center">
-            <Zap className="w-8 h-8 text-teal-600 rounded-xl flex items-center justify-center mr-3" fill="currentColor" />
+            <Image src={Logo} alt="Pulse Protect" width={32} height={32} className="w-8 h-8 text-teal-600 rounded-xl flex items-center justify-center mr-3" />
             <span className="text-xl font-bold text-teal-600">Pulse Protect</span>
           </Link>
 

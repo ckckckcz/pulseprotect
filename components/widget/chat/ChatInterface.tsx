@@ -7,6 +7,7 @@ import Link from "next/link";
 import { authService } from "@/src/services/authService";
 import { aiService, type AIModel, type Message } from "@/src/services/aiService";
 import { Button } from "@/components/ui/button";
+import Logo from "@/public/logo-white.png";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -929,7 +930,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               onMouseEnter={() => setIsLogoHovered(true)}
               onMouseLeave={() => setIsLogoHovered(false)}
             >
-              {isLogoHovered ? <PanelLeft className="w-4 h-4 text-white" /> : <Zap className="w-4 h-4 text-white" fill="currentColor" />}
+              {isLogoHovered ? <PanelLeft className="w-4 h-4 text-white" /> : <Image src={Logo} alt="Pulse Protect" width={32} height={32} className="w-4 h-4 text-white" />}
             </div>
           </div>
 

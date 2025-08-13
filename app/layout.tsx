@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link 
           rel="icon" 
           type="image/png" 
-          href="/favicon.png"
+          href="/logo.png"
         />
         <link 
           rel="preconnect" 

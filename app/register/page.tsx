@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authService } from "@/lib/auth"
+import Logo from "@/public/logo.png";
+import Image from "next/image";
 
 // Password strength calculation
 const calculatePasswordStrength = (password: string) => {
@@ -66,13 +68,13 @@ export default function RegisterPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    
+
     // Calculate password strength when password changes
     if (field === 'password') {
       const strength = calculatePasswordStrength(value)
       setPasswordStrength(strength)
     }
-    
+
     setError("") // Clear error when user types
     setSuccess("") // Clear success when user types
   }
@@ -120,10 +122,10 @@ export default function RegisterPage() {
       setUserEmail(formData.email.trim())
       setShowVerificationMessage(true)
       setSuccess("Akun berhasil dibuat! Silakan cek email Anda untuk verifikasi.")
-      
+
     } catch (error: any) {
       console.error('Registration error:', error)
-      
+
       // Handle specific errors
       if (error.message.includes('Email sudah terdaftar') || error.message.includes('User already registered')) {
         setError("Email sudah terdaftar. Silakan gunakan email lain atau login.")
@@ -163,14 +165,10 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center bg-white px-8 lg:px-16">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <div className="mb-12">
+          <div className="mb-5">
             <Link href="/" className="inline-flex items-center">
-              <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center mr-3">
-                <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
-                  <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
-                </div>
-              </div>
-              <span className="text-xl font-bold text-teal-600">pulseprotect</span>
+              <Image src={Logo} alt="Pulse Protect" width={32} height={32} className="w-8 h-8 text-teal-600 rounded-xl flex items-center justify-center mr-3" />
+              <span className="text-xl font-bold text-teal-600">Pulse Protect</span>
             </Link>
           </div>
 
@@ -240,7 +238,7 @@ export default function RegisterPage() {
             >
               <h3 className="text-blue-800 font-medium mb-2">Verifikasi Email Diperlukan</h3>
               <p className="text-blue-700 text-sm mb-3">
-                Kami telah mengirim link verifikasi ke <strong>{userEmail}</strong>. 
+                Kami telah mengirim link verifikasi ke <strong>{userEmail}</strong>.
                 Silakan cek email Anda dan klik link tersebut untuk mengaktifkan akun.
               </p>
               <button
@@ -320,107 +318,105 @@ export default function RegisterPage() {
                   </motion.div>
 
                 </div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nomor Telepon
-                    </label>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nomor Telepon
+                  </label>
+                  <Input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                    placeholder="08123456789 (opsional)"
+                    disabled={isLoading}
+                  />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
                     <Input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      className="w-full px-4 py-6 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                      placeholder="08123456789 (opsional)"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
+                      placeholder="Minimal 8 karakter"
+                      required
                       disabled={isLoading}
                     />
-                  </motion.div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
+                      disabled={isLoading}
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
 
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={(e) => handleInputChange("password", e.target.value)}
-                        className="w-full px-4 py-6 pr-12 bg-white border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
-                        placeholder="Minimal 8 karakter"
-                        required
-                        disabled={isLoading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-500 transition-colors duration-200"
-                        disabled={isLoading}
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    
-                    {/* Password Strength Indicator */}
-                    {formData.password && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-gray-600">
-                            Kekuatan Password
-                          </span>
-                          <span className={`text-xs font-medium capitalize ${
-                            passwordStrength.level === 'weak' ? 'text-red-500' :
+                  {/* Password Strength Indicator */}
+                  {formData.password && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-600">
+                          Kekuatan Password
+                        </span>
+                        <span className={`text-xs font-medium capitalize ${passwordStrength.level === 'weak' ? 'text-red-500' :
                             passwordStrength.level === 'medium' ? 'text-yellow-500' : 'text-teal-500'
                           }`}>
-                            {passwordStrength.level === 'weak' ? 'Lemah' :
-                             passwordStrength.level === 'medium' ? 'Sedang' : 'Kuat'}
-                          </span>
-                        </div>
-                        
-                        <div className="flex space-x-1 mb-2">
-                          {[1, 2, 3, 4, 5].map((level) => (
-                            <div
-                              key={level}
-                              className={`h-2 flex-1 rounded-full transition-all duration-300 ${
-                                level <= passwordStrength.score
-                                  ? passwordStrength.level === 'weak' ? 'bg-red-400' :
-                                    passwordStrength.level === 'medium' ? 'bg-yellow-400' : 'bg-teal-400'
-                                  : 'bg-gray-200'
+                          {passwordStrength.level === 'weak' ? 'Lemah' :
+                            passwordStrength.level === 'medium' ? 'Sedang' : 'Kuat'}
+                        </span>
+                      </div>
+
+                      <div className="flex space-x-1 mb-2">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-2 flex-1 rounded-full transition-all duration-300 ${level <= passwordStrength.score
+                                ? passwordStrength.level === 'weak' ? 'bg-red-400' :
+                                  passwordStrength.level === 'medium' ? 'bg-yellow-400' : 'bg-teal-400'
+                                : 'bg-gray-200'
                               }`}
-                            />
-                          ))}
+                          />
+                        ))}
+                      </div>
+
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div className={`flex items-center ${passwordStrength.checks.length ? 'text-teal-600' : 'text-gray-400'}`}>
+                          <span className="mr-2">{passwordStrength.checks.length ? '✓' : '○'}</span>
+                          Minimal 8 karakter
                         </div>
-                        
-                        <div className="text-xs text-gray-500 space-y-1">
-                          <div className={`flex items-center ${passwordStrength.checks.length ? 'text-teal-600' : 'text-gray-400'}`}>
-                            <span className="mr-2">{passwordStrength.checks.length ? '✓' : '○'}</span>
-                            Minimal 8 karakter
-                          </div>
-                          <div className={`flex items-center ${passwordStrength.checks.lowercase ? 'text-teal-600' : 'text-gray-400'}`}>
-                            <span className="mr-2">{passwordStrength.checks.lowercase ? '✓' : '○'}</span>
-                            Huruf kecil (a-z)
-                          </div>
-                          <div className={`flex items-center ${passwordStrength.checks.uppercase ? 'text-teal-600' : 'text-gray-400'}`}>
-                            <span className="mr-2">{passwordStrength.checks.uppercase ? '✓' : '○'}</span>
-                            Huruf besar (A-Z)
-                          </div>
-                          <div className={`flex items-center ${passwordStrength.checks.numbers ? 'text-teal-600' : 'text-gray-400'}`}>
-                            <span className="mr-2">{passwordStrength.checks.numbers ? '✓' : '○'}</span>
-                            Angka (0-9)
-                          </div>
-                          <div className={`flex items-center ${passwordStrength.checks.special ? 'text-teal-600' : 'text-gray-400'}`}>
-                            <span className="mr-2">{passwordStrength.checks.special ? '✓' : '○'}</span>
-                            Karakter khusus (!@#$%^&*)
-                          </div>
+                        <div className={`flex items-center ${passwordStrength.checks.lowercase ? 'text-teal-600' : 'text-gray-400'}`}>
+                          <span className="mr-2">{passwordStrength.checks.lowercase ? '✓' : '○'}</span>
+                          Huruf kecil (a-z)
+                        </div>
+                        <div className={`flex items-center ${passwordStrength.checks.uppercase ? 'text-teal-600' : 'text-gray-400'}`}>
+                          <span className="mr-2">{passwordStrength.checks.uppercase ? '✓' : '○'}</span>
+                          Huruf besar (A-Z)
+                        </div>
+                        <div className={`flex items-center ${passwordStrength.checks.numbers ? 'text-teal-600' : 'text-gray-400'}`}>
+                          <span className="mr-2">{passwordStrength.checks.numbers ? '✓' : '○'}</span>
+                          Angka (0-9)
+                        </div>
+                        <div className={`flex items-center ${passwordStrength.checks.special ? 'text-teal-600' : 'text-gray-400'}`}>
+                          <span className="mr-2">{passwordStrength.checks.special ? '✓' : '○'}</span>
+                          Karakter khusus (!@#$%^&*)
                         </div>
                       </div>
-                    )}
-                  </motion.div>
+                    </div>
+                  )}
+                </motion.div>
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -516,10 +512,10 @@ export default function RegisterPage() {
       <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-teal-400 via-teal-500 to-teal-700 overflow-hidden">
         {/* Background Image/Illustration */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-400/90 via-teal-500/90 to-teal-700/90"></div>
-        
+
         {/* City Silhouette */}
         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent"></div>
-        
+
         {/* Clouds */}
         <div className="absolute inset-0">
           <div className="absolute top-20 left-20 w-32 h-16 bg-white/20 rounded-xl blur-sm"></div>
@@ -540,7 +536,7 @@ export default function RegisterPage() {
             <blockquote className="text-2xl font-medium mb-6 leading-relaxed">
               "Bergabung dengan pulseprotect adalah keputusan terbaik! Sekarang mengelola kota jadi lebih mudah dan efisien."
             </blockquote>
-            
+
             <div className="mb-6">
               <p className="font-semibold">Ahmad Rahman</p>
               <p className="text-teal-100">City Manager at pulseprotect</p>

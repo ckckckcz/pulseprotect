@@ -13,6 +13,8 @@ import { getHomePathForRole } from "@/lib/role-utils"
 import { initializeGoogleLogin, triggerGoogleSignIn, resetGoogleAuthState } from '@/lib/google-auth';
 import GoogleUserForm from '@/components/auth/GoogleUserForm';
 import { authService } from "@/lib/auth";
+import Logo from "@/public/logo.png";
+import Image from "next/image";
 
 // Extract the form component that uses useSearchParams
 function LoginForm() {
@@ -35,7 +37,7 @@ function LoginForm() {
     if (typeof window !== 'undefined') {
       // Reset any previous state first
       resetGoogleAuthState();
-      
+
       // Only initialize if Google Client ID is configured
       const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (googleClientId && googleClientId !== '' && googleClientId !== 'undefined') {
@@ -86,28 +88,28 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    
+
     if (!email || !password) {
       setError("Email dan password wajib diisi")
       return
     }
-    
+
     try {
       // console.log(`Attempting login with email: ${email}`)
-      
+
       // First check if this email exists and what role they have
       const userRole = await checkUserRole(email.trim());
       // console.log(`Checked user role for ${email}: ${userRole || 'unknown'}`);
-      
+
       // Use safe error handling with the login function
       const loginResult = await login(email.trim(), password)
-      
+
       if (loginResult && loginResult.error) {
         console.error('Login returned error:', loginResult.message)
         setError(loginResult.message || "Terjadi kesalahan saat login. Silakan coba lagi.")
         return;
       }
-      
+
       // If login is successful and we have the user data, redirect based on role
       if (loginResult && loginResult.user) {
         const role = loginResult.user.role || 'user';
@@ -115,7 +117,7 @@ function LoginForm() {
         // console.log(`Login successful. Redirecting to ${homePath} for role ${role}`);
         router.push(homePath);
       }
-      
+
     } catch (error: any) {
       console.error('Unhandled login error:', error)
       setError(error.message || "Terjadi kesalahan saat login. Silakan coba lagi.")
@@ -149,7 +151,7 @@ function LoginForm() {
       // Disable One Tap and reset state before showing manual login popup
       disableOneTap();
       resetGoogleAuthState();
-      
+
       // Small delay to ensure any pending requests are cleared
       await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -157,7 +159,7 @@ function LoginForm() {
 
       // Trigger Google sign-in with comprehensive error handling
       const googleUser = await triggerGoogleSignIn();
-      
+
       if (!googleUser || !googleUser.email) {
         throw new Error('Gagal mendapatkan informasi dari Google');
       }
@@ -167,17 +169,17 @@ function LoginForm() {
       // Try to login with existing user first (without additional info)
       try {
         const result = await authService.loginWithGoogle(googleUser);
-        
+
         if (result.success) {
           if (result.isExistingUser) {
             // Existing user - manually update auth context and redirect
             // console.log('Existing Google user login successful, updating auth context');
-            
+
             // Force refresh user in auth context
             if (typeof refreshUser === 'function') {
               await refreshUser();
             }
-            
+
             // Small delay to ensure context is updated
             setTimeout(() => {
               const role = result.user.role || 'user';
@@ -185,9 +187,9 @@ function LoginForm() {
               // console.log('Redirecting to:', homePath);
               refreshAfterGoogleLogin(); // Set flag sebelum redirect
               router.push(homePath);
-              setTimeout(() => {}, 600); // (opsional: delay kosong, bisa dihapus)
+              setTimeout(() => { }, 600); // (opsional: delay kosong, bisa dihapus)
             }, 100);
-            
+
             return;
           } else {
             // New user - show completion form
@@ -198,7 +200,7 @@ function LoginForm() {
         }
       } catch (loginError: any) {
         // console.log('Google login attempt result:', loginError.message);
-        
+
         // If error is about missing full name, show the form
         if (loginError.message && loginError.message.includes('Nama lengkap wajib diisi')) {
           // console.log('Showing Google user form for new user');
@@ -206,14 +208,14 @@ function LoginForm() {
           setShowGoogleUserForm(true);
           return;
         }
-        
+
         // If it's any other error, rethrow it
         throw loginError;
       }
 
     } catch (error: any) {
       console.error('Google login error:', error);
-      
+
       // Handle specific error types with better messages
       if (error.message?.includes('sedang diproses')) {
         setError('Google sign-in sedang diproses. Silakan tunggu sebentar dan coba lagi.');
@@ -228,7 +230,7 @@ function LoginForm() {
       } else if (error.message?.includes('belum dikonfigurasi')) {
         setError('Google authentication saat ini tidak tersedia. Silakan gunakan login email/password.');
       } else {
-        setError(error.message || 'Terjadi kesalahan saat login dengan Google. Silakan coba lagi atau gunakan login email/password.');  
+        setError(error.message || 'Terjadi kesalahan saat login dengan Google. Silakan coba lagi atau gunakan login email/password.');
       }
     } finally {
       setIsGoogleLoading(false);
@@ -256,12 +258,12 @@ function LoginForm() {
 
       if (result.success) {
         // console.log('New Google user registration successful, updating auth context');
-        
+
         // Force refresh user in auth context
         if (typeof refreshUser === 'function') {
           await refreshUser();
         }
-        
+
         // Small delay to ensure context is updated
         setTimeout(() => {
           const role = result.user.role || 'user';
@@ -269,7 +271,7 @@ function LoginForm() {
           // console.log('Redirecting to:', homePath);
           refreshAfterGoogleLogin(); // Set flag sebelum redirect
           router.push(homePath);
-          setTimeout(() => {}, 600); // (opsional: delay kosong, bisa dihapus)
+          setTimeout(() => { }, 600); // (opsional: delay kosong, bisa dihapus)
         }, 100);
       }
     } catch (error: any) {
@@ -287,12 +289,8 @@ function LoginForm() {
         {/* Logo */}
         <div className="mb-12">
           <Link href="/" className="inline-flex items-center">
-            <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center mr-3">
-              <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
-                <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
-              </div>
-            </div>
-            <span className="text-xl font-bold text-teal-600">pulseprotect</span>
+            <Image src={Logo} alt="Pulse Protect" width={32} height={32} className="w-8 h-8 text-teal-600 rounded-xl flex items-center justify-center mr-3" />
+            <span className="text-xl font-bold text-teal-600">Pulse Protect</span>
           </Link>
         </div>
 
@@ -322,14 +320,10 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md">
       {/* Logo */}
-      <div className="mb-12">
+      <div className="mb-5">
         <Link href="/" className="inline-flex items-center">
-          <div className="w-8 h-8 bg-teal-600 rounded-xl flex items-center justify-center mr-3">
-            <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
-              <div className="w-4 h-4 bg-teal-600 rounded-md"></div>
-            </div>
-          </div>
-          <span className="text-xl font-bold text-teal-600">pulseprotect</span>
+          <Image src={Logo} alt="Pulse Protect" width={32} height={32} className="w-8 h-8 text-teal-600 rounded-xl flex items-center justify-center mr-3" />
+          <span className="text-xl font-bold text-teal-600">Pulse Protect</span>
         </Link>
       </div>
 
@@ -348,7 +342,7 @@ function LoginForm() {
       </motion.div>
 
       {/* One Tap akan muncul secara otomatis di sini jika user eligible */}
-      
+
       {/* Google Login Button - Only show if configured */}
       {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID !== '' && (
         <>
@@ -415,7 +409,7 @@ function LoginForm() {
           {successMessage}
         </motion.div>
       )}
-      
+
       {/* Error Message */}
       {error && (
         <motion.div
@@ -589,10 +583,10 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-teal-400 via-teal-500 to-teal-700 overflow-hidden">
         {/* Background Image/Illustration */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-400/90 via-teal-500/90 to-teal-700/90"></div>
-        
+
         {/* City Silhouette */}
         <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/40 to-transparent"></div>
-        
+
         {/* Clouds */}
         <div className="absolute inset-0">
           <div className="absolute top-20 left-20 w-32 h-16 bg-white/20 rounded-xl blur-sm"></div>
@@ -613,7 +607,7 @@ export default function LoginPage() {
             <blockquote className="text-2xl font-medium mb-6 leading-relaxed">
               "pulseprotect memudahkan saya dalam mengelola kota dan mengakses semua layanan dalam satu platform."
             </blockquote>
-            
+
             <div className="mb-6">
               <p className="font-semibold">Ahmad Rahman</p>
               <p className="text-teal-100">City Manager at pulseprotect</p>
