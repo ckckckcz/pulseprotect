@@ -224,37 +224,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Force refresh user data from API
   const refreshUser = async (): Promise<User | null> => {
     try {
-      if (!jwtService.isAuthenticated()) {
+      // Ambil token dari jwtService
+      const token = jwtService.getToken();
+      if (!token) {
         // console.log("❌ Cannot refresh user - not authenticated");
+        logout();
         return null;
       }
 
-      const authHeader = jwtService.getAuthHeader();
       const headers = new Headers();
-      if (authHeader.Authorization) {
-        headers.append('Authorization', authHeader.Authorization);
+      headers.append('Authorization', `Bearer ${token}`);
+
+      let response: Response;
+      try {
+        response = await fetch('/api/user/me', { headers });
+      } catch (fetchErr) {
+        console.error("refreshUser: Network/API error", fetchErr);
+        return null;
       }
-      
-      const response = await fetch('/api/user/me', {
-        headers,
-      });
-      
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        console.error("refreshUser: Failed to parse JSON from /api/user/me", jsonErr);
+        return null;
+      }
+
       if (!response.ok) {
-        console.error("Failed to refresh user data:", response.status);
-        
-        // If 401, the token is invalid - clear and redirect to login
+        console.error("Failed to refresh user data:", response.status, data?.error || data);
         if (response.status === 401) {
           logout();
         }
-        
         return null;
       }
 
-      const data = await response.json();
-      setUser(data.user);
-      return data.user;
+      if (!data || typeof data !== "object" || !data.user) {
+        console.error("refreshUser: API returned unexpected structure", data);
+        return null;
+      }
+
+      // Defensive: ensure required fields
+      if (!data.user.id || !data.user.email) {
+        console.error("refreshUser: User data missing id or email", data.user);
+        return null;
+      }
+
+      const safeUser = {
+        id: data.user.id,
+        email: data.user.email,
+        nama_lengkap: data.user.nama_lengkap || (data.user.email ? data.user.email.split('@')[0] : 'User'),
+        role: data.user.role || 'user',
+        account_membership: data.user.account_membership || 'free',
+        foto_profile: data.user.foto_profile,
+        ...data.user,
+      };
+
+      setUser(safeUser);
+      return safeUser;
     } catch (error) {
-      console.error("Error refreshing user:", error);
+      console.error("Error refreshing user (outer catch):", error);
       return null;
     }
   };

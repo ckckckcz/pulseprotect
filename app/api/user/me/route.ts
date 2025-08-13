@@ -28,29 +28,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token payload' }, { status: 401 });
     }
     
-    // Get user data with all fields explicitly selected
-    const { data: user, error } = await supabase
-      .from('user')
-      .select(`
-        id, 
-        email, 
-        nama_lengkap, 
-        nomor_telepon, 
-        tanggal_lahir, 
-        role, 
-        foto_profile, 
-        account_membership, 
-        status, 
-        verifikasi_email, 
-        email_confirmed_at, 
-        created_at, 
-        updated_at
-      `)
-      .eq('id', decoded.userId)
-      .single();
-      
+    // Debug: log decoded JWT
+    console.log('Decoded JWT:', decoded);
+
+    // Try to get user by id, fallback to email if not found
+    let user = null;
+    let error = null;
+
+    if (decoded.userId) {
+      const result = await supabase
+        .from('user')
+        .select('*')
+        .eq('id', decoded.userId)
+        .single();
+      user = result.data;
+      error = result.error;
+    }
+
+    // If not found by id, try by email
+    if ((!user || error) && decoded.email) {
+      const result = await supabase
+        .from('user')
+        .select('*')
+        .eq('email', decoded.email)
+        .single();
+      user = result.data;
+      error = result.error;
+    }
+
     if (error || !user) {
-      console.error('User fetch error:', error);
+      console.error('User fetch error:', error, 'Decoded:', decoded);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     
@@ -78,32 +85,33 @@ export async function GET(request: NextRequest) {
     
     // Ensure membership type is included (default to 'free' if not set)
     const membership = user.account_membership || 'free';
-    
+
     // Create response object with all necessary fields
     const userData = {
       id: user.id,
       email: user.email,
       nama_lengkap: user.nama_lengkap,
       nomor_telepon: user.nomor_telepon,
-      tanggal_lahir: user.tanggal_lahir,
+      // tanggal_lahir removed/not present in schema
       role: user.role,
       foto_profile: user.foto_profile,
-      account_membership: membership,
+      account_membership: membership, // always present
       status: user.status,
       verifikasi_email: user.verifikasi_email,
       email_confirmed_at: user.email_confirmed_at,
       created_at: user.created_at,
-      updated_at: user.updated_at
+      updated_at: user.updated_at,
+      profile: profileData // <-- add as separate key
     };
-    
-    // Add profile data if available
-    if (profileData) {
-      userData.foto_profile = profileData;
+
+    // Defensive: ensure all required fields are present
+    if (!userData.id || !userData.email || !userData.nama_lengkap) {
+      return NextResponse.json({ error: 'Incomplete user data from database' }, { status: 500 });
     }
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       user: userData,
-      membership: membership, // Include membership explicitly at top level too
+      membership: membership,
       currentTime: new Date().toISOString()
     });
     

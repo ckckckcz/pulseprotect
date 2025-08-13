@@ -351,14 +351,27 @@ export default function UserProfile() {
       }
 
       // Update user profile
-      await authService.updateUser(Number(userId), {
+      const result = await authService.updateUser(Number(userId), {
         nama_lengkap: displayName.trim(),
         nomor_telepon: formattedPhone.trim() || undefined,
         foto_profile: avatarUrl,
       });
 
-      // Refresh user data
-      await refreshUser();
+      if (!result.success) {
+        toast.error("Gagal memperbarui profil: " + (result.error || "Unknown error"));
+        return;
+      }
+
+      // Refresh user data only if update was successful
+      try {
+        const refreshed = await refreshUser();
+        if (!refreshed) {
+          toast.error("Gagal mengambil data user terbaru. Silakan reload halaman.");
+        }
+      } catch (err) {
+        console.error("Error in refreshUser after profile update:", err);
+        toast.error("Terjadi error saat refresh user. Silakan reload halaman.");
+      }
 
       toast.success("Profil berhasil diperbarui");
       setFormChanged(false);
@@ -386,8 +399,9 @@ export default function UserProfile() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      // Use JWT auth if available, otherwise fall back to query parameter
-      const endpoint = token ? `/api/payments/user-intents` : `/api/payments/user-intents?email=${encodeURIComponent(user.email)}`;
+      // Use JWT auth if available, otherwise include email as query parameter as well
+      const baseEndpoint = `/api/payments/user-intents`;
+      const endpoint = `${baseEndpoint}?email=${encodeURIComponent(user.email)}`;
 
       const response = await fetch(endpoint, { headers });
 
@@ -502,7 +516,16 @@ export default function UserProfile() {
       console.log("Saving avatar for user ID:", userId, "with URL:", avatarUrl);
       await authService.updateUser(Number(userId), { foto_profile: avatarUrl });
       toast.success("Avatar berhasil disimpan!");
-      await refreshUser();
+      // Tambahkan error handling di sini:
+      try {
+        const refreshed = await refreshUser();
+        if (!refreshed) {
+          toast.error("Gagal mengambil data user terbaru. Silakan reload halaman.");
+        }
+      } catch (err) {
+        console.error("Error in refreshUser after save avatar:", err);
+        toast.error("Terjadi error saat refresh user. Silakan reload halaman.");
+      }
       setIsAvatarChanged(false);
     } catch (err: any) {
       console.error("Error saving avatar:", err);
@@ -582,19 +605,36 @@ export default function UserProfile() {
     setSearchResults([]);
   };
 
+  // Defensive: ensure sidebarItems is always an array
+  const safeSidebarItems = Array.isArray(sidebarItems) ? sidebarItems : [];
+
   // Filter sidebar items based on search
   const filteredSidebarItems = useMemo(() => {
     if (!searchQuery.trim()) {
-      return sidebarItems;
+      return safeSidebarItems;
     }
 
     const searchTerm = searchQuery.toLowerCase();
-    return sidebarItems.filter((item) => {
+    return safeSidebarItems.filter((item) => {
       const content = searchableContent[item.id as keyof typeof searchableContent];
       return content.label.toLowerCase().includes(searchTerm) || content.keywords.some((keyword) => keyword.toLowerCase().includes(searchTerm));
     });
-  }, [searchQuery]);
+  }, [searchQuery, safeSidebarItems]);
 
+  // Move this hook up with the others!
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
+
+  // Add filtered payments logic
+  const filteredPayments = useMemo(() => {
+    // Defensive: ensure payments is always an array
+    const safePayments = Array.isArray(payments) ? payments : [];
+    if (paymentFilter === "all") {
+      return safePayments;
+    }
+    return safePayments.filter((payment) => payment.status === paymentFilter);
+  }, [payments, paymentFilter]);
+
+  // Place conditional returns here, after all hooks:
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -611,23 +651,12 @@ export default function UserProfile() {
   const latestMembershipType = payments.filter((p) => p.status === "success").sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.package_name;
 
   const handleChangeLanguage = (lang: "id" | "en") => {
-    // Ganti prefix di URL
     const segments = (pathname || "").split("/");
     segments[1] = lang; // pastikan segmen pertama adalah locale
     const newPath = segments.join("/") || "/";
     router.push(newPath);
   };
 
-  // Add state for payment filtering
-  const [paymentFilter, setPaymentFilter] = useState<string>("all");
-
-  // Add filtered payments logic
-  const filteredPayments = useMemo(() => {
-    if (paymentFilter === "all") {
-      return payments;
-    }
-    return payments.filter((payment) => payment.status === paymentFilter);
-  }, [payments, paymentFilter]);
 
   function getStatusBadge(status: string): React.ReactNode {
     const colorClass = getStatusColor(status);

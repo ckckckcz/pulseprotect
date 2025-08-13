@@ -476,6 +476,35 @@ export async function forgotPassword(email: string) {
   }
 }
 
+// Function to update user data
+export async function updateUser(
+  userId: number,
+  updates: Partial<{ nama_lengkap: string; nomor_telepon: string; foto_profile: string }>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!userId || isNaN(Number(userId))) {
+      return { success: false, error: "ID pengguna tidak valid" };
+    }
+
+    const { error } = await supabase
+      .from("user")
+      .update(updates)
+      .eq("id", userId);
+
+    if (error) {
+      console.error("Error updating user:", error);
+      return { success: false, error: error.message || "Gagal memperbarui data pengguna" };
+    }
+
+    await refreshUserSession();
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("updateUser error:", err);
+    return { success: false, error: err.message || "Terjadi kesalahan server" };
+  }
+}
+
 // Hook for accessing session info in React components
 export function useAuth() {
   const [user, setUser] = useState<UserSession | null>(null);

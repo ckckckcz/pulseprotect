@@ -590,7 +590,7 @@ export const authService = {
         return currentSession; // Return existing session as fallback
       }
 
-      // Update session with fresh data
+      // Defensive: ensure required fields
       const refreshedSession: UserSession = {
         ...currentSession,
         email: user.email || currentSession.email,
@@ -639,6 +639,40 @@ export const authService = {
     } catch (error) {
       console.error("Error in refreshUserSession:", error);
       return null;
+    }
+  },
+
+  // Function to update user data
+  async updateUser(
+    userId: number,
+    updates: Partial<{ nama_lengkap: string; nomor_telepon: string; foto_profile: string }>
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!userId || isNaN(Number(userId))) {
+        return { success: false, error: "ID pengguna tidak valid" };
+      }
+
+      const { error } = await supabase
+        .from("user")
+        .update(updates)
+        .eq("id", userId);
+
+      if (error) {
+        console.error("Error updating user:", error);
+        return { success: false, error: error.message || "Gagal memperbarui data pengguna" };
+      }
+
+      // Optionally refresh session data after update
+      const refreshed = await this.refreshUserSession();
+      if (!refreshed) {
+        // Defensive: avoid unhandled error if refresh fails
+        return { success: false, error: "Gagal memperbarui sesi pengguna setelah update" };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error("updateUser error:", err);
+      return { success: false, error: err.message || "Terjadi kesalahan server" };
     }
   },
 };
