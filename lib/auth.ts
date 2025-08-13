@@ -194,6 +194,142 @@ export const authService = {
     }
   },
 
+  async register({
+    email,
+    password,
+    fullName,
+    phone,
+  }: {
+    email: string;
+    password: string;
+    fullName: string;
+    phone?: string;
+  }) {
+    try {
+      // Validate inputs
+      if (!email || !email.includes('@')) {
+        throw new Error('Email tidak valid');
+      }
+      if (!password || password.length < 8) {
+        throw new Error('Kata sandi harus minimal 8 karakter');
+      }
+      if (!fullName || !fullName.trim()) {
+        throw new Error('Nama lengkap wajib diisi');
+      }
+
+      // Check if email already exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('user')
+        .select('email')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing user:', checkError);
+        throw new Error('Gagal memeriksa ketersediaan email');
+      }
+
+      if (existingUser) {
+        throw new Error('Email sudah terdaftar');
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Sign up user with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: phone?.trim() || null,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`, // Adjust to your verification callback route
+        },
+      });
+
+      if (error) {
+        console.error('Supabase sign-up error:', error);
+        if (error.message.includes('User already registered')) {
+          throw new Error('Email sudah terdaftar');
+        }
+        throw new Error('Gagal mendaftar: ' + error.message);
+      }
+
+      if (!data.user) {
+        throw new Error('Gagal membuat akun pengguna');
+      }
+
+      // Insert user data into custom user table
+      const { error: insertError } = await supabase
+        .from('user')
+        .insert({
+          id: data.user.id,
+          email: email.toLowerCase().trim(),
+          nama_lengkap: fullName.trim(),
+          nomor_telepon: phone?.trim() || null,
+          kata_sandi: hashedPassword,
+          role: 'user', // Default role, adjust as needed
+          verifikasi_email: false, // Email verification required
+          account_membership: 'free', // Default membership, adjust as needed
+          status: 'active', // Default status, adjust as needed
+          foto_profile: null, // Default, adjust as needed
+        });
+
+      if (insertError) {
+        console.error('Error inserting user into user table:', insertError);
+        throw new Error('Gagal menyimpan data pengguna: ' + insertError.message);
+      }
+
+      return {
+        success: true,
+        message: 'Pendaftaran berhasil, silakan verifikasi email Anda',
+        user: {
+          id: data.user.id,
+          email: email.toLowerCase().trim(),
+          nama_lengkap: fullName.trim(),
+          role: 'user',
+          account_membership: 'free',
+          sessionExpires: Date.now() + SESSION_DURATION * 1000,
+          lastActivity: Date.now(),
+          foto_profile: null,
+        },
+      };
+    } catch (error: any) {
+      console.error('Register error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat mendaftar');
+    }
+  },
+
+  async resendVerification(email: string) {
+    try {
+      // Validate email
+      if (!email || !email.includes('@')) {
+        throw new Error('Email tidak valid');
+      }
+
+      // Resend verification email using Supabase
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.toLowerCase().trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`, // Adjust to your verification callback route
+        },
+      });
+
+      if (error) {
+        console.error('Supabase resend verification error:', error);
+        throw new Error('Gagal mengirim ulang email verifikasi: ' + error.message);
+      }
+
+      return { success: true, message: 'Email verifikasi telah dikirim ulang' };
+    } catch (error: any) {
+      console.error('Resend verification error:', error);
+      throw new Error(error.message || 'Terjadi kesalahan saat mengirim ulang email verifikasi');
+    }
+  },
+
   async verifyEmail(email: string) {
     try {
       // Validate email
