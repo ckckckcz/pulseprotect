@@ -275,6 +275,7 @@ export function checkSession(): UserSession | null {
     console.error('Session check error:', error);
     return null;
   }
+  
 }
 
 // Function to get current user with JWT validation support
@@ -420,6 +421,61 @@ export async function refreshUserSession(): Promise<UserSession | null> {
   }
 }
 
+// Function to handle forgot password requests
+export async function forgotPassword(email: string) {
+  try {
+    // Check if the user exists
+    const { data: user, error } = await supabase
+      .from('user')
+      .select('id, email')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking user email:', error);
+      throw new Error('Error processing request');
+    }
+    
+    if (!user) {
+      console.log(`Password reset requested for non-existent email: ${email}`);
+      return;
+    }
+    
+    // Generate a secure random token
+    const resetToken = crypto.randomUUID();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+    
+    const { error: insertError } = await supabase
+      .from('password_reset_tokens')
+      .upsert([
+        {
+          user_id: user.id,
+          token: resetToken,
+          expires_at: expiresAt.toISOString(),
+          created_at: now.toISOString()
+        }
+      ]);
+    
+    if (insertError) {
+      console.error('Error storing reset token:', insertError);
+      throw new Error('Error processing request');
+    }
+    
+    // Here you would typically send an email with the reset link
+    // This depends on your email service integration
+    console.log(`Password reset token created for ${email}: ${resetToken}`);
+    
+    // This is where you'd integrate with your email sending service
+    // sendResetEmail(email, resetToken);
+    
+    return true;
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    throw error;
+  }
+}
+
 // Hook for accessing session info in React components
 export function useAuth() {
   const [user, setUser] = useState<UserSession | null>(null);
@@ -462,3 +518,4 @@ export function useAuth() {
     }
   };
 }
+
