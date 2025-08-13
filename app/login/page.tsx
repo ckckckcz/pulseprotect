@@ -3,7 +3,7 @@
 import type React from "react"
 import { motion } from "framer-motion"
 import { useState, useEffect, Suspense } from "react"
-import { Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react"
+import { Eye, EyeOff, ChevronLeft, ChevronRight, ArrowLeft, X, Construction } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,8 @@ function LoginForm() {
   const [oneTapShown, setOneTapShown] = useState(false)
   const router = useRouter()
   const { login, loginWithGoogle, loading: isLoading, user, checkUserRole, refreshUser } = useAuth()
+  const [showDevModal, setShowDevModal] = useState(false)
+
 
   // Initialize Google login on component mount
   useEffect(() => {
@@ -97,10 +99,7 @@ function LoginForm() {
     try {
       // console.log(`Attempting login with email: ${email}`)
 
-      // First check if this email exists and what role they have
-      const userRole = await checkUserRole(email.trim());
-      // console.log(`Checked user role for ${email}: ${userRole || 'unknown'}`);
-
+      await checkUserRole(email.trim());
       // Use safe error handling with the login function
       const loginResult = await login(email.trim(), password)
 
@@ -241,6 +240,16 @@ function LoginForm() {
     }
   };
 
+  const handleRememberMeClick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    setShowDevModal(true)
+  }
+
+  const handleForgotPasswordClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowDevModal(true)
+  }
+
   const handleGoogleUserFormSubmit = async (formData: { fullName: string; phone: string }) => {
     try {
       setError("");
@@ -286,6 +295,15 @@ function LoginForm() {
   if (showGoogleUserForm && googleUserInfo) {
     return (
       <div className="w-full max-w-md">
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center text-gray-600 hover:text-teal-600 transition-colors duration-200"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            <span className="text-sm font-medium">Kembali</span>
+          </Link>
+        </div>
         {/* Logo */}
         <div className="mb-12">
           <Link href="/" className="inline-flex items-center">
@@ -318,7 +336,17 @@ function LoginForm() {
   }
 
   return (
+    <>
     <div className="w-full max-w-md">
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="inline-flex items-center text-gray-600 hover:text-teal-600 transition-colors duration-200"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          <span className="text-sm font-medium">Kembali</span>
+        </Link>
+      </div>
       {/* Logo */}
       <div className="mb-5">
         <Link href="/" className="inline-flex items-center">
@@ -481,15 +509,19 @@ function LoginForm() {
             <input
               type="checkbox"
               checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
+              onChange={handleRememberMeClick}
               className="mr-2 h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded-lg"
               disabled={isLoading}
             />
             <span className="text-sm text-gray-600">Ingat saya</span>
           </label>
-          <Link href="/auth/forgot-password" className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200">
+          <button
+            type="button"
+            onClick={handleForgotPasswordClick}
+            className="text-sm text-teal-600 hover:text-teal-700 hover:underline transition-colors duration-200"
+          >
             Lupa password?
-          </Link>
+          </button>
         </motion.div>
 
         <motion.div
@@ -528,6 +560,42 @@ function LoginForm() {
         </p>
       </motion.div>
     </div>
+    {showDevModal && (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Informasi</h3>
+            <button
+              onClick={() => setShowDevModal(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="mb-6 text-center">
+            <div className="flex justify-center mb-3">
+              <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                <Construction className="w-6 h-6 text-teal-600" />
+              </div>
+            </div>
+            <p className="text-gray-600">Fitur sedang dalam pengerjaan</p>
+            <p className="text-sm text-gray-500 mt-1">Mohon tunggu update selanjutnya</p>
+          </div>
+          <Button
+            onClick={() => setShowDevModal(false)}
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-xl font-medium transition-colors duration-200"
+          >
+            Mengerti
+          </Button>
+        </motion.div>
+      </div>
+    )}
+    </>
   );
 }
 

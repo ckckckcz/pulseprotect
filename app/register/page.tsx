@@ -179,10 +179,13 @@ export default function RegisterPage() {
             className="mb-8"
           >
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Bergabung dengan pulseprotect
+              Bergabung dengan {" "}
+              <span className="text-teal-600 relative">
+                Pulse Protect
+              </span>
             </h1>
             <p className="text-gray-600">
-              Buat akun untuk mengakses semua fitur
+              Mulai dengan membuat akun untuk mengakses semua fitur eksklusif pulse protect.
             </p>
           </motion.div>
 
@@ -372,7 +375,7 @@ export default function RegisterPage() {
                           Kekuatan Password
                         </span>
                         <span className={`text-xs font-medium capitalize ${passwordStrength.level === 'weak' ? 'text-red-500' :
-                            passwordStrength.level === 'medium' ? 'text-yellow-500' : 'text-teal-500'
+                          passwordStrength.level === 'medium' ? 'text-yellow-500' : 'text-teal-500'
                           }`}>
                           {passwordStrength.level === 'weak' ? 'Lemah' :
                             passwordStrength.level === 'medium' ? 'Sedang' : 'Kuat'}
@@ -384,9 +387,9 @@ export default function RegisterPage() {
                           <div
                             key={level}
                             className={`h-2 flex-1 rounded-full transition-all duration-300 ${level <= passwordStrength.score
-                                ? passwordStrength.level === 'weak' ? 'bg-red-400' :
-                                  passwordStrength.level === 'medium' ? 'bg-yellow-400' : 'bg-teal-400'
-                                : 'bg-gray-200'
+                              ? passwordStrength.level === 'weak' ? 'bg-red-400' :
+                                passwordStrength.level === 'medium' ? 'bg-yellow-400' : 'bg-teal-400'
+                              : 'bg-gray-200'
                               }`}
                           />
                         ))}
