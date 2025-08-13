@@ -107,43 +107,6 @@ export const authService = {
     }
   },
 
-  forgotPassword: async (email: string) => {
-    try {
-      const normalizedEmail = email.toLowerCase().trim();
-
-      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: `${window.location.origin}/reset-password`, // Adjust this URL to your reset password page
-      });
-
-      if (error) {
-        console.error("Supabase forgot password error:", error);
-      }
-
-      return;
-    } catch (error) {
-      console.error("Forgot password error:", error);
-      return;
-    }
-  },
-
-  resetPassword: async (token: string, newPassword: string) => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) {
-        console.error("Supabase reset password error:", error);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Reset password error:", error);
-      return false;
-    }
-  },
-
   saveUserSession(userData: any) {
     if (typeof window !== "undefined") {
       console.log("Saving user session for:", userData.email);
