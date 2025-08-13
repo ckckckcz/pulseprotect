@@ -126,6 +126,24 @@ export const authService = {
     }
   },
 
+  resetPassword: async (token: string, newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        console.error("Supabase reset password error:", error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Reset password error:", error);
+      return false;
+    }
+  },
+
   saveUserSession(userData: any) {
     if (typeof window !== "undefined") {
       console.log("Saving user session for:", userData.email);
