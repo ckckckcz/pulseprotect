@@ -201,14 +201,14 @@ export default function AntiFakeMedicineGames() {
             </Card>
 
             <Card className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-0 shadow-lg overflow-hidden rounded-2xl">
-              <CardHeader className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white p-8 rounded-t-2xl">
+              <CardHeader className="bg-gradient-to-r from-teal-500 to-teal-600 text-white p-8 rounded-t-2xl">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="p-3 bg-white/20 rounded-xl">
                     <Brain className="w-8 h-8" />
                   </div>
                   <div>
                     <CardTitle className="text-2xl font-bold">Memory Obat</CardTitle>
-                    <CardDescription className="text-cyan-100 text-base">
+                    <CardDescription className="text-teal-100 text-base">
                       Cocokkan kartu obat dengan benar
                     </CardDescription>
                   </div>
@@ -235,7 +235,7 @@ export default function AntiFakeMedicineGames() {
                     setCurrentScreen("game2")
                     initializeMemoryGame()
                   }}
-                  className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3 text-lg font-semibold rounded-2xl"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 text-lg font-semibold rounded-2xl"
                 >
                   <Play className="w-5 h-5 mr-2" />
                   Mulai Bermain
@@ -298,7 +298,7 @@ export default function AntiFakeMedicineGames() {
                           className="w-full h-full rounded-2xl shadow-xl object-cover"
                         />
                       </div>
-                      <div className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden] flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border">
+                      <div className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden] flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-50 rounded-2xl border">
                         <div className="text-center p-6">
                           <Trophy className="w-10 h-10 text-teal-600 mx-auto mb-3" />
                           <div className="text-gray-700 font-medium">Jawaban Tersimpan</div>
@@ -363,7 +363,7 @@ export default function AntiFakeMedicineGames() {
             </Button>
             <div className="flex items-center gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-cyan-600">⏱️ {formatTime(timer)}</div>
+                <div className="text-2xl font-bold text-teal-600">⏱️ {formatTime(timer)}</div>
                 <div className="text-sm text-gray-500">Waktu</div>
               </div>
               <div className="text-center">
@@ -389,7 +389,7 @@ export default function AntiFakeMedicineGames() {
                     card.flipped || card.matched ? '[transform:rotateY(180deg)]' : ''
                   }`}
                 >
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-cyan-400 to-cyan-500 shadow-md hover:shadow-lg [backface-visibility:hidden] flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-500 shadow-md hover:shadow-lg [backface-visibility:hidden] flex items-center justify-center">
                     <Brain className="w-8 h-8 text-white" />
                   </div>
                   <div className="absolute inset-0 rounded-2xl bg-white shadow-lg [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-hidden">
@@ -407,7 +407,7 @@ export default function AntiFakeMedicineGames() {
           <div className="text-center">
             <Button
               onClick={initializeMemoryGame}
-              className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-3 text-lg font-semibold rounded-2xl"
+              className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 text-lg font-semibold rounded-2xl"
             >
               <RotateCcw className="w-5 h-5 mr-2" />
               Mulai Ulang
