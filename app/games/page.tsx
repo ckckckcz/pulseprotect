@@ -153,9 +153,9 @@ export default function AntiFakeMedicineGames() {
         <div className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold text-teal-800 mb-4">Anti Fake Medicine Games</h1>
-            <p className="text-lg text-teal-600 max-w-2xl mx-auto">
-              Tingkatkan kemampuan Anda dalam mendeteksi obat palsu melalui permainan edukatif yang menyenangkan
+            <h1 className="text-4xl sm:text-5xl font-bold text-black mb-1">Anti Fake Medicine <span className="text-teal-600 cardo italic">Games</span></h1>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Tingkatkan kemampuan anda dalam mendeteksi obat palsu melalui permainan edukatif yang menyenangkan
             </p>
           </div>
 
@@ -169,15 +169,14 @@ export default function AntiFakeMedicineGames() {
                   <div>
                     <CardTitle className="text-2xl font-bold">Obat Asli atau Palsu?</CardTitle>
                     <CardDescription className="text-teal-100 text-base">
-                      Uji kemampuan Anda mengenali obat asli dan palsu
+                      Uji kemampuan anda mengenali obat asli dan palsu
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-8 rounded-b-2xl">
                 <p className="text-gray-600 mb-6 leading-relaxed">
-                  Tantang diri Anda untuk mengidentifikasi keaslian obat berdasarkan kemasan, label, dan karakteristik
-                  visual lainnya.
+                  Tantang diri anda untuk mengidentifikasi keaslian obat berdasarkan kemasan,dan visual lainnya.
                 </p>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -192,7 +191,7 @@ export default function AntiFakeMedicineGames() {
                 </div>
                 <Button
                   onClick={() => setCurrentScreen("game1")}
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 text-lg font-semibold rounded-2xl"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
                 >
                   <Play className="w-5 h-5 mr-2" />
                   Mulai Bermain
@@ -209,14 +208,14 @@ export default function AntiFakeMedicineGames() {
                   <div>
                     <CardTitle className="text-2xl font-bold">Memory Obat</CardTitle>
                     <CardDescription className="text-teal-100 text-base">
-                      Cocokkan kartu obat dengan benar
+                      Latih daya ingat anda dengan mencocokkan pasangan kartu obat
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="p-8 rounded-b-2xl">
                 <p className="text-gray-600 mb-6 leading-relaxed">
-                  Latih daya ingat Anda dengan mencocokkan pasangan kartu obat yang sama dalam waktu terbatas.
+                  Latih daya ingat anda dengan mencocokkan pasangan kartu obat yang sama dalam waktu terbatas.
                 </p>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -235,7 +234,7 @@ export default function AntiFakeMedicineGames() {
                     setCurrentScreen("game2")
                     initializeMemoryGame()
                   }}
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 text-lg font-semibold rounded-2xl"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
                 >
                   <Play className="w-5 h-5 mr-2" />
                   Mulai Bermain
@@ -244,11 +243,11 @@ export default function AntiFakeMedicineGames() {
             </Card>
           </div>
 
-          <div className="bg-white rounded-2xl p-8 shadow-lg border-0">
+          <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Mengapa Penting Mendeteksi Obat Palsu?</h2>
               <p className="text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Obat palsu dapat membahayakan kesehatan dan bahkan mengancam nyawa. Dengan bermain game ini, Anda akan
+                Obat palsu dapat membahayakan kesehatan dan bahkan mengancam nyawa. Dengan bermain game ini, anda akan
                 belajar mengenali ciri-ciri obat asli dan palsu untuk melindungi diri dan keluarga.
               </p>
             </div>
@@ -310,7 +309,7 @@ export default function AntiFakeMedicineGames() {
 
                 <div className="text-center md:text-left">
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">Apakah obat ini asli atau palsu?</h2>
-                  <p className="text-gray-600 mb-6">Pilih jawaban Anda. Pertanyaan akan lanjut otomatis.</p>
+                  <p className="text-gray-600 mb-6">Pilih jawaban anda. Pertanyaan akan lanjut otomatis.</p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button
