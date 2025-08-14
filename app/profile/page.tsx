@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, Mail, Shield, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, Info, RefreshCw, Sun, Moon, MessageCircle, Bolt, LogOut, Globe2, Languages } from "lucide-react";
+import { Search, Mail, Medal, Save, User, Key, CreditCard, FileText, Code, Loader2, ChevronDown, Info, RefreshCw, Sun, Moon, MessageCircle, Bolt, LogOut, Globe2, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import BadgeSystem from "@/components/widget/profile/badge";
 
 // Define UserData type locally since it's not exported from auth-context
 interface UserData {
@@ -538,7 +539,7 @@ export default function UserProfile() {
   // Add search functionality
   const sidebarItems = [
     { id: "general", label: "Umum", icon: User },
-    { id: "security", label: "Keamanan", icon: Shield },
+    { id: "gamifikasi", label: "Badge", icon: Medal },
     { id: "billing", label: "Transaksi", icon: CreditCard },
     { id: "settings", label: "Pengaturan", icon: Bolt },
   ];
@@ -548,9 +549,9 @@ export default function UserProfile() {
       label: "Umum",
       keywords: ["avatar", "profil", "nama", "telepon", "informasi", "foto", "gambar", "identitas", "data diri"],
     },
-    security: {
-      label: "Keamanan",
-      keywords: ["password", "kata sandi", "autentikasi", "keamanan", "login", "masuk", "verifikasi", "2fa"],
+    gamifikasi: {
+      label: "Badge",
+      keywords: ["password", "kata sandi", "autentikasi", "Badge", "login", "masuk", "verifikasi", "2fa"],
     },
     billing: {
       label: "Transaksi",
@@ -972,24 +973,8 @@ export default function UserProfile() {
                 </div>
               )}
 
-              {activeSetting === "security" && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-                  <h2 className="text-2xl font-semibold">Autentikasi</h2>
-                  <p className="text-gray-400 text-sm">Pengaturan keamanan dan autentikasi akun Anda.</p>
-
-                  <div className="mt-6 p-4 rounded-xl bg-gray-100 border border-gray-200">
-                    <div className="flex items-start gap-4">
-                      <div className="p-2 bg-gray-200 rounded-full">
-                        <Shield className="w-5 h-5 text-teal-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-1">Keamanan Akun</h3>
-                        <p className="text-gray-400 text-sm">Kami merekomendasikan untuk secara rutin memperbarui kata sandi dan mengaktifkan autentikasi dua faktor untuk keamanan yang lebih baik.</p>
-                        <Button className="mt-4 bg-teal-600 rounded-xl hover:bg-teal-700 text-white">Perbarui Pengaturan Keamanan</Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {activeSetting === "gamifikasi" && (
+                <BadgeSystem />
               )}
 
               {/* Add the billing section */}
