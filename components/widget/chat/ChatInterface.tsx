@@ -911,16 +911,16 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   // Camera controls
   const openCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       setIsCameraOpen(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } as MediaTrackConstraints,
+        audio: false,
+      });
       setCameraStream(stream);
-      if (cameraVideoRef.current) {
-        cameraVideoRef.current.srcObject = stream as any;
-        await cameraVideoRef.current.play();
-      }
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Tidak bisa mengakses kamera. Periksa permission browser.");
+      alert("Tidak bisa mengakses kamera. Periksa permission browser (HTTPS/localhost) dan pastikan tidak ada app lain yang memakai kamera.");
+      setIsCameraOpen(false);
     }
   };
 
@@ -958,6 +958,21 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       closeCamera();
     }, "image/png");
   };
+
+  // Ensure stream is attached after dialog mounts to avoid black video
+  useEffect(() => {
+    if (!isCameraOpen) return;
+    const videoEl = cameraVideoRef.current;
+    if (videoEl && cameraStream) {
+      try {
+        videoEl.srcObject = cameraStream as any;
+        const playPromise = videoEl.play();
+        if (playPromise && typeof playPromise.then === "function") {
+          playPromise.catch(() => {});
+        }
+      } catch {}
+    }
+  }, [isCameraOpen, cameraStream]);
 
   useEffect(() => {
     return () => {
@@ -1612,12 +1627,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         </div>
 
         <Dialog open={isCameraOpen} onOpenChange={(open) => { if (!open) closeCamera(); }}>
-          <DialogContent className="sm:max-w-lg bg-white">
+          <DialogContent className="sm:max-w-lg bg-white" onOpenAutoFocus={(e) => { e.preventDefault(); }}>
             <DialogHeader className="space-y-1">
               <DialogTitle className="text-lg font-semibold text-gray-900">Kamera</DialogTitle>
             </DialogHeader>
             <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "16 / 9" }}>
-              <video ref={cameraVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+              <video
+                ref={cameraVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
             </div>
             <DialogFooter className="flex gap-2 pt-2">
               <Button variant="outline" onClick={closeCamera} className="rounded bg-white text-black border border-gray-200 hover:bg-gray-200 hover:text-black">
