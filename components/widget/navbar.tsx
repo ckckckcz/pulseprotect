@@ -216,9 +216,9 @@ export default function Navbar() {
             <Link href="/cek-obat" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Cek Obat
             </Link>
-            <Link href="/silva" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
+            {/* <Link href="/silva" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Silva
-            </Link>
+            </Link> */}
             {/* <Link href="/contact" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Kontak
             </Link> */}
@@ -384,9 +384,9 @@ export default function Navbar() {
                 <Link href="/cek-obat" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Cek Obat
                 </Link>
-                <Link href="/silva" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
+                {/* <Link href="/silva" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Silva
-                </Link>
+                </Link> */}
                 {/* <Link href="/contact" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Kontak
                 </Link> */}
