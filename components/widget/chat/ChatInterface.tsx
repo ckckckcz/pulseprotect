@@ -1311,7 +1311,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   {messages.map((message, idx) => {
                     const isLastAi = message.role === "assistant" && idx === messages.length - 1 && (isAiTyping || aiTypingText);
                     const imageUrlMatch = message.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|svg)/i);
-                    const textContent = imageUrlMatch ? message.content.replace(imageUrlMatch[0], "").trim() : message.content;
+                    const textContent = message.content;
 
                     return (
                       <div key={message.id} className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}>
@@ -1329,7 +1329,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             minHeight: "unset",
                           }}
                         >
-                          <div className="whitespace-pre-wrap break-words leading-relaxed">{isLastAi && aiTypingText ? aiTypingText : message.content}</div>
+                          <div className="whitespace-pre-wrap break-words leading-relaxed">
+                            {isLastAi && aiTypingText
+                              ? aiTypingText
+                              : imageUrlMatch
+                                ? textContent.replace(imageUrlMatch[0], "").trim()
+                                : textContent}
+                          </div>
                         </div>
 
                         {message.role === "assistant" && (
@@ -1653,6 +1659,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             {/* Webcam langsung di sini */}
             <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "16/9" }}>
               <Webcam
+                ref={cameraVideoRef}
                 audio={false}
                 mirrored
                 screenshotFormat="image/png"
@@ -1671,19 +1678,15 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </Button>
               <Button
                 onClick={() => {
-                  const video = cameraVideoRef.current as HTMLVideoElement | null;
-                  if (video && cameraCanvasRef.current) {
-                    const canvas = cameraCanvasRef.current;
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    const ctx = canvas.getContext("2d");
-                    if (ctx) {
-                      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                      const imageSrc = canvas.toDataURL("image/png");
-                      setImagePreviews((prev) => [...prev, imageSrc].slice(0, 3));
-                      fetch(imageSrc)
-                        .then((res) => res.blob())
-                    }
+                  const imageSrc = cameraVideoRef.current?.getScreenshot();
+                  if (imageSrc) {
+                    setImagePreviews((prev) => [...prev, imageSrc].slice(0, 3));
+                    fetch(imageSrc)
+                      .then((res) => res.blob())
+                      .then((blob) => {
+                        const file = new File([blob], `capture-${Date.now()}.png`, { type: "image/png" });
+                        setImageFiles((prev) => [...prev, file].slice(0, 3));
+                      });
                   }
                   closeCamera();
                 }}
