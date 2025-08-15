@@ -314,7 +314,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
-  const webcamRef = useRef<Webcam>(null);
 
   // Avatar URL state
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -332,6 +331,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement>(null);
   const cameraCanvasRef = useRef<HTMLCanvasElement>(null);
+  const webcamRef = useRef<Webcam>(null);
 
   // Chat room states (localStorage removed)
   const [chatID, setChatID] = useState<string>("room-1");
@@ -1203,7 +1203,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <form onSubmit={onSubmit}>
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
-                      <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={100} height={100} className="rounded-xl object-cover max-h-32 max-w-32" />
+                      <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={200} height={200} className="rounded-xl object-cover max-h-44 max-w-44" />
                       <Button
                         type="button"
                         size="sm"
@@ -1315,7 +1315,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
                     return (
                       <div key={message.id} className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}>
-                        {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-0 rounded-xl max-w-full h-auto" style={{ maxHeight: 130 }} />}
+                        {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-0 rounded-bl-xl rounded-tr-xl rounded-tl-xl max-w-full h-auto" style={{ maxHeight: 130 }} />}
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
                             ${message.role === "user"
@@ -1546,7 +1546,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               {/* Input Form - Fixed at bottom */}
               {imagePreviews.map((preview, idx) => (
                 <div key={idx} className="relative inline-block mr-2 mb-4">
-                  <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={100} height={100} className="rounded-xl object-cover max-h-32 max-w-32" />
+                  <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={200} height={200} className="rounded-xl object-cover max-h-44 max-w-44" />
                   <Button
                     type="button"
                     size="sm"
@@ -1659,7 +1659,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             {/* Webcam langsung di sini */}
             <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "16/9" }}>
               <Webcam
-                ref={cameraVideoRef}
+                ref={webcamRef}
                 audio={false}
                 mirrored
                 screenshotFormat="image/png"
@@ -1678,7 +1678,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </Button>
               <Button
                 onClick={() => {
-                  const imageSrc = cameraVideoRef.current?.getScreenshot();
+                  const imageSrc = webcamRef.current?.getScreenshot();
                   if (imageSrc) {
                     setImagePreviews((prev) => [...prev, imageSrc].slice(0, 3));
                     fetch(imageSrc)
