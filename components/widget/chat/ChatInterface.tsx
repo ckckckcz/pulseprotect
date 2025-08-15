@@ -41,6 +41,7 @@ import {
   Images,
   Check,
   Clock,
+  Camera,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -322,6 +323,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   // Enhanced audio recording states
   const [isRecording, setIsRecording] = useState(false);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Chat room states (localStorage removed)
   const [chatID, setChatID] = useState<string>("room-1");
@@ -901,6 +905,39 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     }
   };
 
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false,
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setAudioStream(stream); // Reuse audioStream state for camera stream
+        setIsCameraActive(true);
+      }
+    } catch (error) {
+      console.error("Error accessing camera:", error);
+      alert("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (audioStream) {
+      audioStream.getTracks().forEach((track) => track.stop());
+      setAudioStream(null);
+    }
+    setIsCameraActive(false);
+  };
+
+  const handleCameraButton = () => {
+    if (isCameraActive) {
+      stopCamera();
+    } else {
+      startCamera();
+    }
+  };
+
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -998,10 +1035,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}>
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${
-                  activeMembershipType === "pro"
-                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
-                    : activeMembershipType === "plus"
+                ${activeMembershipType === "pro"
+                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
+                  : activeMembershipType === "plus"
                     ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
                     : ""
                 }
@@ -1100,6 +1136,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               </div>
 
               <div className="w-full max-w-2xl space-y-3">
+                {/* Input Form */}
                 <form onSubmit={onSubmit}>
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
@@ -1119,6 +1156,16 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   ))}
                   <div className="w-full">
                     <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
+                      {isCameraActive && (
+                        <div className="absolute inset-0 bg-white rounded-3xl border border-gray-200 shadow-lg z-50 overflow-hidden">
+                          <video ref={videoRef} autoPlay className="w-full h-full object-cover" />
+                          <div className="absolute top-4 right-4">
+                            <Button onClick={stopCamera} size="sm" variant="ghost" className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full">
+                              <X className="w-4 h-4 text-gray-600" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
 
                       {/* Input area */}
@@ -1151,6 +1198,16 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               </span>
                             </Button>
                           </label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm ${isCameraActive ? "bg-red-500 text-white hover:bg-red-600" : ""}`}
+                            onClick={handleCameraButton}
+                            aria-label={isCameraActive ? "Stop camera" : "Start camera"}
+                          >
+                            <Camera className="w-4 h-4 mr-2" />
+                            Kamera
+                          </Button>
                         </div>
 
                         <div>
@@ -1214,10 +1271,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-0 rounded-xl max-w-full h-auto" style={{ maxHeight: 130 }} />}
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
-                            ${
-                              message.role === "user"
-                                ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl"
-                                : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"
+                            ${message.role === "user"
+                              ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl"
+                              : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"
                             }`}
                           style={{
                             lineHeight: "1.35",
@@ -1452,9 +1508,20 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 </div>
               ))}
               <div className="w-full sticky z-10 pb-1 bottom-0">
+                {/* Input Form */}
                 <form onSubmit={onSubmit}>
                   <div className="relative mb-2 bg-white rounded-3xl border border-gray-200 shadow-lg">
                     {/* Enhanced Waveform Overlay */}
+                    {isCameraActive && (
+                      <div className="absolute inset-0 bg-white rounded-3xl border border-gray-200 shadow-lg z-50 overflow-hidden">
+                        <video ref={videoRef} autoPlay className="w-full h-full object-cover" />
+                        <div className="absolute top-4 right-4">
+                          <Button onClick={stopCamera} size="sm" variant="ghost" className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full">
+                            <X className="w-4 h-4 text-gray-600" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
 
                     {/* Input area */}
@@ -1487,6 +1554,16 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             </span>
                           </Button>
                         </label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm ${isCameraActive ? "bg-red-500 text-white hover:bg-red-600" : ""}`}
+                          onClick={handleCameraButton}
+                          aria-label={isCameraActive ? "Stop camera" : "Start camera"}
+                        >
+                          <Camera className="w-4 h-4 mr-2" />
+                          Kamera
+                        </Button>
                       </div>
 
                       <div>
@@ -1563,13 +1640,12 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <div className="flex items-center space-x-3 mb-4">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${
-                  activeMembershipType === "pro"
+                ${activeMembershipType === "pro"
                     ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border border-amber-300"
                     : activeMembershipType === "plus"
-                    ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
-                    : ""
-                }
+                      ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
+                      : ""
+                  }
               `}
                 style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
               >
