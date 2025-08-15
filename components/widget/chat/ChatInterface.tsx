@@ -41,6 +41,7 @@ import {
   Images,
   Check,
   Clock,
+  Camera,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -322,6 +323,12 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   // Enhanced audio recording states
   const [isRecording, setIsRecording] = useState(false);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+
+  // Camera states
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Chat room states (localStorage removed)
   const [chatID, setChatID] = useState<string>("room-1");
@@ -901,6 +908,65 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     }
   };
 
+  // Camera controls
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      setIsCameraOpen(true);
+      setCameraStream(stream);
+      if (cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = stream as any;
+        await cameraVideoRef.current.play();
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      alert("Tidak bisa mengakses kamera. Periksa permission browser.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const closeCamera = () => {
+    stopCamera();
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    const video = cameraVideoRef.current;
+    if (!video) return;
+
+    const canvas = document.createElement("canvas");
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, width, height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const file = new File([blob], `camera-${Date.now()}.png`, { type: "image/png" });
+      setImageFiles((prev) => [...prev, file].slice(0, 3));
+      const previewUrl = URL.createObjectURL(blob);
+      setImagePreviews((prev) => [...prev, previewUrl].slice(0, 3));
+      closeCamera();
+    }, "image/png");
+  };
+
+  useEffect(() => {
+    return () => {
+      try {
+        stopCamera();
+      } catch {}
+    };
+  }, []);
+
   // If still checking auth, show a loading state
   if (isAuthChecking) {
     return (
@@ -1099,7 +1165,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 </h1>
               </div>
 
-              <div className="w-full max-w-2xl space-y-3">
+              <div className="w-full lg:max-w-7xl space-y-3">
                 <form onSubmit={onSubmit}>
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
@@ -1151,6 +1217,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               </span>
                             </Button>
                           </label>
+                          <Button variant="ghost" size="sm" type="button" onClick={openCamera} className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm">
+                            <Camera className="w-4 h-4 mr-2" />
+                            Kamera
+                          </Button>
                         </div>
 
                         <div>
@@ -1201,7 +1271,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             </div>
           ) : (
             /* Chat Messages Area */
-            <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto relative" style={{ minHeight: 0 }}>
+            <div className="flex-1 flex flex-col w-full lg:max-w-7xl mx-auto relative" style={{ minHeight: 0 }}>
               <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 180px)" }}>
                 <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
@@ -1487,6 +1557,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             </span>
                           </Button>
                         </label>
+                        <Button variant="ghost" size="sm" type="button" onClick={openCamera} className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm">
+                          <Camera className="w-4 h-4 mr-2" />
+                          Kamera
+                        </Button>
                       </div>
 
                       <div>
@@ -1536,6 +1610,25 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             </div>
           )}
         </div>
+
+        <Dialog open={isCameraOpen} onOpenChange={(open) => { if (!open) closeCamera(); }}>
+          <DialogContent className="sm:max-w-lg bg-white">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-lg font-semibold text-gray-900">Kamera</DialogTitle>
+            </DialogHeader>
+            <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "16 / 9" }}>
+              <video ref={cameraVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+            </div>
+            <DialogFooter className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={closeCamera} className="rounded bg-white text-black border border-gray-200 hover:bg-gray-200 hover:text-black">
+                Batal
+              </Button>
+              <Button onClick={capturePhoto} className="rounded bg-teal-600 hover:bg-teal-700 text-white">
+                Ambil Foto
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Mobile Bottom Toggle Button */}
         <div className="absolute bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
