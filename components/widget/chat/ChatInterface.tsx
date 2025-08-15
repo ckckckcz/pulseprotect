@@ -8,6 +8,7 @@ import { authService } from "@/src/services/authService";
 import { aiService, type AIModel, type Message } from "@/src/services/aiService";
 import { Button } from "@/components/ui/button";
 import Logo from "@/public/logo-white.png";
+import Webcam from "react-webcam";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -80,6 +81,7 @@ const translations = [
   { lang: "Français", text: "Qu'aimeriez-vous créer?" },
   { lang: "한국어", text: "무엇을 만들고 싶으신가요?" },
 ];
+
 
 // Enhanced Waveform Component with better audio responsiveness
 const EnhancedWaveform: React.FC<{
@@ -312,6 +314,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
+  const webcamRef = useRef<Webcam>(null);
 
   // Avatar URL state
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -324,8 +327,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [isRecording, setIsRecording] = useState(false);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  // Camera states
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Chat room states (localStorage removed)
   const [chatID, setChatID] = useState<string>("room-1");
@@ -905,38 +911,96 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     }
   };
 
-  const startCamera = async () => {
+  // Camera controls
+  const openCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setAudioStream(stream); // Reuse audioStream state for camera stream
-        setIsCameraActive(true);
-      }
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+      console.log("Camera opened, isCameraOpen:", true);
     } catch (error) {
       console.error("Error accessing camera:", error);
-      alert("Could not access camera. Please check permissions.");
+      alert("Gagal mengakses kamera. Pastikan izin kamera diberikan dan browser mendukung.");
     }
   };
 
-  const stopCamera = () => {
-    if (audioStream) {
-      audioStream.getTracks().forEach((track) => track.stop());
-      setAudioStream(null);
+  const closeCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
     }
-    setIsCameraActive(false);
+    setCameraStream(null);
+    setIsCameraOpen(false);
   };
 
-  const handleCameraButton = () => {
-    if (isCameraActive) {
-      stopCamera();
-    } else {
-      startCamera();
+  const capturePhoto = () => {
+    if (cameraVideoRef.current && cameraCanvasRef.current) {
+      const video = cameraVideoRef.current;
+      const canvas = cameraCanvasRef.current;
+
+      // Set canvas size to match video dimensions
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext("2d");
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/png");
+
+        // Konversi dataUrl ke File untuk ditambahkan ke imageFiles
+        fetch(dataUrl)
+          .then((res) => res.blob())
+          .then((blob) => {
+            const file = new File([blob], `capture-${Date.now()}.png`, { type: "image/png" });
+            setImageFiles((prev) => [...prev, file].slice(0, 3));
+            setImagePreviews((prev) => [...prev, dataUrl].slice(0, 3));
+          });
+      }
     }
+    closeCamera();
   };
+
+  useEffect(() => {
+    if (isCameraOpen && cameraStream && cameraVideoRef.current) {
+      const video = cameraVideoRef.current;
+
+      // tempel stream langsung
+      if ("srcObject" in video) {
+        video.srcObject = cameraStream;
+      } else {
+        // fallback lama (Safari jadul)
+        // @ts-ignore
+        video.src = window.URL.createObjectURL(cameraStream);
+      }
+
+      // tunggu metadata, baru play
+      video.onloadedmetadata = () => {
+        video.play().catch((err) => {
+          console.error("Video play failed:", err);
+        });
+      };
+    }
+
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [isCameraOpen, cameraStream]);
+
+
+  useEffect(() => {
+    return () => {
+      try {
+        closeCamera();
+      } catch { }
+    };
+  }, []);
 
   // If still checking auth, show a loading state
   if (isAuthChecking) {
@@ -1135,8 +1199,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 </h1>
               </div>
 
-              <div className="w-full max-w-2xl space-y-3">
-                {/* Input Form */}
+              <div className="w-full lg:max-w-3xl space-y-3">
                 <form onSubmit={onSubmit}>
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
@@ -1156,16 +1219,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   ))}
                   <div className="w-full">
                     <div className="relative bg-white rounded-3xl border border-gray-200 shadow-lg">
-                      {isCameraActive && (
-                        <div className="absolute inset-0 bg-white rounded-3xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                          <video ref={videoRef} autoPlay className="w-full h-full object-cover" />
-                          <div className="absolute top-4 right-4">
-                            <Button onClick={stopCamera} size="sm" variant="ghost" className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full">
-                              <X className="w-4 h-4 text-gray-600" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
                       <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
 
                       {/* Input area */}
@@ -1198,13 +1251,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                               </span>
                             </Button>
                           </label>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm ${isCameraActive ? "bg-red-500 text-white hover:bg-red-600" : ""}`}
-                            onClick={handleCameraButton}
-                            aria-label={isCameraActive ? "Stop camera" : "Start camera"}
-                          >
+                          <Button variant="ghost" size="sm" type="button" onClick={openCamera} className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm">
                             <Camera className="w-4 h-4 mr-2" />
                             Kamera
                           </Button>
@@ -1258,7 +1305,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             </div>
           ) : (
             /* Chat Messages Area */
-            <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto relative" style={{ minHeight: 0 }}>
+            <div className="flex-1 flex flex-col w-full lg:max-w-3xl mx-auto relative" style={{ minHeight: 0 }}>
               <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 180px)" }}>
                 <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
@@ -1508,20 +1555,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 </div>
               ))}
               <div className="w-full sticky z-10 pb-1 bottom-0">
-                {/* Input Form */}
                 <form onSubmit={onSubmit}>
                   <div className="relative mb-2 bg-white rounded-3xl border border-gray-200 shadow-lg">
                     {/* Enhanced Waveform Overlay */}
-                    {isCameraActive && (
-                      <div className="absolute inset-0 bg-white rounded-3xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                        <video ref={videoRef} autoPlay className="w-full h-full object-cover" />
-                        <div className="absolute top-4 right-4">
-                          <Button onClick={stopCamera} size="sm" variant="ghost" className="w-8 h-8 p-0 hover:bg-gray-100 rounded-full">
-                            <X className="w-4 h-4 text-gray-600" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                     <EnhancedWaveform isRecording={isRecording} onAccept={handleAcceptVoice} onCancel={handleCancelVoice} audioStream={audioStream} />
 
                     {/* Input area */}
@@ -1554,13 +1590,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             </span>
                           </Button>
                         </label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm ${isCameraActive ? "bg-red-500 text-white hover:bg-red-600" : ""}`}
-                          onClick={handleCameraButton}
-                          aria-label={isCameraActive ? "Stop camera" : "Start camera"}
-                        >
+                        <Button variant="ghost" size="sm" type="button" onClick={openCamera} className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm">
                           <Camera className="w-4 h-4 mr-2" />
                           Kamera
                         </Button>
@@ -1613,6 +1643,59 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             </div>
           )}
         </div>
+
+        <Dialog open={isCameraOpen} onOpenChange={(open) => { if (!open) closeCamera(); }}>
+          <DialogContent className="lg:max-w-7xl bg-white rounded-xl">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-lg font-semibold text-gray-900">Kamera</DialogTitle>
+            </DialogHeader>
+
+            {/* Webcam langsung di sini */}
+            <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ aspectRatio: "16/9" }}>
+              <Webcam
+                audio={false}
+                mirrored
+                screenshotFormat="image/png"
+                videoConstraints={{
+                  facingMode: "user",
+                  width: 1280,
+                  height: 720,
+                }}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <DialogFooter className="flex gap-2 pt-2">
+              <Button variant="outline" onClick={closeCamera} className="rounded-xl bg-white text-black border border-gray-200 hover:bg-gray-200 hover:text-black">
+                Batal
+              </Button>
+              <Button
+                onClick={() => {
+                  const video = cameraVideoRef.current as HTMLVideoElement | null;
+                  if (video && cameraCanvasRef.current) {
+                    const canvas = cameraCanvasRef.current;
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext("2d");
+                    if (ctx) {
+                      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                      const imageSrc = canvas.toDataURL("image/png");
+                      setImagePreviews((prev) => [...prev, imageSrc].slice(0, 3));
+                      fetch(imageSrc)
+                        .then((res) => res.blob())
+                    }
+                  }
+                  closeCamera();
+                }}
+                className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                Ambil Foto
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <canvas ref={cameraCanvasRef} className="hidden" />
 
         {/* Mobile Bottom Toggle Button */}
         <div className="absolute bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">

@@ -215,6 +215,9 @@ dependencies:
   react-speech-recognition:
     specifier: ^4.0.1
     version: 4.0.1(react@19.1.0)
+  react-webcam:
+    specifier: ^7.2.0
+    version: 7.2.0(react-dom@19.1.0)(react@19.1.0)
   recharts:
     specifier: 2.15.0
     version: 2.15.0(react-dom@19.1.0)(react@19.1.0)
@@ -3636,6 +3639,16 @@ packages:
       dom-helpers: 5.2.1
       loose-envify: 1.4.0
       prop-types: 15.8.1
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+    dev: false
+
+  /react-webcam@7.2.0(react-dom@19.1.0)(react@19.1.0):
+    resolution: {integrity: sha512-xkrzYPqa1ag2DP+2Q/kLKBmCIfEx49bVdgCCCcZf88oF+0NPEbkwYk3/s/C7Zy0mhM8k+hpdNkBLzxg8H0aWcg==}
+    peerDependencies:
+      react: '>=16.2.0'
+      react-dom: '>=16.2.0'
+    dependencies:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
     dev: false
