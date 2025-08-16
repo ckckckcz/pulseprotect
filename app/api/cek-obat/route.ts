@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 const dummyProduk = [
   {
     nomorRegistrasi: 'MD243182000100097',
-    barcode: '8997212800295', // Fixed to match the barcode you're scanning
+    barcode: '8997212800295',
     nama: "Fox's Crystal Clear Mint Candy",
     status: 'Terdaftar',
     gramasi: '500gr/kantong',

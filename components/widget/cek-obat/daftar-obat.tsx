@@ -37,6 +37,7 @@ import BarcodeScanner from "@/components/widget/cek-obat/barcode-scanner"
 import Navbar from "@/components/widget/navbar"
 import { useEffect, useState } from "react"
 import Footer from "@/components/widget/footer"
+import { useRouter } from "next/navigation"
 
 interface ProductData {
   nama: string
@@ -59,6 +60,8 @@ export default function DaftarObat() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sidebarTop, setSidebarTop] = useState(0)
   const [modalData, setModalData] = useState<any>(null)
+  const router = useRouter();
+  const [scannedProduct, setScannedProduct] = useState<any | null>(null);
 
   // Framer Motion hooks for sticky sidebar animation
   const { scrollY } = useScroll()
@@ -167,8 +170,6 @@ export default function DaftarObat() {
   }
 
   const handleBarcodeDetected = async (qrText: string) => {
-    // console.log("📦 Data terdeteksi:", qrText)
-
     const trimmed = qrText.trim()
 
     const matchRegistrasi = trimmed.match(/MD\s?\d{15}/i)
@@ -192,7 +193,7 @@ export default function DaftarObat() {
 
       if (data.found) {
         setModalData(data)
-        setShowScanner(false) // Close scanner when successful
+        setShowScanner(false)
       } else {
         alert(`❌ Produk tidak ditemukan.\nCek manual di: ${data.saranPengecekan}`)
       }
@@ -201,6 +202,14 @@ export default function DaftarObat() {
       alert("Terjadi kesalahan saat memeriksa kode.")
     }
   }
+
+  const handleDiscussWithSilva = () => {
+    if (modalData) {
+      const id = Date.now().toString();
+      localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(modalData));
+      router.push(`/silva?id=${id}`);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -341,12 +350,10 @@ export default function DaftarObat() {
                         Tutup Detail
                       </Button>
                       <Button
-                        variant="outline"
-                        onClick={() => setShowScanner(true)}
-                        className="flex-1 border-teal-200 text-teal-700 bg-white hover:bg-teal-200 hover:text-black px-6 py-3 rounded-xl font-medium"
+                        onClick={handleDiscussWithSilva}
+                        className="flex-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 py-3 rounded-xl font-medium shadow-lg"
                       >
-                        <ScanBarcode className="w-4 h-4 mr-2" />
-                        Scan Lagi
+                        Diskusi dengan Silva
                       </Button>
                     </div>
                   </div>

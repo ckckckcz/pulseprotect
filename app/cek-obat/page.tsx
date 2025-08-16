@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { motion, useAnimation } from "framer-motion"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,28 @@ export default function CekObat() {
   const [doctors, setDoctors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [scannedProduct, setScannedProduct] = useState<any | null>(null);
+
+  const handleScan = async (barcode: string) => {
+    // Request ke API cek-produk sesuai format anda
+    const res = await fetch(`/api/cek-produk?barcode=${barcode}`);
+    if (res.ok) {
+      const data = await res.json();
+      setScannedProduct(data);
+    } else {
+      const error = await res.json();
+      setScannedProduct({ error: error.message, barcode });
+    }
+  };
+
+  const handleDiscuss = () => {
+    if (scannedProduct) {
+      const id = Date.now().toString(); // Generate a unique ID
+      localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(scannedProduct));
+      router.push(`/silva?id=${id}`);
+    }
+  };
 
   // Fetch doctors data
   useEffect(() => {
@@ -130,7 +153,7 @@ export default function CekObat() {
 
   // Use available doctors or fallback to placeholders
   const displayDoctors = doctors.length > 0 ? doctors : placeholderDoctors
-  
+
   interface Doctor {
     id: number;
     name: string;
@@ -149,7 +172,7 @@ export default function CekObat() {
   // Improved function to generate infinite carousel items
   const generateInfiniteDoctors = (doctorsArray: Doctor[]): Doctor[] => {
     if (!doctorsArray.length) return [];
-    
+
     // Create a longer array by duplicating the doctors several times
     return [
       ...doctorsArray,
@@ -159,7 +182,7 @@ export default function CekObat() {
       ...doctorsArray.map((doc, idx) => ({ ...doc, id: doc.id + 4000 })),
     ];
   };
-  
+
   const infiniteDoctors = generateInfiniteDoctors(displayDoctors);
   const controls = useAnimation();
 
@@ -175,24 +198,24 @@ export default function CekObat() {
   // Separate useEffect for animation to ensure it runs independently
   useEffect(() => {
     if (infiniteDoctors.length === 0) return;
-    
+
     let isMounted = true; // Track if component is mounted
-    
+
     // Simpler animation approach that's more reliable
     const animate = async () => {
       try {
         // Calculate total width based on number of doctors and card width
         const cardWidth = 320; // Approximate width of each card including gap
-        
+
         // Get the total width of all cards
         const totalWidth = infiniteDoctors.length * cardWidth;
-        
+
         // Reset to start position
         controls.set({ x: 0 });
-        
+
         // Only continue if component is still mounted
         if (!isMounted) return;
-        
+
         // Animate continuously to the left
         await controls.start({
           x: -totalWidth / 2, // Move half the width (we have duplicates)
@@ -207,12 +230,12 @@ export default function CekObat() {
         console.error("Animation error:", error);
       }
     };
-    
+
     // Small timeout to ensure DOM is fully ready
     const animationTimer = setTimeout(() => {
       if (isMounted) animate();
     }, 100);
-    
+
     // Cleanup function to stop animation and clear timers
     return () => {
       isMounted = false;
@@ -397,7 +420,7 @@ export default function CekObat() {
           ) : (
             <div className="relative overflow-hidden w-full">
               <div className="w-full mx-auto overflow-hidden" key={animationKey}>
-                <motion.div 
+                <motion.div
                   className="flex gap-4 pl-4"
                   animate={controls}
                   initial={{ x: 0 }}
@@ -424,9 +447,8 @@ export default function CekObat() {
                             {/* Availability Badge */}
                             <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
                               <Badge
-                                className={`${
-                                  doctor.availability === "Tersedia" ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                                } border-0 font-medium px-2 sm:px-3 py-1 text-xs sm:text-sm`}
+                                className={`${doctor.availability === "Tersedia" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                                  } border-0 font-medium px-2 sm:px-3 py-1 text-xs sm:text-sm`}
                               >
                                 {doctor.availability}
                               </Badge>
@@ -490,13 +512,59 @@ export default function CekObat() {
                   ))}
                 </motion.div>
               </div>
-              
+
               {/* Add gradient overlays to improve infinite scroll effect */}
               <div className="absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-white to-transparent z-10"></div>
               <div className="absolute top-0 bottom-0 right-0 w-16 bg-gradient-to-l from-white to-transparent z-10"></div>
             </div>
           )}
         </motion.div>
+        {scannedProduct && (
+          <div className="my-6 max-w-xl mx-auto bg-white border rounded-lg shadow p-6">
+            <h3 className="text-lg font-bold mb-2">Hasil Scan Produk</h3>
+            {scannedProduct.error ? (
+              <div className="mb-2 text-red-600">{scannedProduct.error}</div>
+            ) : (
+              <div className="mb-4 text-sm">
+                <div><b>Nama:</b> {scannedProduct.nama}</div>
+                <div><b>Barcode:</b> {scannedProduct.barcode}</div>
+                <div><b>Status:</b> {scannedProduct.status}</div>
+                <div><b>Nomor Registrasi:</b> {scannedProduct.nomorRegistrasi}</div>
+                <div><b>Gramasi:</b> {scannedProduct.gramasi}</div>
+                <div><b>Anjuran Sajian:</b> {scannedProduct.anjuranSajian}</div>
+                <div><b>Sajian/Kantong:</b> {scannedProduct.sajianPerKantong}</div>
+                <div><b>Jumlah Karton:</b> {scannedProduct.jumlahKarton}</div>
+                <div><b>Masa Simpan:</b> {scannedProduct.masaSimpan}</div>
+                <div><b>Dimensi Karton:</b> {scannedProduct.dimensiKarton}</div>
+              </div>
+            )}
+            {/* Tampilkan tombol "Diskusi dengan Silva" jika valid (tidak error) */}
+            {!scannedProduct.error && (
+              <Button
+                onClick={handleDiscuss}
+                className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-semibold px-6 py-2 rounded-lg shadow"
+              >
+                Diskusi dengan Silva
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Contoh tombol simulasi scan produk (untuk demo/testing) */}
+        <div className="flex gap-2 justify-center my-4">
+          <Button
+            onClick={() => handleScan("8997212800295")}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Simulasi Scan Fox's Mint Candy
+          </Button>
+          <Button
+            onClick={() => handleScan("8997212801254")}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Simulasi Scan Test Product Alternative
+          </Button>
+        </div>
       </section>
 
       <DaftarObat />
