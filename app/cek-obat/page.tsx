@@ -47,7 +47,7 @@ export default function CekObat() {
 
   const handleDiscuss = () => {
     if (scannedProduct) {
-      const id = Date.now().toString(); // Generate a unique ID
+      const id = Date.now().toString();
       localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(scannedProduct));
       router.push(`/silva?id=${id}`);
     }

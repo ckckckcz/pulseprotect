@@ -314,6 +314,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
+  const [scannedProductCard, setScannedProductCard] = useState<any | null>(null);
 
   // Avatar URL state
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -434,6 +435,23 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     checkAuth();
   }, [router]);
 
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      // prioritas: active → id → latest
+      const rawActive = localStorage.getItem("scannedProduct:active");
+      const rawById = id ? localStorage.getItem(`scannedProduct:${id}`) : null;
+      const rawLatest = localStorage.getItem("scannedProduct:latest");
+      const raw = rawActive || rawById || rawLatest;
+
+      if (raw) setScannedProductCard(JSON.parse(raw));
+    } catch (e) {
+      console.error("load scanned product failed", e);
+    }
+  }, []);
+
+
   const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -536,6 +554,53 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (scannedProductCard) {
+      setMessages(prev => {
+        // hindari duplikat kalau sudah ada
+        const alreadyHas = prev.some(m => m.type === "product-context");
+        if (alreadyHas) return prev;
+
+        return [
+          {
+            id: `product-${Date.now()}`,
+            role: "system",
+            type: "product-context",
+            content: scannedProductCard, // simpan object, bukan string
+          },
+          ...prev,
+        ];
+      });
+    }
+  }, [scannedProductCard]);
+
+
+  function getActiveProduct() {
+    try {
+      const s = localStorage.getItem("scannedProduct:active");
+      return s ? JSON.parse(s) : null;
+    } catch { return null; }
+  }
+
+  async function sendMessage() {
+    if (!input.trim()) return;
+
+    const product = scannedProductCard ?? getActiveProduct();
+
+    const body = {
+      message: input,
+      // ...field lain kamu (images, etc)
+      scannedProduct: product,  // ⬅️ WAJIB
+    };
+
+    await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
 
   // Typing animation effect
   useEffect(() => {
@@ -1201,6 +1266,32 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
               <div className="w-full lg:max-w-3xl space-y-3">
                 <form onSubmit={onSubmit}>
+                  {scannedProductCard && (
+                    <div className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
+                      <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk (terkunci)</div>
+
+                      {"error" in scannedProductCard ? (
+                        <div className="text-red-600">{scannedProductCard.error}</div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-teal-900">
+                          <div><b>Nama:</b> {scannedProductCard.nama || "-"}</div>
+                          <div><b>Barcode:</b> {scannedProductCard.barcode || "-"}</div>
+                          <div><b>Status:</b> {scannedProductCard.status || "-"}</div>
+                          <div><b>Nomor Registrasi:</b> {scannedProductCard.nomorRegistrasi || "-"}</div>
+                          <div><b>Gramasi:</b> {scannedProductCard.gramasi || "-"}</div>
+                          <div><b>Anjuran Sajian:</b> {scannedProductCard.anjuranSajian || "-"}</div>
+                          <div><b>Sajian/Kantong:</b> {scannedProductCard.sajianPerKantong || "-"}</div>
+                          <div><b>Jumlah Karton:</b> {scannedProductCard.jumlahKarton || "-"}</div>
+                          <div><b>Masa Simpan:</b> {scannedProductCard.masaSimpan || "-"}</div>
+                          <div><b>Dimensi Karton:</b> {scannedProductCard.dimensiKarton || "-"}</div>
+                        </div>
+                      )}
+                      <p className="mt-2 text-xs text-teal-700">
+                        Produk ini akan selalu disertakan dalam percakapan dengan Silva.
+                      </p>
+                    </div>
+                  )}
+
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
                       <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={200} height={200} className="rounded-xl object-cover max-h-44 max-w-44" />

@@ -192,10 +192,13 @@ export default function DaftarObat() {
       const data = await res.json()
 
       if (data.found) {
-        setModalData(data)
-        setShowScanner(false)
+        setModalData(data);
+        setShowScanner(false);
+        try {
+          localStorage.setItem("scannedProduct:latest", JSON.stringify(data));
+        } catch { }
       } else {
-        alert(`❌ Produk tidak ditemukan.\nCek manual di: ${data.saranPengecekan}`)
+        alert(`❌ Produk tidak ditemukan.\nCek manual di: ${data.saranPengecekan}`);
       }
     } catch (err) {
       console.error("❌ Error:", err)
@@ -207,6 +210,12 @@ export default function DaftarObat() {
     if (modalData) {
       const id = Date.now().toString();
       localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(modalData));
+      try {
+        // simpan canonical key (selalu dibaca ChatInterface)
+        localStorage.setItem("scannedProduct:active", JSON.stringify(modalData));
+        // opsional: tetap simpan per-id jika kamu butuh deep-link
+        localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(modalData));
+      } catch { }
       router.push(`/silva?id=${id}`);
     }
   };
