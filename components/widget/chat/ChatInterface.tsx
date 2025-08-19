@@ -43,6 +43,8 @@ import {
   Check,
   Clock,
   Camera,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -462,6 +464,20 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     setShowExitModal(true);
   };
 
+  const confirmExit = () => {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("scannedProduct"))
+      .forEach((key) => localStorage.removeItem(key));
+
+    if (exitAction) exitAction();
+    setShowExitModal(false);
+    setExitAction(null);
+  };
+  const cancelExit = () => {
+    setShowExitModal(false);
+    setExitAction(null);
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -469,20 +485,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     } catch (error) {
       console.error("Logout error:", error);
     }
-  };
-
-  const confirmExit = () => {
-    localStorage.removeItem("scannedProduct");
-    localStorage.removeItem("scannedProduct:active");
-    localStorage.removeItem("scannedProduct:latest");
-    if (exitAction) exitAction();
-    setShowExitModal(false);
-    setExitAction(null);
-  };
-
-  const cancelExit = () => {
-    setShowExitModal(false);
-    setExitAction(null);
   };
 
   useEffect(() => {
@@ -1259,18 +1261,20 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
           {/* Profile Dropdown Menu */}
           {isProfileMenuOpen && (
-            <div className={`absolute bottom-full ${isSidebarExpanded ? "left-2" : "left-16"} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}>
-              <Button onClick={() => handleExitConfirmation(() => router.push("/"))} className="flex items-center gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
+            <div className={`absolute bottom-full ${isSidebarExpanded ? "left-2" : "left-16"} w-44 flex flex-col bg-white border border-gray-200 rounded-xl shadow-lg py-2 mb-2 z-10`}>
+              <Button onClick={() => handleExitConfirmation(() => router.push("/"))} className="w-full flex items-center justify-start gap-2 bg-white mb-1 px-3 transition-all duration-200 text-gray-700">
                 <House className="w-4 h-4" />
-                <span>Home</span>
+                <span className="font-medium">Home</span>
               </Button>
-              <Button onClick={() => handleExitConfirmation(() => router.push("/profile"))} className="flex items-center gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
+
+              <Button onClick={() => handleExitConfirmation(() => router.push("/profile"))} className="w-full flex items-center justify-start gap-2 bg-white mb-1 px-3 transition-all duration-200 text-gray-700">
                 <User className="w-4 h-4" />
-                <span>Profil</span>
+                <span className="font-medium">Profil</span>
               </Button>
-              <Button onClick={() => handleExitConfirmation(logout)} className="flex items-center gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600">
+
+              <Button onClick={() => handleExitConfirmation(logout)} className="w-full flex items-center justify-start gap-2 bg-white px-3 transition-all duration-200 text-gray-700">
                 <LogOut className="w-4 h-4" />
-                <span>Keluar</span>
+                <span className="font-medium">Keluar</span>
               </Button>
             </div>
           )}
@@ -1924,17 +1928,30 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         <canvas ref={cameraCanvasRef} className="hidden" />
 
         <Dialog open={showExitModal} onOpenChange={setShowExitModal}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-gray-900">Yakin ingin keluar?</DialogTitle>
+          <DialogContent className="sm:max-w-md bg-white border border-gray-200 rounded-2xl shadow-xl p-6">
+            <DialogHeader className="text-center gap-2">
+              <div className="mx-auto w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-teal-600" />
+              </div>
+              <DialogTitle className="text-xl text-center font-semibold text-gray-900">Yakin Mau Keluar?</DialogTitle>
             </DialogHeader>
-            <div className="py-4 text-sm text-gray-500">Jika keluar, data scan produk akan dihapus dan siap untuk scan baru.</div>
-            <DialogFooter className="flex justify-end gap-2">
-              <Button variant="outline" onClick={cancelExit} className="rounded-xl border-gray-200 hover:bg-gray-100">
-                Tidak
+
+            <div className=" text-center space-y-2">
+              <p className="text-sm text-gray-500 text-center leading-relaxed">Semua hasil scan akan dihapus jika Anda keluar dari sesi ini.</p>
+            </div>
+
+            <DialogFooter className="flex justify-center gap-3 sm:gap-4 pt-4">
+              <Button
+                variant="outline"
+                onClick={cancelExit}
+                className="flex-1 rounded-xl border-gray-300 bg-gray-50 hover:bg-gray-100 hover:text-gray-700 text-gray-700 px-6 py-2.5 font-medium flex items-center justify-center gap-2 transition-colors duration-200"
+              >
+                <X className="w-4 h-4" />
+                Batal
               </Button>
-              <Button onClick={confirmExit} className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white">
-                Iya
+              <Button onClick={confirmExit} className="flex-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 font-medium flex items-center justify-center gap-2 transition-colors duration-200">
+                <Check className="w-4 h-4" />
+                Keluar
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2008,6 +2025,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             >
               <House className="w-4 h-4" />
               <span>Home</span>
+            </Button>
+            <Button onClick={() => handleExitConfirmation(logout)} className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600">
+              <LogOut className="w-4 h-4" />
+              <span>Keluar</span>
             </Button>
           </div>
         </motion.div>
