@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -336,6 +336,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [scannedProductCard, setScannedProductCard] = useState<ScannedProduct | null>(null);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [exitAction, setExitAction] = useState<(() => void) | null>(null);
 
   const [avatarUrl, setAvatarUrl] = useState("");
 
@@ -454,6 +456,34 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
     checkAuth();
   }, [router]);
+
+  const handleExitConfirmation = (action: () => void) => {
+    setExitAction(() => action);
+    setShowExitModal(true);
+  };
+
+  const logout = async () => {
+    try {
+      await authService.logout();
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const confirmExit = () => {
+    localStorage.removeItem("scannedProduct");
+    localStorage.removeItem("scannedProduct:active");
+    localStorage.removeItem("scannedProduct:latest");
+    if (exitAction) exitAction();
+    setShowExitModal(false);
+    setExitAction(null);
+  };
+
+  const cancelExit = () => {
+    setShowExitModal(false);
+    setExitAction(null);
+  };
 
   useEffect(() => {
     try {
@@ -1230,18 +1260,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           {/* Profile Dropdown Menu */}
           {isProfileMenuOpen && (
             <div className={`absolute bottom-full ${isSidebarExpanded ? "left-2" : "left-16"} w-44 bg-white border border-gray-200 rounded-xl shadow-lg py-1 mb-2 z-10`}>
-              <Link href="/" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                <Home className="w-4 h-4 mr-2" />
-                Home
-              </Link>
-              <Link href="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                <User className="w-4 h-4 mr-2" />
-                Profile
-              </Link>
-              <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left">
-                <LogOut className="w-4 h-4 mr-2" />
-                Keluar
-              </button>
+              <Button onClick={() => handleExitConfirmation(() => router.push("/"))} className="flex items-center gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
+                <House className="w-4 h-4" />
+                <span>Home</span>
+              </Button>
+              <Button onClick={() => handleExitConfirmation(() => router.push("/profile"))} className="flex items-center gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
+                <User className="w-4 h-4" />
+                <span>Profil</span>
+              </Button>
+              <Button onClick={() => handleExitConfirmation(logout)} className="flex items-center gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600">
+                <LogOut className="w-4 h-4" />
+                <span>Keluar</span>
+              </Button>
             </div>
           )}
         </div>
@@ -1303,7 +1333,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
               <div className="w-full lg:max-w-3xl space-y-3">
                 <form onSubmit={onSubmit}>
-                  {scannedProductCard && (
+                  {/* {scannedProductCard && (
                     <div className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
                       <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk (terkunci)</div>
                       {"error" in scannedProductCard ? (
@@ -1344,7 +1374,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       )}
                       <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
                     </div>
-                  )}
+                  )} */}
 
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
@@ -1456,8 +1486,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   {messages.map((message, idx) => {
                     if (message.role === "system" && message.type === "product-context") {
                       return (
-                        <>
-                          <div key={message.id} className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
+                        <React.Fragment key={message.id}>
+                          <div className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
                             <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk</div>
                             {"error" in message.content ? (
                               <div className="text-red-600">{message.content.error}</div>
@@ -1497,8 +1527,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             )}
                             <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
                           </div>
-                          {idx === messages.filter((m) => m.role === "system" && m.type === "product-context").length - 1 && <hr className="h-px my-8 bg-gray-300 border-0 dark:bg-gray-700" />}
-                        </>
+                          {idx === messages.filter((m) => m.role === "system" && m.type === "product-context").length - 1 && <hr className="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />}
+                        </React.Fragment>
                       );
                     }
 
@@ -1893,6 +1923,23 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
         <canvas ref={cameraCanvasRef} className="hidden" />
 
+        <Dialog open={showExitModal} onOpenChange={setShowExitModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-gray-900">Yakin ingin keluar?</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 text-sm text-gray-500">Jika keluar, data scan produk akan dihapus dan siap untuk scan baru.</div>
+            <DialogFooter className="flex justify-end gap-2">
+              <Button variant="outline" onClick={cancelExit} className="rounded-xl border-gray-200 hover:bg-gray-100">
+                Tidak
+              </Button>
+              <Button onClick={confirmExit} className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white">
+                Iya
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Mobile Bottom Toggle Button */}
         <div className="absolute bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
           <Button onClick={toggleBottomCard} className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${showBottomCard ? "rotate-180" : ""}`}>
@@ -1914,19 +1961,17 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           <div className="flex justify-center mb-2">
             <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
           </div>
-
           <div className="space-y-6">
             <div className="flex items-center space-x-3 mb-4">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${
-                  activeMembershipType === "pro"
-                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border border-amber-300"
-                    : activeMembershipType === "plus"
-                    ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
-                    : ""
-                }
-              `}
+          ${
+            activeMembershipType === "pro"
+              ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border border-amber-300"
+              : activeMembershipType === "plus"
+              ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
+              : ""
+          }`}
                 style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
               >
                 {avatarUrl ? (
@@ -1940,7 +1985,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <div className="text-xs text-gray-400">{activeMembershipType === "pro" ? "Pro Plan" : activeMembershipType === "plus" ? "Plus Plan" : "Free Plan"}</div>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <Button
                 variant="outline"
@@ -1953,18 +1997,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <Plus className="w-5 h-5 text-teal-600" />
                 <span>New Chat</span>
               </Button>
-
               <Button variant="outline" className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
                 <Clock className="w-4 h-4" />
                 <span>Riwayat Chat</span>
               </Button>
             </div>
-            <Link href="/" className="flex items-center justify-start h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900">
-              <Button className="gap-3">
-                <House className="w-4 h-4" />
-                <span>Home</span>
-              </Button>
-            </Link>
+            <Button
+              onClick={() => handleExitConfirmation(() => router.push("/"))}
+              className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
+            >
+              <House className="w-4 h-4" />
+              <span>Home</span>
+            </Button>
           </div>
         </motion.div>
 
