@@ -2,6 +2,7 @@
 'use client';
 
 import ChatInterface from '@/components/widget/chat/ChatInterface';
+import { Suspense } from 'react';
 
 export default function SilvaPage() {
   // Define default props or fetch data if needed
@@ -18,11 +19,13 @@ export default function SilvaPage() {
   };
 
   return (
-    <ChatInterface
-      textContent="Welcome to Silva!"
-      onRegenerate={handleRegenerate}
-      onSpeak={handleSpeak}
-      onCopy={handleCopy}
-    />
+    <Suspense fallback={<div>Loading...</div>}>
+      <ChatInterface
+        textContent="Welcome to Silva!"
+        onRegenerate={handleRegenerate}
+        onSpeak={handleSpeak}
+        onCopy={handleCopy}
+      />
+    </Suspense>
   );
 }

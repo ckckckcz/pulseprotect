@@ -302,7 +302,7 @@ export default function AntiFakeMedicineGames() {
                 Kembali
               </Button>
               <div className="text-right">
-                <div className="text-2xl font-bold text-teal-600">Skor: {score}</div>
+                {/* <div className="text-2xl font-bold text-teal-600">Skor: {score}</div> */}
                 <div className="text-sm text-gray-500">Waktu: {formatTime(timer)}</div>
               </div>
             </div>
@@ -381,10 +381,10 @@ export default function AntiFakeMedicineGames() {
                   <div className="text-2xl font-bold text-teal-600">⏱️ {formatTime(timer)}</div>
                   <div className="text-sm text-gray-500">Waktu</div>
                 </div>
-                <div className="text-center">
+                {/* <div className="text-center">
                   <div className="text-2xl font-bold text-teal-600">🏆 {score}</div>
                   <div className="text-sm text-gray-500">Skor</div>
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -438,7 +438,7 @@ export default function AntiFakeMedicineGames() {
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Selamat!</h2>
                 <p className="text-gray-600 mb-8">
-                  Kamu telah menyelesaikan permainan. Skor kamu: <span className="font-semibold text-teal-700">{score}</span>
+                  Kamu telah menyelesaikan permainan.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button
