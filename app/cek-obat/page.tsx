@@ -549,22 +549,6 @@ export default function CekObat() {
             )}
           </div>
         )}
-
-        {/* Contoh tombol simulasi scan produk (untuk demo/testing) */}
-        <div className="flex gap-2 justify-center my-4">
-          <Button
-            onClick={() => handleScan("8997212800295")}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Simulasi Scan Fox's Mint Candy
-          </Button>
-          <Button
-            onClick={() => handleScan("8997212801254")}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Simulasi Scan Test Product Alternative
-          </Button>
-        </div>
       </section>
 
       <DaftarObat />

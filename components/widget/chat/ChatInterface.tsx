@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/src/services/authService";
-import { aiService, type AIModel, type Message } from "@/src/services/aiService";
+import { aiService, type AIModel, type Message as AIServiceMessage } from "@/src/services/aiService";
 import { Button } from "@/components/ui/button";
 import Logo from "@/public/logo-white.png";
 import Webcam from "react-webcam";
@@ -69,6 +69,28 @@ interface ChatActionsProps {
   onCopy?: (text: string) => void;
 }
 
+interface Message {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string | any;
+  type?: string;
+}
+// If you want to use the imported type, use AIServiceMessage instead of Message
+
+interface ScannedProduct {
+  nama?: string;
+  barcode?: string;
+  status?: string;
+  nomorRegistrasi?: string;
+  gramasi?: string;
+  anjuranSajian?: string;
+  sajianPerKantong?: string;
+  jumlahKarton?: string;
+  masaSimpan?: string;
+  dimensiKarton?: string;
+  error?: string;
+}
+
 const chatHistory = ["Supabase URL Environment Error"];
 
 const suggestions = ["Generate a blog UI", "Rewrite my LinkedIn bio", "Create a slideshow", "Synthesise an excel document", "Find me the average cost"];
@@ -81,7 +103,6 @@ const translations = [
   { lang: "Français", text: "Qu'aimeriez-vous créer?" },
   { lang: "한국어", text: "무엇을 만들고 싶으신가요?" },
 ];
-
 
 // Enhanced Waveform Component with better audio responsiveness
 const EnhancedWaveform: React.FC<{
@@ -314,9 +335,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
-  const [scannedProductCard, setScannedProductCard] = useState<any | null>(null);
+  const [scannedProductCard, setScannedProductCard] = useState<ScannedProduct | null>(null);
 
-  // Avatar URL state
   const [avatarUrl, setAvatarUrl] = useState("");
 
   // Image upload states
@@ -451,8 +471,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     }
   }, []);
 
-
-  const [messages, setMessages] = useState<{ id: string; role: "user" | "assistant"; content: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -557,9 +576,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
   useEffect(() => {
     if (scannedProductCard) {
-      setMessages(prev => {
+      setMessages((prev) => {
         // hindari duplikat kalau sudah ada
-        const alreadyHas = prev.some(m => m.type === "product-context");
+        const alreadyHas = prev.some((m) => m.role === "system" && m.type === "product-context");
         if (alreadyHas) return prev;
 
         return [
@@ -567,7 +586,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             id: `product-${Date.now()}`,
             role: "system",
             type: "product-context",
-            content: scannedProductCard, // simpan object, bukan string
+            content: scannedProductCard,
           },
           ...prev,
         ];
@@ -575,12 +594,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     }
   }, [scannedProductCard]);
 
-
   function getActiveProduct() {
     try {
       const s = localStorage.getItem("scannedProduct:active");
       return s ? JSON.parse(s) : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   async function sendMessage() {
@@ -591,7 +611,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     const body = {
       message: input,
       // ...field lain kamu (images, etc)
-      scannedProduct: product,  // ⬅️ WAJIB
+      scannedProduct: product, // ⬅️ WAJIB
     };
 
     await fetch("/api/chat", {
@@ -600,7 +620,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       body: JSON.stringify(body),
     });
   }
-
 
   // Typing animation effect
   useEffect(() => {
@@ -705,15 +724,15 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     e.preventDefault();
     const imageUrls: string[] = [];
     for (const file of imageFiles) {
-      const url = await uploadImage(file);
+      const url = await uploadImage(file); // Asumsi uploadImage ada, kalau nggak, sesuaikan
       if (url) imageUrls.push(url);
     }
     let content = imageUrls.map((url) => url).join("\n");
     if (input) content += (content ? "\n" : "") + input;
 
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now().toString(),
-      role: "user" as const,
+      role: "user",
       content,
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -725,15 +744,33 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     setAiTypingText("");
 
     try {
-      const messageHistory: Message[] = messages.concat(userMessage).map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Mapping messages ke AIServiceMessage (content harus string)
+      const messageHistory: AIServiceMessage[] = messages.concat(userMessage).map((msg) => {
+        let msgContent: string;
 
-      // Fetch response from AI
+        if (msg.role === "system" && msg.type === "product-context") {
+          const prod = msg.content as ScannedProduct;
+          if (prod.error) {
+            msgContent = `Product scan error: ${prod.error}`;
+          } else {
+            msgContent = `Scanned product details for context:\n- Name: ${prod.nama || "-"}\n- Barcode: ${prod.barcode || "-"}\n- Status: ${prod.status || "-"}\n- Registration Number: ${prod.nomorRegistrasi || "-"}\n- Weight: ${
+              prod.gramasi || "-"
+            }\n- Serving Suggestion: ${prod.anjuranSajian || "-"}\n- Servings per Bag: ${prod.sajianPerKantong || "-"}\n- Carton Quantity: ${prod.jumlahKarton || "-"}\n- Shelf Life: ${prod.masaSimpan || "-"}\n- Carton Dimensions: ${
+              prod.dimensiKarton || "-"
+            }\nUse this product information in your responses where relevant.`;
+          }
+        } else {
+          msgContent = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content); // Fallback kalau ada content non-string lain
+        }
+
+        return {
+          role: msg.role as "user" | "assistant" | "system", // Cast ke tipe AIServiceMessage
+          content: msgContent,
+        };
+      });
+
       const response = await aiService.generateCompletion(selectedModel, messageHistory);
 
-      // MULAI TYPING ANIMASI
       setIsAiTyping(true);
       let i = 0;
       const text = response.text;
@@ -742,14 +779,14 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         if (i <= text.length) {
           setAiTypingText(text.slice(0, i));
           i++;
-          setTimeout(typeChar, 18); // bisa diganti 40 untuk lambat, 18 untuk cepat
+          setTimeout(typeChar, 18);
         } else {
           setIsAiTyping(false);
           setMessages((prev) => [
             ...prev,
             {
               id: (Date.now() + 1).toString(),
-              role: "assistant" as const,
+              role: "assistant",
               content: text,
             },
           ]);
@@ -760,9 +797,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       typeChar();
     } catch (error) {
       console.error("AI error:", error);
-      const errorMessage = {
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: "assistant" as const,
+        role: "assistant",
         content: "Sorry, I encountered an error while processing your request. Please try again.",
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -983,8 +1020,8 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         video: {
           facingMode: "user",
           width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+          height: { ideal: 720 },
+        },
       });
       setCameraStream(stream);
       setIsCameraOpen(true);
@@ -1058,12 +1095,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     };
   }, [isCameraOpen, cameraStream]);
 
-
   useEffect(() => {
     return () => {
       try {
         closeCamera();
-      } catch { }
+      } catch {}
     };
   }, []);
 
@@ -1164,9 +1200,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}>
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${activeMembershipType === "pro"
-                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
-                  : activeMembershipType === "plus"
+                ${
+                  activeMembershipType === "pro"
+                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
+                    : activeMembershipType === "plus"
                     ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
                     : ""
                 }
@@ -1269,26 +1306,43 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   {scannedProductCard && (
                     <div className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
                       <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk (terkunci)</div>
-
                       {"error" in scannedProductCard ? (
                         <div className="text-red-600">{scannedProductCard.error}</div>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-teal-900">
-                          <div><b>Nama:</b> {scannedProductCard.nama || "-"}</div>
-                          <div><b>Barcode:</b> {scannedProductCard.barcode || "-"}</div>
-                          <div><b>Status:</b> {scannedProductCard.status || "-"}</div>
-                          <div><b>Nomor Registrasi:</b> {scannedProductCard.nomorRegistrasi || "-"}</div>
-                          <div><b>Gramasi:</b> {scannedProductCard.gramasi || "-"}</div>
-                          <div><b>Anjuran Sajian:</b> {scannedProductCard.anjuranSajian || "-"}</div>
-                          <div><b>Sajian/Kantong:</b> {scannedProductCard.sajianPerKantong || "-"}</div>
-                          <div><b>Jumlah Karton:</b> {scannedProductCard.jumlahKarton || "-"}</div>
-                          <div><b>Masa Simpan:</b> {scannedProductCard.masaSimpan || "-"}</div>
-                          <div><b>Dimensi Karton:</b> {scannedProductCard.dimensiKarton || "-"}</div>
+                          <div>
+                            <b>Nama:</b> {scannedProductCard.nama || "-"}
+                          </div>
+                          <div>
+                            <b>Barcode:</b> {scannedProductCard.barcode || "-"}
+                          </div>
+                          <div>
+                            <b>Status:</b> {scannedProductCard.status || "-"}
+                          </div>
+                          <div>
+                            <b>Nomor Registrasi:</b> {scannedProductCard.nomorRegistrasi || "-"}
+                          </div>
+                          <div>
+                            <b>Gramasi:</b> {scannedProductCard.gramasi || "-"}
+                          </div>
+                          <div>
+                            <b>Anjuran Sajian:</b> {scannedProductCard.anjuranSajian || "-"}
+                          </div>
+                          <div>
+                            <b>Sajian/Kantong:</b> {scannedProductCard.sajianPerKantong || "-"}
+                          </div>
+                          <div>
+                            <b>Jumlah Karton:</b> {scannedProductCard.jumlahKarton || "-"}
+                          </div>
+                          <div>
+                            <b>Masa Simpan:</b> {scannedProductCard.masaSimpan || "-"}
+                          </div>
+                          <div>
+                            <b>Dimensi Karton:</b> {scannedProductCard.dimensiKarton || "-"}
+                          </div>
                         </div>
                       )}
-                      <p className="mt-2 text-xs text-teal-700">
-                        Produk ini akan selalu disertakan dalam percakapan dengan Silva.
-                      </p>
+                      <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
                     </div>
                   )}
 
@@ -1400,19 +1454,68 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               <div className="flex-1 overflow-y-auto px-6 pt-6 pb-24 scrollbar-none min-h-0" style={{ maxHeight: "calc(100vh - 180px)" }}>
                 <div className="space-y-3 w-full">
                   {messages.map((message, idx) => {
+                    if (message.role === "system" && message.type === "product-context") {
+                      return (
+                        <>
+                          <div key={message.id} className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
+                            <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk</div>
+                            {"error" in message.content ? (
+                              <div className="text-red-600">{message.content.error}</div>
+                            ) : (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-teal-900">
+                                <div>
+                                  <b>Nama:</b> {message.content.nama || "-"}
+                                </div>
+                                <div>
+                                  <b>Barcode:</b> {message.content.barcode || "-"}
+                                </div>
+                                <div>
+                                  <b>Status:</b> {message.content.status || "-"}
+                                </div>
+                                <div>
+                                  <b>Nomor Registrasi:</b> {message.content.nomorRegistrasi || "-"}
+                                </div>
+                                <div>
+                                  <b>Gramasi:</b> {message.content.gramasi || "-"}
+                                </div>
+                                <div>
+                                  <b>Anjuran Sajian:</b> {message.content.anjuranSajian || "-"}
+                                </div>
+                                <div>
+                                  <b>Sajian/Kantong:</b> {message.content.sajianPerKantong || "-"}
+                                </div>
+                                <div>
+                                  <b>Jumlah Karton:</b> {message.content.jumlahKarton || "-"}
+                                </div>
+                                <div>
+                                  <b>Masa Simpan:</b> {message.content.masaSimpan || "-"}
+                                </div>
+                                <div>
+                                  <b>Dimensi Karton:</b> {message.content.dimensiKarton || "-"}
+                                </div>
+                              </div>
+                            )}
+                            <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
+                          </div>
+                          {idx === messages.filter((m) => m.role === "system" && m.type === "product-context").length - 1 && <hr className="h-px my-8 bg-gray-300 border-0 dark:bg-gray-700" />}
+                        </>
+                      );
+                    }
+
                     const isLastAi = message.role === "assistant" && idx === messages.length - 1 && (isAiTyping || aiTypingText);
-                    const imageUrlMatch = message.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|svg)/i);
-                    const textContent = message.content;
+                    const imageUrlMatch = typeof message.content === "string" ? message.content.match(/https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|svg)/i) : null;
+                    const textContent = typeof message.content === "string" ? message.content : "";
 
                     return (
                       <div key={message.id} className={`flex flex-col gap-1 ${message.role === "user" ? "items-end" : "items-start"}`}>
                         {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-0 rounded-bl-xl rounded-tr-xl rounded-tl-xl max-w-full h-auto" style={{ maxHeight: 130 }} />}
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
-                            ${message.role === "user"
+                          ${
+                            message.role === "user"
                               ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl"
                               : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"
-                            }`}
+                          }`}
                           style={{
                             lineHeight: "1.35",
                             fontSize: "1.1rem",
@@ -1420,13 +1523,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                             minHeight: "unset",
                           }}
                         >
-                          <div className="whitespace-pre-wrap break-words leading-relaxed">
-                            {isLastAi && aiTypingText
-                              ? aiTypingText
-                              : imageUrlMatch
-                                ? textContent.replace(imageUrlMatch[0], "").trim()
-                                : textContent}
-                          </div>
+                          <div className="whitespace-pre-wrap break-words leading-relaxed">{isLastAi && aiTypingText ? aiTypingText : imageUrlMatch ? textContent.replace(imageUrlMatch[0], "").trim() : textContent}</div>
                         </div>
 
                         {message.role === "assistant" && (
@@ -1741,7 +1838,12 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           )}
         </div>
 
-        <Dialog open={isCameraOpen} onOpenChange={(open) => { if (!open) closeCamera(); }}>
+        <Dialog
+          open={isCameraOpen}
+          onOpenChange={(open) => {
+            if (!open) closeCamera();
+          }}
+        >
           <DialogContent className="lg:max-w-7xl bg-white rounded-xl">
             <DialogHeader className="space-y-1">
               <DialogTitle className="text-lg font-semibold text-gray-900">Kamera</DialogTitle>
@@ -1817,12 +1919,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <div className="flex items-center space-x-3 mb-4">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${activeMembershipType === "pro"
+                ${
+                  activeMembershipType === "pro"
                     ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border border-amber-300"
                     : activeMembershipType === "plus"
-                      ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
-                      : ""
-                  }
+                    ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
+                    : ""
+                }
               `}
                 style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
               >
