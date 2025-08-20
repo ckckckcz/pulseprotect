@@ -5,83 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Medal, Shield, Eye, Users, Award, Star, CheckCircle, Lock, ArrowRight } from "lucide-react";
+import { Medal, Shield, Eye, Users, Award, Star, CheckCircle, Lock, ArrowRight, Ticket } from "lucide-react";
 import { loadUserProgress, BADGE_RULES, UserProgress } from "@/lib/badgeSystem";
 import { BADGE_META } from "@/lib/badgeMeta";
-const badges = [
-  {
-    id: 1,
-    name: "Detektif Pemula",
-    description: "Badge untuk pengguna yang baru memulai perjalanan deteksi obat palsu",
-    points: 100,
-    icon: Eye,
-    color: "bg-teal-500",
-    earned: true,
-    progress: 100,
-    requirements: ["Daftar akun di platform", "Selesaikan tutorial dasar", "Lakukan 1 kali verifikasi obat"],
-    howToEarn: "Badge ini diberikan secara otomatis setelah Anda menyelesaikan registrasi dan tutorial dasar sistem deteksi obat palsu.",
-  },
-  {
-    id: 2,
-    name: "Penjaga Kesehatan",
-    description: "Untuk pengguna yang telah memverifikasi 10 obat dengan akurat",
-    points: 250,
-    icon: Shield,
-    color: "bg-teal-600",
-    earned: true,
-    progress: 100,
-    requirements: ["Verifikasi 10 obat berbeda", "Tingkat akurasi minimal 85%", "Tidak ada laporan palsu"],
-    howToEarn: "Lakukan verifikasi obat secara konsisten dengan tingkat akurasi tinggi. Gunakan fitur scan barcode dan analisis visual untuk memastikan keaslian obat.",
-  },
-  {
-    id: 3,
-    name: "Ahli Farmasi",
-    description: "engguna dengan keahlian tinggi dalam identifikasi obat",
-    points: 500,
-    icon: Award,
-    color: "bg-teal-700",
-    earned: false,
-    progress: 60,
-    requirements: ["Verifikasi 50 obat dengan akurasi 95%", "Laporkan 5 obat palsu yang terkonfirmasi", "Dapatkan 20 like dari komunitas"],
-    howToEarn: "Tingkatkan keahlian Anda dengan mempelajari karakteristik obat asli vs palsu. Aktif melaporkan temuan obat palsu dan berbagi pengetahuan dengan komunitas.",
-  },
-  {
-    id: 4,
-    name: "Kontributor Komunitas",
-    description: "Untuk pengguna yang aktif membantu sesama dalam komunitas",
-    points: 300,
-    icon: Users,
-    color: "bg-emerald-600",
-    earned: false,
-    progress: 30,
-    requirements: ["Bantu 15 pengguna lain", "Posting 10 tips berguna", "Rating komunitas minimal 4.5/5"],
-    howToEarn: "Aktif di forum komunitas, jawab pertanyaan pengguna lain, dan bagikan tips praktis tentang cara mengenali obat palsu.",
-  },
-  {
-    id: 5,
-    name: "Master Validator",
-    description: "Badge tertinggi untuk validator obat terpercaya",
-    points: 1000,
-    icon: Medal,
-    color: "bg-cyan-600",
-    earned: false,
-    progress: 10,
-    requirements: ["Verifikasi 200+ obat", "Akurasi 98% atau lebih", "Sertifikasi dari ahli farmasi", "Kontribusi database obat"],
-    howToEarn: "Capai level tertinggi dengan konsistensi dan keahlian luar biasa. Ikuti program sertifikasi dan berkontribusi pada pengembangan database obat.",
-  },
-  {
-    id: 6,
-    name: "Guardian Angel",
-    description: "Untuk pengguna yang telah menyelamatkan nyawa dengan mendeteksi obat berbahaya",
-    points: 750,
-    icon: Star,
-    color: "bg-teal-800",
-    earned: false,
-    progress: 0,
-    requirements: ["Laporkan obat palsu berbahaya", "Konfirmasi dari otoritas kesehatan", "Dampak positif terdokumentasi"],
-    howToEarn: "Badge khusus yang diberikan ketika laporan Anda tentang obat palsu berbahaya dikonfirmasi oleh otoritas kesehatan dan terbukti mencegah bahaya pada masyarakat.",
-  },
-];
+import Link from "next/link";
+import RedeemVoucherPage from "@/app/redeem-voucher/page";
 
 const defaultProgress: UserProgress = {
   gamesPlayed: 0,
@@ -221,6 +149,12 @@ export default function BadgeSystem() {
         {earnedBadgeList.length > 0 && lockedBadgeList.length > 0 && <hr className="my-6 border-gray-200" />}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">{lockedBadgeList.map((badge) => renderBadgeCard(badge))}</div>
       </div>
+      <a href="/redeem-voucher">
+        <Button variant="outline" className="flex-1 gap-3 w-full mt-6 border-gray-300 hover:bg-teal-700 bg-teal-600 rounded-xl text-white hover:text-white">
+          <Ticket />
+          Tukarkan Poin
+        </Button>
+      </a>
     </div>
   );
 }
