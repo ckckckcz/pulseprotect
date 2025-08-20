@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, ShoppingBag, Percent, CheckCircle, Lock, ArrowRight, Copy } from "lucide-react";
+import { AlertCircle, ShoppingBag, Percent, CheckCircle, Lock, ArrowRight, Copy, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { loadUserProgress, saveUserProgress, UserProgress, BADGE_RULES } from "@/lib/badgeSystem";
 import { BADGE_META } from "@/lib/badgeMeta";
@@ -256,6 +256,12 @@ export default function RedeemVoucherPage() {
             <div className="max-w-7xl mx-auto">
                 <div className="mb-12">
                     <div className="w-full">
+                        <a href="/profile">
+                            <Button className="bg-gray-200 hover:bg-gray-300 gap-3 justify-center align-center flex text-center rounded-xl mb-5">
+                                <ArrowLeft className="w-4 h-4" />
+                                Kembali
+                            </Button>
+                        </a>
                         <h1 className="text-1xl sm:text-2xl font-bold text-gray-900 mb-1">Halaman Tukarkan Kode Voucher</h1>
                         <p className="text-md text-gray-600 mb-8">Tukarkan poin Anda menjadi voucher diskon untuk produk kesehatan dan obat asli di berbagai platform.</p>
                         <div className="bg-yellow-100 border border-yellow-200 rounded-xl p-4 mb-8 flex items-start gap-3">
