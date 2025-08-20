@@ -286,13 +286,13 @@ export default function Navbar() {
                       <span>Profil</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="border border-gray-200" />
+                  {/* <DropdownMenuSeparator className="border border-gray-200" />
                   <DropdownMenuItem asChild>
                     <Link href="/konsultasi">
                       <Stethoscope className="mr-2 h-4 w-4" />
                       <span>Konsultasi</span>
                     </Link>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   {user.role === "dokter" && (
                     <DropdownMenuItem className="hover:bg-gray-100" asChild>
                       <Link href="/dokter">Dashboard</Link>

@@ -10,14 +10,28 @@ import Navbar from "@/components/widget/navbar";
 import Footer from "@/components/widget/footer";
 import { addGameResult, loadUserProgress, BADGE_RULES } from "@/lib/badgeSystem";
 import ConfettiAnimation from "@/components/widget/celebration-confetti";
+import { authService } from "@/lib/auth"
+import FooterBanner from "@/components/widget/footer-banner"
 
-type Screen = "home" | "game1" | "game2" | "completed";
+type Screen = "home" | "game1" | "game2" | "completed" | "lost";
+
 type Difficulty = "easy" | "medium" | "hard";
 
-const medicineImages = ["/images/obat/Darah/Asam Folat.png", "/images/obat/Darah/Clopidogrel.png", "/images/obat/Darah/Ferrous-Sulfate.png", "/images/obat/Darah/Sangobion.png", "/images/obat/Darah/Warfarin 2mg.png"];
+const medicineImages = [
+  "/images/obat/Darah/Asam Folat.png",
+  "/images/obat/Darah/Clopidogrel.png",
+  "/images/obat/Darah/Ferrous-Sulfate.png",
+  "/images/obat/Darah/Sangobion.png",
+  "/images/obat/Darah/Warfarin 2mg.png",
+  "/images/obat/Darah/Asam Traneksamat 500mg.png",
+  "/images/obat/Darah/Epoetin Alfa Injection.png",
+  "/images/obat/Darah/Vitamin B12 (Cyanocobalamin).png",
+  "/images/obat/Darah/Vitamin K (Phytomenadione).png", 
+];
 
 export default function AntiFakeMedicineGames() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("home");
+  const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
   const [score, setScore] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -28,6 +42,7 @@ export default function AntiFakeMedicineGames() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>("easy");
   const [memoryDurationSeconds, setMemoryDurationSeconds] = useState(60);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(!!authService.checkSession()); // Initial check
 
   const QUIZ_DURATION_SECONDS = 120;
 
@@ -75,7 +90,6 @@ export default function AntiFakeMedicineGames() {
     if (newFlippedCards.length === 2) {
       const [first, second] = newFlippedCards;
       if (newCards[first].pairKey === newCards[second].pairKey) {
-        // Match found
         setTimeout(() => {
           newCards[first].matched = true;
           newCards[second].matched = true;
@@ -84,7 +98,6 @@ export default function AntiFakeMedicineGames() {
           setScore((prev) => prev + difficultyConfig[selectedDifficulty].pointsPerMatch);
         }, 1000);
       } else {
-        // No match
         setTimeout(() => {
           newCards[first].flipped = false;
           newCards[second].flipped = false;
@@ -110,11 +123,10 @@ export default function AntiFakeMedicineGames() {
 
     let correct = 0;
     if (currentScreen === "game1") {
-      correct = Math.floor(score / 10); // contoh: 10 poin per jawaban benar
+      correct = Math.floor(score / 10);
     } else if (currentScreen === "game2") {
       correct = score / difficultyConfig[selectedDifficulty].pointsPerMatch;
     }
-    // Simpan progres dan cek badge baru
     const result = addGameResult({ correct, points: score });
 
     if (result.newBadges?.length > 0) {
@@ -127,32 +139,43 @@ export default function AntiFakeMedicineGames() {
       setGameProgress((prev) => prev + 20);
       setSelectedAnswer(null);
     } else {
-      // Game completed
       finishGame();
     }
   };
 
-  // Detect completion for Memory game (all matched)
   useEffect(() => {
     if (currentScreen === "game2" && memoryCards.length > 0) {
       const allMatched = memoryCards.every((c) => c.matched);
       if (allMatched) {
         finishGame();
+      } else if (timer <= 0) {
+        setCurrentScreen("lost");
+        setShowConfetti(false);
+        setPreviousScreen("game2");
       }
     }
-  }, [memoryCards, currentScreen]);
+  }, [memoryCards, currentScreen, timer]);
 
-  // Start countdown when entering a game screen
   useEffect(() => {
     if (currentScreen === "game1" || currentScreen === "game2") {
       if (currentScreen === "game1") {
         setTimer(QUIZ_DURATION_SECONDS);
+      } else {
+        setTimer(difficultyConfig[selectedDifficulty].timer);
       }
       const intervalId = setInterval(() => {
         setTimer((prev) => {
           if (prev <= 1) {
             clearInterval(intervalId);
-            finishGame();
+            if (currentScreen === "game1" && currentQuestion < 4) {
+              setCurrentScreen("lost");
+              setShowConfetti(false);
+              setPreviousScreen("game1");
+            } else if (currentScreen === "game2") {
+              setCurrentScreen("lost");
+              setShowConfetti(false);
+              setPreviousScreen("game2");
+            }
             return 0;
           }
           return prev - 1;
@@ -160,7 +183,23 @@ export default function AntiFakeMedicineGames() {
       }, 1000);
       return () => clearInterval(intervalId);
     }
-  }, [currentScreen]);
+  }, [currentScreen, currentQuestion, selectedDifficulty]);
+
+  useEffect(() => {
+    const checkSession = () => {
+      const session = authService.checkSession();
+      setIsLoggedIn(!!session);
+    };
+
+    checkSession();
+    const intervalId = setInterval(checkSession, 60000);
+    window.addEventListener("storage", checkSession);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("storage", checkSession);
+    };
+  }, []);
 
   if (currentScreen === "home") {
     return (
@@ -179,7 +218,7 @@ export default function AntiFakeMedicineGames() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
               <Card className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-0 shadow-lg overflow-hidden rounded-2xl">
                 <CardHeader className="bg-gradient-to-r from-teal-500 to-teal-600 text-white p-8 rounded-t-2xl">
-                  <div className="flex items-center gap-4 mb-4">
+                  <div className="flex lg:flex-row flex-col lg:items-center items-start gap-4 mb-4">
                     <div className="p-3 bg-white/20 rounded-xl">
                       <Search className="w-8 h-8" />
                     </div>
@@ -202,7 +241,16 @@ export default function AntiFakeMedicineGames() {
                       </span>
                     </div>
                   </div>
-                  <Button onClick={() => setCurrentScreen("game1")} className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl">
+                  <Button
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        window.location.href = "/login";
+                      } else {
+                        setCurrentScreen("game1");
+                      }
+                    }}
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
+                  >
                     <Play className="w-5 h-5 mr-2" />
                     Mulai Bermain
                   </Button>
@@ -211,7 +259,7 @@ export default function AntiFakeMedicineGames() {
 
               <Card className="group hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white border-0 shadow-lg overflow-hidden rounded-2xl">
                 <CardHeader className="bg-gradient-to-r from-teal-500 to-teal-600 text-white p-8 rounded-t-2xl">
-                  <div className="flex items-center gap-4 mb-4">
+                  <div className="flex lg:flex-row flex-col lg:items-center items-start gap-4 mb-4">
                     <div className="p-3 bg-white/20 rounded-xl">
                       <Brain className="w-8 h-8" />
                     </div>
@@ -261,8 +309,12 @@ export default function AntiFakeMedicineGames() {
                     </DropdownMenu>
                     <Button
                       onClick={() => {
-                        initializeMemoryGame(selectedDifficulty);
-                        setCurrentScreen("game2");
+                        if (!isLoggedIn) {
+                          window.location.href = "/login";
+                        } else {
+                          initializeMemoryGame(selectedDifficulty);
+                          setCurrentScreen("game2");
+                        }
                       }}
                       className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
                     >
@@ -275,7 +327,7 @@ export default function AntiFakeMedicineGames() {
             </div>
 
             <div className="bg-white rounded-2xl p-8 border-2 border-gray-200">
-              <div className="text-center">
+              <div className="lg:text-center">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Mengapa Penting Mendeteksi Obat Palsu?</h2>
                 <p className="text-gray-600 max-w-3xl mx-auto leading-relaxed">
                   Obat palsu dapat membahayakan kesehatan dan bahkan mengancam nyawa. Dengan bermain game ini, anda akan belajar mengenali ciri-ciri obat asli dan palsu untuk melindungi diri dan keluarga.
@@ -284,6 +336,7 @@ export default function AntiFakeMedicineGames() {
             </div>
           </div>
         </div>
+        <FooterBanner/>
         <Footer />
       </div>
     );
@@ -302,7 +355,6 @@ export default function AntiFakeMedicineGames() {
                 Kembali
               </Button>
               <div className="text-right">
-                {/* <div className="text-2xl font-bold text-teal-600">Skor: {score}</div> */}
                 <div className="text-sm text-gray-500">Waktu: {formatTime(timer)}</div>
               </div>
             </div>
@@ -359,6 +411,7 @@ export default function AntiFakeMedicineGames() {
             </Card>
           </div>
         </div>
+        <FooterBanner/>
         <Footer />
       </div>
     );
@@ -381,10 +434,6 @@ export default function AntiFakeMedicineGames() {
                   <div className="text-2xl font-bold text-teal-600">⏱️ {formatTime(timer)}</div>
                   <div className="text-sm text-gray-500">Waktu</div>
                 </div>
-                {/* <div className="text-center">
-                  <div className="text-2xl font-bold text-teal-600">🏆 {score}</div>
-                  <div className="text-sm text-gray-500">Skor</div>
-                </div> */}
               </div>
             </div>
 
@@ -419,6 +468,7 @@ export default function AntiFakeMedicineGames() {
             </div>
           </div>
         </div>
+        <FooterBanner/>
         <Footer />
       </div>
     );
@@ -472,6 +522,66 @@ export default function AntiFakeMedicineGames() {
             </Card>
           </div>
         </div>
+        <FooterBanner/>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (currentScreen === "lost") {
+    return (
+      <div className="min-h-screen bg-white mt-24">
+        <Navbar />
+        <div className="py-24 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto">
+            <Card className="bg-white border border-gray-200 overflow-hidden rounded-2xl">
+              <CardContent className="p-10 text-center">
+                <div className="mb-6">
+                  <X className="w-12 h-12 text-red-600 mx-auto" />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Waktu Habis!</h2>
+                <p className="text-gray-600 mb-8">
+                  Sayang sekali, kamu kehabisan waktu dan belum menyelesaikan permainan. Coba lagi ya!
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button
+                    onClick={() => {
+                      setCurrentScreen("home");
+                      setScore(0);
+                      setCurrentQuestion(0);
+                      setGameProgress(0);
+                      setSelectedAnswer(null);
+                      setMemoryCards([]);
+                    }}
+                    className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 text-lg font-semibold rounded-xl"
+                  >
+                    Kembali ke Beranda
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (previousScreen === "game1") {
+                        setCurrentScreen("game1");
+                        setScore(0);
+                        setCurrentQuestion(0);
+                        setGameProgress(0);
+                        setSelectedAnswer(null);
+                      } else if (previousScreen === "game2") {
+                        setCurrentScreen("game2");
+                        initializeMemoryGame(selectedDifficulty);
+                        setScore(0);
+                      }
+                    }}
+                    className="px-8 py-3 text-lg font-semibold rounded-xl"
+                  >
+                    Coba Lagi
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <FooterBanner/>
         <Footer />
       </div>
     );
