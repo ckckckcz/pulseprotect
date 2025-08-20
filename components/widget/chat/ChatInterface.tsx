@@ -45,6 +45,7 @@ import {
   Camera,
   AlertTriangle,
   Trash2,
+  ChevronsDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
@@ -785,11 +786,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           if (prod.error) {
             msgContent = `Product scan error: ${prod.error}`;
           } else {
-            msgContent = `Scanned product details for context:\n- Name: ${prod.nama || "-"}\n- Barcode: ${prod.barcode || "-"}\n- Status: ${prod.status || "-"}\n- Registration Number: ${prod.nomorRegistrasi || "-"}\n- Weight: ${
-              prod.gramasi || "-"
-            }\n- Serving Suggestion: ${prod.anjuranSajian || "-"}\n- Servings per Bag: ${prod.sajianPerKantong || "-"}\n- Carton Quantity: ${prod.jumlahKarton || "-"}\n- Shelf Life: ${prod.masaSimpan || "-"}\n- Carton Dimensions: ${
-              prod.dimensiKarton || "-"
-            }\nUse this product information in your responses where relevant.`;
+            msgContent = `Scanned product details for context:\n- Name: ${prod.nama || "-"}\n- Barcode: ${prod.barcode || "-"}\n- Status: ${prod.status || "-"}\n- Registration Number: ${prod.nomorRegistrasi || "-"}\n- Weight: ${prod.gramasi || "-"
+              }\n- Serving Suggestion: ${prod.anjuranSajian || "-"}\n- Servings per Bag: ${prod.sajianPerKantong || "-"}\n- Carton Quantity: ${prod.jumlahKarton || "-"}\n- Shelf Life: ${prod.masaSimpan || "-"}\n- Carton Dimensions: ${prod.dimensiKarton || "-"
+              }\nUse this product information in your responses where relevant.`;
           }
         } else {
           msgContent = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content); // Fallback kalau ada content non-string lain
@@ -1131,7 +1130,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     return () => {
       try {
         closeCamera();
-      } catch {}
+      } catch { }
     };
   }, []);
 
@@ -1232,10 +1231,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}>
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${
-                  activeMembershipType === "pro"
-                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
-                    : activeMembershipType === "plus"
+                ${activeMembershipType === "pro"
+                  ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border-2 border-amber-300"
+                  : activeMembershipType === "plus"
                     ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
                     : ""
                 }
@@ -1319,6 +1317,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               <Sparkles className="w-4 h-4" />
               <span>Subscribe to a Pro plan for increased message limits</span>
             </div>
+          </div>
+          <div className="flex items-center space-x-3 lg:hidden block">
+            <Button className="flex items-center space-x-1 text-sm text-teal-800 bg-gray-100 border border-gray-200 rounded-xl">
+              <ChevronsDown onClick={toggleBottomCard} className="w-5 h-5" />
+            </Button>
           </div>
         </div>
 
@@ -1545,11 +1548,10 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         {imageUrlMatch && <img src={imageUrlMatch[0] || "/placeholder.svg"} alt="uploaded" className="mb-0 rounded-bl-xl rounded-tr-xl rounded-tl-xl max-w-full h-auto" style={{ maxHeight: 130 }} />}
                         <div
                           className={`ai-bubble max-w-[75%] sm:max-w-[70%] px-3 py-1.5 mb-1 min-h-0 h-auto items-start align-middle
-                          ${
-                            message.role === "user"
+                          ${message.role === "user"
                               ? "bg-teal-600 text-white rounded-tr rounded-tl-xl rounded-br-xl rounded-bl-xl"
                               : "bg-white border border-gray-200 text-gray-900 shadow-sm rounded-tl rounded-tr-xl rounded-br-xl rounded-bl-xl"
-                          }`}
+                            }`}
                           style={{
                             lineHeight: "1.35",
                             fontSize: "1.1rem",
@@ -1958,11 +1960,11 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         </Dialog>
 
         {/* Mobile Bottom Toggle Button */}
-        <div className="absolute bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
+        {/* <div className="absolute bottom-12 left-0 right-0 flex justify-center lg:hidden z-20">
           <Button onClick={toggleBottomCard} className={`rounded-tr-xl rounded-tl-xl w-12 h-12 bg-teal-600 hover:bg-teal-700 text-white shadow-lg transition-transform ${showBottomCard ? "rotate-180" : ""}`}>
             <ArrowUp className="w-full h-full" />
           </Button>
-        </div>
+        </div> */}
 
         {/* Overlay when bottom card is open */}
         {showBottomCard && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20 lg:hidden" onClick={toggleBottomCard}></div>}
@@ -1982,13 +1984,12 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
             <div className="flex items-center space-x-3 mb-4">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center
-          ${
-            activeMembershipType === "pro"
-              ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border border-amber-300"
-              : activeMembershipType === "plus"
-              ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
-              : ""
-          }`}
+          ${activeMembershipType === "pro"
+                    ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_15px_rgba(245,158,11,0.6)] border border-amber-300"
+                    : activeMembershipType === "plus"
+                      ? "ring-2 ring-teal-500 ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(20,184,166,0.5)]"
+                      : ""
+                  }`}
                 style={{ backgroundColor: "#14b8a6", overflow: "hidden" }}
               >
                 {avatarUrl ? (
@@ -2018,18 +2019,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 <Clock className="w-4 h-4" />
                 <span>Riwayat Chat</span>
               </Button>
+              <Button
+                onClick={() => handleExitConfirmation(() => router.push("/"))}
+                className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
+              >
+                <House className="w-4 h-4" />
+                <span>Home</span>
+              </Button>
+              <Button onClick={() => handleExitConfirmation(logout)} className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600">
+                <LogOut className="w-4 h-4" />
+                <span>Keluar</span>
+              </Button>
             </div>
-            <Button
-              onClick={() => handleExitConfirmation(() => router.push("/"))}
-              className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-teal-50 hover:border-teal-200 hover:text-gray-900"
-            >
-              <House className="w-4 h-4" />
-              <span>Home</span>
-            </Button>
-            <Button onClick={() => handleExitConfirmation(logout)} className="flex items-center justify-start gap-3 h-14 bg-gray-50 border border-gray-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600">
-              <LogOut className="w-4 h-4" />
-              <span>Keluar</span>
-            </Button>
           </div>
         </motion.div>
 
