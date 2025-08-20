@@ -208,7 +208,7 @@ export default function AntiFakeMedicineGames() {
         {showConfetti && <ConfettiAnimation />}
         <div className="py-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
+            <div className="lg:text-center mb-12">
               <h1 className="text-4xl sm:text-5xl font-bold text-black mb-1">
                 Anti Fake Medicine <span className="text-teal-600 cardo italic">Games</span>
               </h1>
