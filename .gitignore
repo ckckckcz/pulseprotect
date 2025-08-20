@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/python/venv
 
 # next.js
 /.next/

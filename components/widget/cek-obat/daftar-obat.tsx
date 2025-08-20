@@ -33,23 +33,35 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { dataObatLengkap } from "@/lib/data/obat"
 import type React from "react"
-import BarcodeScanner from "@/components/widget/cek-obat/barcode-scanner"
+// import BarcodeScanner from "@/components/widget/cek-obat/barcode-scanner"
+import YOLOScanner from "@/components/widget/cek-obat/yolo/scaner"
 import Navbar from "@/components/widget/navbar"
 import { useEffect, useState } from "react"
 import Footer from "@/components/widget/footer"
 import { useRouter } from "next/navigation"
 
 interface ProductData {
-  nama: string
+  // MedVerify response structure
   status: string
-  barcode: string
-  nomorRegistrasi: string
-  gramasi: string
-  anjuranSajian: string
-  sajianPerKantong: string
-  jumlahKarton: string
-  masaSimpan: string
-  dimensiKarton: string
+  source: string
+  product?: {
+    nie: string
+    name: string
+    manufacturer: string
+    category: string
+    composition: string
+    updated_at: string
+  }
+  confidence: number
+  message: string
+  explanation: string
+  sessionId?: string
+  ocrResult?: {
+    title_text?: string
+    title_conf?: number
+    bpom_number?: string
+    winner?: string
+  }
 }
 
 export default function DaftarObat() {
@@ -69,15 +81,15 @@ export default function DaftarObat() {
   const sidebarBg = useTransform(scrollY, [0, 50], ["rgba(255, 255, 255, 0.8)", "rgba(255, 255, 255, 0.95)"])
 
   const productFields = [
-    { label: "Nama Produk", value: modalData?.nama, icon: Package },
-    { label: "Barcode", value: modalData?.barcode, icon: Barcode },
-    { label: "No. Registrasi", value: modalData?.nomorRegistrasi, icon: FileText },
-    { label: "Gramasi", value: modalData?.gramasi, icon: Scale },
-    { label: "Anjuran Sajian", value: modalData?.anjuranSajian, icon: Utensils },
-    { label: "Sajian per Kantong", value: modalData?.sajianPerKantong, icon: Package2 },
-    { label: "Jumlah Karton", value: modalData?.jumlahKarton, icon: Archive },
-    { label: "Masa Simpan", value: modalData?.masaSimpan, icon: Clock },
-    { label: "Dimensi Karton", value: modalData?.dimensiKarton, icon: Ruler },
+    { label: "Nama Produk", value: modalData?.product?.name, icon: Package },
+    { label: "NIE/Nomor Registrasi", value: modalData?.product?.nie, icon: FileText },
+    { label: "Produsen", value: modalData?.product?.manufacturer, icon: Package2 },
+    { label: "Kategori", value: modalData?.product?.category, icon: Archive },
+    { label: "Komposisi", value: modalData?.product?.composition, icon: TestTube },
+    { label: "Terakhir Update", value: modalData?.product?.updated_at, icon: Clock },
+    { label: "Sumber Data", value: modalData?.source, icon: FileText },
+    { label: "Confidence Score", value: modalData?.confidence ? `${(modalData.confidence * 100).toFixed(1)}%` : undefined, icon: Activity },
+    { label: "OCR Title", value: modalData?.ocrResult?.title_text, icon: ScanBarcode },
   ]
 
   const getStatusIcon = (status: string) => {
@@ -169,7 +181,7 @@ export default function DaftarObat() {
     },
   }
 
-  const handleBarcodeDetected = async (qrText: string) => {
+  const handleYOLODetected = async (qrText: string) => {
     const trimmed = qrText.trim()
 
     const matchRegistrasi = trimmed.match(/MD\s?\d{15}/i)
@@ -425,7 +437,7 @@ export default function DaftarObat() {
         </motion.div>
       </div>
 
-      {showScanner && <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setShowScanner(false)} />}
+      {showScanner && <YOLOScanner onDetected={handleYOLODetected} onClose={() => setShowScanner(false)} />}
       {/* <Footer /> */}
     </>
   )
