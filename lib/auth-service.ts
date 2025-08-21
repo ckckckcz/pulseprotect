@@ -177,7 +177,7 @@ export function hasJwtTokens() {
 // Function to check if session is active and valid with JWT token support
 export function checkSession(): UserSession | null {
   try {
-    console.log("Checking session from auth-utils.ts");
+    // console.log("Checking session from auth-utils.ts");
     let sessionData: UserSession | null = null;
     
     // First check if we have JWT tokens
@@ -360,7 +360,7 @@ export async function refreshUserSession(): Promise<UserSession | null> {
           const tokenData = JSON.parse(jsonPayload);
           
           if (tokenData && tokenData.userId) {
-            console.log("Found userId in JWT:", tokenData.userId);
+            // console.log("Found userId in JWT:", tokenData.userId);
             
             // Fetch user data from Supabase
             const { data: user, error } = await supabase
@@ -454,7 +454,7 @@ export async function refreshUserSession(): Promise<UserSession | null> {
       });
     }
     
-    console.log("Session refreshed successfully for:", refreshedSession.email);
+    // console.log("Session refreshed successfully for:", refreshedSession.email);
     return refreshedSession;
   } catch (error) {
     console.error('Error in refreshUserSession:', error);

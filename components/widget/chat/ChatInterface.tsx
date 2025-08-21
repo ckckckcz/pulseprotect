@@ -383,25 +383,25 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
         const accessToken = localStorage.getItem("accessToken");
         const cookieAccessToken = Cookies.get("jwt_access_token");
 
-        console.log("📋 Token sources check:", {
-          "localStorage token exists": !!accessToken,
-          "cookie token exists": !!cookieAccessToken,
-        });
+        // console.log("📋 Token sources check:", {
+        //   "localStorage token exists": !!accessToken,
+        //   "cookie token exists": !!cookieAccessToken,
+        // });
 
         // If we have tokens but they're not in both places, sync them
         if (cookieAccessToken && !accessToken) {
-          console.log("🔄 Syncing token from cookie to localStorage");
+          // console.log("🔄 Syncing token from cookie to localStorage");
           localStorage.setItem("accessToken", cookieAccessToken);
         } else if (accessToken && !cookieAccessToken) {
-          console.log("🔄 Syncing token from localStorage to cookie");
+          // console.log("🔄 Syncing token from localStorage to cookie");
           Cookies.set("jwt_access_token", accessToken, { path: "/" });
         }
 
         // For debugging: Check what's in localStorage to help identify stale data issues
-        console.log("📦 Current localStorage data:", {
-          userSession: localStorage.getItem("userSession") ? "exists" : "none",
-          user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") || "{}") : "none",
-        });
+        // console.log("📦 Current localStorage data:", {
+        //   userSession: localStorage.getItem("userSession") ? "exists" : "none",
+        //   user: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") || "{}") : "none",
+        // });
 
         // Check if we have any tokens
         if (authService.hasJwtTokens()) {
@@ -416,13 +416,13 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           }
 
           if (currentUser) {
-            console.log("✅ Authentication successful:", {
-              userId: currentUser.id,
-              email: currentUser.email,
-              role: currentUser.role,
-              account_membership: currentUser.account_membership || "free",
-              has_profile_pic: !!currentUser.foto_profile,
-            });
+            // console.log("✅ Authentication successful:", {
+            //   userId: currentUser.id,
+            //   email: currentUser.email,
+            //   role: currentUser.role,
+            //   account_membership: currentUser.account_membership || "free",
+            //   has_profile_pic: !!currentUser.foto_profile,
+            // });
 
             // Update user state with fresh data
             setUser(currentUser);

@@ -439,7 +439,7 @@ export const authService = {
   // Function to check if session is active and valid with JWT token support
   checkSession(): UserSession | null {
     try {
-      console.log("Checking session from auth-utils.ts");
+      // console.log("Checking session from auth-utils.ts");
       let sessionData: UserSession | null = null;
 
       // First check if we have JWT tokens
@@ -455,7 +455,7 @@ export const authService = {
         try {
           const userData = JSON.parse(storedUser);
           if (userData && userData.id) {
-            console.log("Found user data in localStorage");
+            // console.log("Found user data in localStorage");
 
             // Create session data from user data
             const now = Date.now();
@@ -749,7 +749,7 @@ export const authService = {
             const tokenData = JSON.parse(jsonPayload);
 
             if (tokenData && tokenData.userId) {
-              console.log("Found userId in JWT:", tokenData.userId);
+              // console.log("Found userId in JWT:", tokenData.userId);
 
               // Fetch user data from Supabase
               const { data: user, error } = await supabase.from("user").select("*").eq("id", tokenData.userId).maybeSingle();
@@ -869,7 +869,7 @@ export const authService = {
         );
       }
 
-      console.log("Session refreshed successfully for:", refreshedSession.email);
+      // console.log("Session refreshed successfully for:", refreshedSession.email);
       return refreshedSession;
     } catch (error) {
       console.error("Error in refreshUserSession:", error);
