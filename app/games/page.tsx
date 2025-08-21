@@ -26,7 +26,7 @@ const medicineImages = [
   "/images/obat/Darah/Asam Traneksamat 500mg.png",
   "/images/obat/Darah/Epoetin Alfa Injection.png",
   "/images/obat/Darah/Vitamin B12 (Cyanocobalamin).png",
-  "/images/obat/Darah/Vitamin K (Phytomenadione).png", 
+  "/images/obat/Darah/Vitamin K (Phytomenadione).png",
 ];
 
 export default function AntiFakeMedicineGames() {
@@ -115,6 +115,21 @@ export default function AntiFakeMedicineGames() {
     setTimeout(() => {
       handleNextQuestion();
     }, 800);
+  };
+
+  const handleStartGame = (game: "game1" | "game2") => {
+    const session = authService.checkSession();
+    if (!session) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (game === "game1") {
+      setCurrentScreen("game1");
+    } else {
+      initializeMemoryGame(selectedDifficulty);
+      setCurrentScreen("game2");
+    }
   };
 
   const finishGame = () => {
@@ -242,13 +257,7 @@ export default function AntiFakeMedicineGames() {
                     </div>
                   </div>
                   <Button
-                    onClick={() => {
-                      if (!isLoggedIn) {
-                        window.location.href = "/login";
-                      } else {
-                        setCurrentScreen("game1");
-                      }
-                    }}
+                    onClick={() => handleStartGame("game1")}
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
                   >
                     <Play className="w-5 h-5 mr-2" />
@@ -308,19 +317,13 @@ export default function AntiFakeMedicineGames() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <Button
-                      onClick={() => {
-                        if (!isLoggedIn) {
-                          window.location.href = "/login";
-                        } else {
-                          initializeMemoryGame(selectedDifficulty);
-                          setCurrentScreen("game2");
-                        }
-                      }}
+                      onClick={() => handleStartGame("game2")}
                       className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
                     >
                       <Play className="w-5 h-5 mr-2" />
                       Mulai Bermain
                     </Button>
+
                   </div>
                 </CardContent>
               </Card>
@@ -336,7 +339,7 @@ export default function AntiFakeMedicineGames() {
             </div>
           </div>
         </div>
-        <FooterBanner/>
+        <FooterBanner />
         <Footer />
       </div>
     );
@@ -411,7 +414,7 @@ export default function AntiFakeMedicineGames() {
             </Card>
           </div>
         </div>
-        <FooterBanner/>
+        <FooterBanner />
         <Footer />
       </div>
     );
@@ -468,7 +471,7 @@ export default function AntiFakeMedicineGames() {
             </div>
           </div>
         </div>
-        <FooterBanner/>
+        <FooterBanner />
         <Footer />
       </div>
     );
@@ -522,7 +525,7 @@ export default function AntiFakeMedicineGames() {
             </Card>
           </div>
         </div>
-        <FooterBanner/>
+        <FooterBanner />
         <Footer />
       </div>
     );
@@ -581,7 +584,7 @@ export default function AntiFakeMedicineGames() {
             </Card>
           </div>
         </div>
-        <FooterBanner/>
+        <FooterBanner />
         <Footer />
       </div>
     );

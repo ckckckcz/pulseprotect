@@ -141,7 +141,7 @@ export default function GoogleAuthCallback() {
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="h-1 bg-gray-900 rounded-full"
+                  className="h-1 bg-teal-600 rounded-full"
                 />
               </div>
 
