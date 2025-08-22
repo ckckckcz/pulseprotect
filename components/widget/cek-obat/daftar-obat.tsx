@@ -246,7 +246,7 @@ export default function DaftarObat() {
                   placeholder="Cari nama produk atau NIE..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 rounded-xl border-teal-200 focus:border-teal-500"
+                  className="flex-1 rounded-xl bg-white border-teal-600 text-black focus:border-teal-500"
                 />
                 <Button
                   onClick={handleSearch}
@@ -260,7 +260,7 @@ export default function DaftarObat() {
                   )}
                 </Button>
               </div>
-              {searchStatus && (
+              {/* {searchStatus && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -268,7 +268,7 @@ export default function DaftarObat() {
                 >
                   {searchStatus}
                 </motion.div>
-              )}
+              )} */}
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: -20, height: 0 }}

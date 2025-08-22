@@ -13,6 +13,22 @@ export interface AIResponse {
   sources?: string[];
 }
 
+export interface ScannedProduct {
+  status: string;
+  source: string;
+  confidence: number;
+  explanation: string;
+  data: {
+    product: {
+      nie?: string | null;
+      name?: string | null;
+      manufacturer?: string | null;
+      dosage_form?: string | null;
+      strength?: string | null;
+    };
+  };
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 const API_KEY = process.env.NEXT_PUBLIC_YOLO_KEY as string;
 const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || '';
@@ -214,10 +230,15 @@ async function generateCuraAICompletion(messages: Message[]): Promise<AIResponse
       throw new Error('Latest message must be from user');
     }
 
-    // Server kontrak: { session_id, text }
+    // Retrieve scannedProduct from localStorage
+    const scannedProductRaw = localStorage.getItem('scannedProduct');
+    const scannedProduct: ScannedProduct | null = scannedProductRaw ? JSON.parse(scannedProductRaw) : null;
+
+    // Server kontrak: { session_id, text, scanned_product? }
     const body = {
       session_id: sessionId,
       text: latestMessage.content,
+      scanned_product: scannedProduct, // Include scanned product if available
     };
 
     const response = await fetch(`${API_BASE_URL}/v1/agent`, {
@@ -260,8 +281,7 @@ async function generateCuraAICompletion(messages: Message[]): Promise<AIResponse
     return {
       text,
       model: 'cura-ai',
-      // Cast sources ke string[] untuk sesuai dengan tipe AIResponse
-      sources: sources.map(item => String(item)), // Transformasi ke string jika sources bukan string[]
+      sources: sources.map(item => String(item)),
     };
   } catch (error: any) {
     console.error('Cura AI API error:', error);
