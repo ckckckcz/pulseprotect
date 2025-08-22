@@ -4,27 +4,11 @@ import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { Camera, X, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { VerificationResponse } from "@/types/yolo"
 
 interface CameraCaptureProps {
   onClose: () => void
   onDetected: (data: VerificationResponse) => Promise<void>
-}
-
-type VerificationResponse = {
-  message: string
-  confidence: number
-  data: {
-    status: string
-    source: string
-    product: {
-      nie?: string | null
-      name?: string | null
-      manufacturer?: string | null
-      category?: string | null
-      composition?: string | null
-      updated_at?: string | null
-    }
-  }
 }
 
 export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps) {
@@ -65,13 +49,20 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
       setStatus("Mengirim gambar ke server...")
       console.log("Sending image to", `${API_BASE_URL}/v1/verify-photo`)
 
-      const resp = await fetch(imageBase64)
-      const blob = await resp.blob()
+      // Convert base64 to blob
+      const byteString = atob(imageBase64.split(',')[1])
+      const mimeString = imageBase64.split(',')[0].split(':')[1].split(';')[0]
+      const ab = new ArrayBuffer(byteString.length)
+      const ia = new Uint8Array(ab)
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i)
+      }
+      const blob = new Blob([ab], { type: mimeString })
 
       const form = new FormData()
       form.append("img", blob, "captured_image.jpg")
 
-      const r = await fetch(`${API_BASE_URL}/v1/verify-photo`, {
+      const response = await fetch(`${API_BASE_URL}/v1/verify-photo`, {
         method: "POST",
         headers: {
           "X-Api-Key": API_KEY,
@@ -80,17 +71,38 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
         body: form,
       })
 
-      if (!r.ok) {
-        const errorText = await r.text()
-        throw new Error(`HTTP ${r.status} ${r.statusText}: ${errorText}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status} ${response.statusText}: ${errorText}`)
       }
 
-      const data: VerificationResponse = await r.json()
+      const data = await response.json()
       console.log("Received response:", data)
-      setResult(data)
-      setStatus("Verifikasi selesai!")
 
-      await onDetected(data)
+      // Map response ke format VerificationResponse
+      const mappedData: VerificationResponse = {
+        status: data.data?.status || "unknown",
+        source: data.data?.source || "camera",
+        confidence: data.confidence || 0,
+        explanation: data.message || "No explanation provided",
+        data: {
+          product: {
+            nie: data.data?.product?.nie || null,
+            name: data.data?.product?.name || null,
+            manufacturer: data.data?.product?.manufacturer || null,
+            dosage_form: data.data?.product?.dosage_form || null,
+            strength: data.data?.product?.strength || null,
+            category: data.data?.product?.category || null,
+            composition: data.data?.product?.composition || null,
+            updated_at: data.data?.product?.updated_at || null,
+            status: data.data?.product ? "valid" : "invalid", 
+          },
+        },
+      }
+
+      setResult(mappedData)
+      setStatus("Verifikasi selesai!")
+      await onDetected(mappedData)
     } catch (e: any) {
       console.error("Send image error:", e)
       setStatus(`Gagal mengirim gambar: ${e?.message || e}`)
@@ -170,7 +182,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
             >
               <h4 className="font-semibold mb-2">Hasil Verifikasi</h4>
               <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
-                <div><span className="text-gray-500">Status:</span> <b>{result.data.status || "-"}</b></div>
+                <div><span className="text-gray-500">Status:</span> <b>{prod?.status || "-"}</b></div>
                 <div><span className="text-gray-500">Confidence:</span> <b>{pct(result.confidence)}</b></div>
                 <div><span className="text-gray-500">Nama Produk:</span> <b>{prod?.name || "-"}</b></div>
                 <div><span className="text-gray-500">NIE:</span> <b>{prod?.nie || "-"}</b></div>
@@ -178,9 +190,9 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
                 <div><span className="text-gray-500">Kategori:</span> <b>{prod?.category || "-"}</b></div>
                 <div><span className="text-gray-500">Terakhir Diperbarui:</span> <b>{prod?.updated_at || "-"}</b></div>
               </div>
-              {result.message && (
+              {result.explanation && (
                 <p className="mt-3 text-sm text-gray-700">
-                  <span className="font-medium">Penjelasan:</span> {result.message}
+                  <span className="font-medium">Penjelasan:</span> {result.explanation}
                 </p>
               )}
             </motion.div>

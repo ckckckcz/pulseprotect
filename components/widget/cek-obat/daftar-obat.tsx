@@ -1,3 +1,4 @@
+// daftar-obat.tsx
 "use client"
 
 import { motion, useScroll, useTransform } from "framer-motion"
@@ -15,22 +16,7 @@ import Navbar from "@/components/widget/navbar"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { v4 as uuidv4 } from "uuid"
-
-interface VerificationResponse {
-  status: string
-  source: string
-  confidence: number
-  explanation: string
-  data: {
-    product: {
-      nie?: string | null
-      name?: string | null
-      manufacturer?: string | null
-      dosage_form?: string | null
-      strength?: string | null
-    }
-  }
-}
+import { VerificationResponse } from "@/types/yolo"
 
 export default function DaftarObat() {
   const [selectedCategory, setSelectedCategory] = useState("Semua")
@@ -46,7 +32,7 @@ export default function DaftarObat() {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string
   const API_KEY = process.env.NEXT_PUBLIC_YOLO_KEY as string
-  const sessionId = uuidv4() // Generate unique session ID
+  const sessionId = uuidv4()
 
   const { scrollY } = useScroll()
   const sidebarShadow = useTransform(scrollY, [0, 50], ["shadow-lg", "shadow-xl ring-1 ring-gray-100"])
@@ -58,6 +44,9 @@ export default function DaftarObat() {
     { label: "Produsen", value: modalData?.data?.product?.manufacturer, icon: Package2 },
     { label: "Bentuk Sediaan", value: modalData?.data?.product?.dosage_form, icon: Pill },
     { label: "Kekuatan", value: modalData?.data?.product?.strength, icon: TestTube },
+    { label: "Kategori", value: modalData?.data?.product?.category, icon: Archive },
+    { label: "Komposisi", value: modalData?.data?.product?.composition, icon: TestTube },
+    { label: "Terakhir Diperbarui", value: modalData?.data?.product?.updated_at, icon: Clock },
     { label: "Sumber Data", value: modalData?.source, icon: FileText },
     { label: "Confidence Score", value: modalData?.confidence ? `${(modalData.confidence * 100).toFixed(1)}%` : undefined, icon: Activity },
     { label: "Penjelasan", value: modalData?.explanation, icon: Archive },
