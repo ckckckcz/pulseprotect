@@ -60,7 +60,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 const models = [
   { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
-  { id: "bakekok", name: "Model Bakekok", description: "Bakekok 30b", requiredMembership: "free" },
+  { id: "cura-ai", name: "Cura AI", description: "Cura", requiredMembership: "free" },
   { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM", requiredMembership: "plus" },
   { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
 ];
@@ -78,20 +78,21 @@ interface Message {
   content: string | any;
   type?: string;
 }
-// If you want to use the imported type, use AIServiceMessage instead of Message
 
 interface ScannedProduct {
-  nama?: string;
-  barcode?: string;
-  status?: string;
-  nomorRegistrasi?: string;
-  gramasi?: string;
-  anjuranSajian?: string;
-  sajianPerKantong?: string;
-  jumlahKarton?: string;
-  masaSimpan?: string;
-  dimensiKarton?: string;
-  error?: string;
+  status: string;
+  source: string;
+  confidence: number;
+  explanation: string;
+  data: {
+    product: {
+      nie?: string | null;
+      name?: string | null;
+      manufacturer?: string | null;
+      dosage_form?: string | null;
+      strength?: string | null;
+    };
+  };
 }
 
 const chatHistory = ["Supabase URL Environment Error"];
@@ -757,7 +758,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     e.preventDefault();
     const imageUrls: string[] = [];
     for (const file of imageFiles) {
-      const url = await uploadImage(file); // Asumsi uploadImage ada, kalau nggak, sesuaikan
+      const url = await uploadImage(file);
       if (url) imageUrls.push(url);
     }
     let content = imageUrls.map((url) => url).join("\n");
@@ -777,25 +778,18 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
     setAiTypingText("");
 
     try {
-      // Mapping messages ke AIServiceMessage (content harus string)
       const messageHistory: AIServiceMessage[] = messages.concat(userMessage).map((msg) => {
         let msgContent: string;
 
         if (msg.role === "system" && msg.type === "product-context") {
           const prod = msg.content as ScannedProduct;
-          if (prod.error) {
-            msgContent = `Product scan error: ${prod.error}`;
-          } else {
-            msgContent = `Scanned product details for context:\n- Name: ${prod.nama || "-"}\n- Barcode: ${prod.barcode || "-"}\n- Status: ${prod.status || "-"}\n- Registration Number: ${prod.nomorRegistrasi || "-"}\n- Weight: ${prod.gramasi || "-"
-              }\n- Serving Suggestion: ${prod.anjuranSajian || "-"}\n- Servings per Bag: ${prod.sajianPerKantong || "-"}\n- Carton Quantity: ${prod.jumlahKarton || "-"}\n- Shelf Life: ${prod.masaSimpan || "-"}\n- Carton Dimensions: ${prod.dimensiKarton || "-"
-              }\nUse this product information in your responses where relevant.`;
-          }
+          msgContent = `Scanned product details for context:\n- Status: ${prod.status || "-"}\n- Source: ${prod.source || "-"}\n- Confidence: ${prod.confidence ? (prod.confidence * 100).toFixed(1) + "%" : "-"}\n- Explanation: ${prod.explanation || "-"}\n- Product Name: ${prod.data.product.name || "-"}\n- NIE: ${prod.data.product.nie || "-"}\n- Manufacturer: ${prod.data.product.manufacturer || "-"}\n- Dosage Form: ${prod.data.product.dosage_form || "-"}\n- Strength: ${prod.data.product.strength || "-"}\nUse this product information in your responses where relevant.`;
         } else {
-          msgContent = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content); // Fallback kalau ada content non-string lain
+          msgContent = typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content);
         }
 
         return {
-          role: msg.role as "user" | "assistant" | "system", // Cast ke tipe AIServiceMessage
+          role: msg.role as "user" | "assistant" | "system",
           content: msgContent,
         };
       });
@@ -837,6 +831,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       setIsLoading(false);
     }
   };
+
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1340,49 +1335,41 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
 
               <div className="w-full lg:max-w-3xl space-y-3">
                 <form onSubmit={onSubmit}>
-                  {/* {scannedProductCard && (
+                  {scannedProductCard && (
                     <div className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
-                      <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk (terkunci)</div>
-                      {"error" in scannedProductCard ? (
-                        <div className="text-red-600">{scannedProductCard.error}</div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-teal-900">
-                          <div>
-                            <b>Nama:</b> {scannedProductCard.nama || "-"}
-                          </div>
-                          <div>
-                            <b>Barcode:</b> {scannedProductCard.barcode || "-"}
-                          </div>
-                          <div>
-                            <b>Status:</b> {scannedProductCard.status || "-"}
-                          </div>
-                          <div>
-                            <b>Nomor Registrasi:</b> {scannedProductCard.nomorRegistrasi || "-"}
-                          </div>
-                          <div>
-                            <b>Gramasi:</b> {scannedProductCard.gramasi || "-"}
-                          </div>
-                          <div>
-                            <b>Anjuran Sajian:</b> {scannedProductCard.anjuranSajian || "-"}
-                          </div>
-                          <div>
-                            <b>Sajian/Kantong:</b> {scannedProductCard.sajianPerKantong || "-"}
-                          </div>
-                          <div>
-                            <b>Jumlah Karton:</b> {scannedProductCard.jumlahKarton || "-"}
-                          </div>
-                          <div>
-                            <b>Masa Simpan:</b> {scannedProductCard.masaSimpan || "-"}
-                          </div>
-                          <div>
-                            <b>Dimensi Karton:</b> {scannedProductCard.dimensiKarton || "-"}
-                          </div>
+                      <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-teal-900">
+                        <div>
+                          <b>Status:</b> {scannedProductCard.status || "-"}
                         </div>
-                      )}
+                        <div>
+                          <b>Sumber:</b> {scannedProductCard.source || "-"}
+                        </div>
+                        <div>
+                          <b>Confidence:</b> {scannedProductCard.confidence ? `${(scannedProductCard.confidence * 100).toFixed(1)}%` : "-"}
+                        </div>
+                        <div>
+                          <b>Penjelasan:</b> {scannedProductCard.explanation || "-"}
+                        </div>
+                        <div>
+                          <b>Nama Produk:</b> {scannedProductCard.data.product.name || "-"}
+                        </div>
+                        <div>
+                          <b>NIE:</b> {scannedProductCard.data.product.nie || "-"}
+                        </div>
+                        <div>
+                          <b>Produsen:</b> {scannedProductCard.data.product.manufacturer || "-"}
+                        </div>
+                        <div>
+                          <b>Bentuk Sediaan:</b> {scannedProductCard.data.product.dosage_form || "-"}
+                        </div>
+                        <div>
+                          <b>Kekuatan:</b> {scannedProductCard.data.product.strength || "-"}
+                        </div>
+                      </div>
                       <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
                     </div>
-                  )} */}
-
+                  )}
                   {imagePreviews.map((preview, idx) => (
                     <div key={idx} className="relative inline-block mr-2">
                       <Image src={preview || "/placeholder.svg"} alt={`preview-${idx}`} width={200} height={200} className="rounded-xl object-cover max-h-44 max-w-44" />
@@ -1496,42 +1483,35 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         <React.Fragment key={message.id}>
                           <div className="mb-3 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm">
                             <div className="mb-2 font-semibold text-teal-800">Hasil Scan Produk</div>
-                            {"error" in message.content ? (
-                              <div className="text-red-600">{message.content.error}</div>
-                            ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-teal-900">
-                                <div>
-                                  <b>Nama:</b> {message.content.nama || "-"}
-                                </div>
-                                <div>
-                                  <b>Barcode:</b> {message.content.barcode || "-"}
-                                </div>
-                                <div>
-                                  <b>Status:</b> {message.content.status || "-"}
-                                </div>
-                                <div>
-                                  <b>Nomor Registrasi:</b> {message.content.nomorRegistrasi || "-"}
-                                </div>
-                                <div>
-                                  <b>Gramasi:</b> {message.content.gramasi || "-"}
-                                </div>
-                                <div>
-                                  <b>Anjuran Sajian:</b> {message.content.anjuranSajian || "-"}
-                                </div>
-                                <div>
-                                  <b>Sajian/Kantong:</b> {message.content.sajianPerKantong || "-"}
-                                </div>
-                                <div>
-                                  <b>Jumlah Karton:</b> {message.content.jumlahKarton || "-"}
-                                </div>
-                                <div>
-                                  <b>Masa Simpan:</b> {message.content.masaSimpan || "-"}
-                                </div>
-                                <div>
-                                  <b>Dimensi Karton:</b> {message.content.dimensiKarton || "-"}
-                                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-teal-900">
+                              <div>
+                                <b>Status:</b> {message.content.status || "-"}
                               </div>
-                            )}
+                              <div>
+                                <b>Sumber:</b> {message.content.source || "-"}
+                              </div>
+                              <div>
+                                <b>Confidence:</b> {message.content.confidence ? `${(message.content.confidence * 100).toFixed(1)}%` : "-"}
+                              </div>
+                              <div>
+                                <b>Penjelasan:</b> {message.content.explanation || "-"}
+                              </div>
+                              <div>
+                                <b>Nama Produk:</b> {message.content.data.product.name || "-"}
+                              </div>
+                              <div>
+                                <b>NIE:</b> {message.content.data.product.nie || "-"}
+                              </div>
+                              <div>
+                                <b>Produsen:</b> {message.content.data.product.manufacturer || "-"}
+                              </div>
+                              <div>
+                                <b>Bentuk Sediaan:</b> {message.content.data.product.dosage_form || "-"}
+                              </div>
+                              <div>
+                                <b>Kekuatan:</b> {message.content.data.product.strength || "-"}
+                              </div>
+                            </div>
                             <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
                           </div>
                           {idx === messages.filter((m) => m.role === "system" && m.type === "product-context").length - 1 && <hr className="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />}

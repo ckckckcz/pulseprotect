@@ -49,7 +49,7 @@ export default function CekObat() {
     if (scannedProduct) {
       const id = Date.now().toString();
       localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(scannedProduct));
-      router.push(`/silva?id=${id}`);
+      router.push(`/cura-ai?id=${id}`);
     }
   };
 

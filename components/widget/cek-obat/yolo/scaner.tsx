@@ -5,318 +5,122 @@ import { motion } from "framer-motion"
 import { Camera, X, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-interface YOLOScannerProps {
-  onDetected: (productData: any) => void
+interface CameraCaptureProps {
   onClose: () => void
+  onDetected: (data: VerificationResponse) => Promise<void>
 }
 
-interface Detection {
-  class: string
+type VerificationResponse = {
+  message: string
   confidence: number
-  bbox: [number, number, number, number] // [x, y, width, height]
+  data: {
+    status: string
+    source: string
+    product: {
+      nie?: string | null
+      name?: string | null
+      manufacturer?: string | null
+      category?: string | null
+      composition?: string | null
+      updated_at?: string | null
+    }
+  }
 }
 
-interface ScanResult {
-  title_text?: string
-  title_conf?: number
-  bpom_number?: string
-  match?: any
-  winner?: string
-}
-
-export default function YOLOScanner({ onDetected, onClose }: YOLOScannerProps) {
+export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [status, setStatus] = useState<string>("Menginisialisasi kamera...")
-  const [detections, setDetections] = useState<Detection[]>([])
+  const [result, setResult] = useState<VerificationResponse | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null)
 
-  // Initialize camera
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string
+  const API_KEY = process.env.NEXT_PUBLIC_YOLO_KEY as string
+
   useEffect(() => {
     const initCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            facingMode: "environment" // Use back camera if available
-          }
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: "environment" },
         })
-        
         streamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
-          setStatus("Kamera siap. Arahkan ke produk obat...")
+          setStatus("Kamera siap. Ambil foto...")
         }
-      } catch (error) {
-        console.error("Camera initialization error:", error)
+      } catch (err) {
+        console.error("Camera init error:", err)
         setStatus("Gagal mengakses kamera. Pastikan izin kamera diberikan.")
       }
     }
-
     initCamera()
-
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
-    }
+    return () => { streamRef.current?.getTracks().forEach(t => t.stop()) }
   }, [])
 
-  // Real YOLO detection function
-  const runYOLODetection = async (imageData: ImageData): Promise<Detection[]> => {
+  const sendImage = async (imageBase64: string) => {
     try {
-      // Import YOLO utilities
-      const { yoloModel } = await import('@/lib/yoloUtils')
-      
-      // Create canvas to convert ImageData to drawable element
-      const canvas = document.createElement('canvas')
-      canvas.width = imageData.width
-      canvas.height = imageData.height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return []
-      
-      ctx.putImageData(imageData, 0, 0)
-      
-      // Run YOLO prediction
-      const detections = await yoloModel.predict(canvas)
-      
-      return detections
-    } catch (error) {
-      console.error("YOLO detection error:", error)
-      
-      // Fallback to mock detection for development
-      await new Promise(resolve => setTimeout(resolve, 500))
-      return [
-        {
-          class: "body",
-          confidence: 0.91,
-          bbox: [50, 100, 200, 400]
-        },
-        {
-          class: "title", 
-          confidence: 0.89,
-          bbox: [80, 200, 150, 100]
-        }
-      ]
-    }
-  }
+      setStatus("Mengirim gambar ke server...")
+      console.log("Sending image to", `${API_BASE_URL}/v1/verify-photo`)
 
-  // Draw detections on overlay canvas
-  const drawDetections = (detections: Detection[]) => {
-    const canvas = overlayCanvasRef.current
-    const video = videoRef.current
-    
-    if (!canvas || !video) return
-    
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    
-    // Clear previous drawings
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    
-    // Draw bounding boxes
-    detections.forEach(detection => {
-      const [x, y, width, height] = detection.bbox
-      const scaleX = canvas.width / video.videoWidth
-      const scaleY = canvas.height / video.videoHeight
-      
-      const scaledX = x * scaleX
-      const scaledY = y * scaleY
-      const scaledWidth = width * scaleX
-      const scaledHeight = height * scaleY
-      
-      // Draw bounding box
-      ctx.strokeStyle = detection.class === 'body' ? '#06b6d4' : '#3b82f6' // cyan for body, blue for title
-      ctx.lineWidth = 3
-      ctx.strokeRect(scaledX, scaledY, scaledWidth, scaledHeight)
-      
-      // Draw label background
-      ctx.fillStyle = detection.class === 'body' ? '#06b6d4' : '#3b82f6'
-      const label = `${detection.class} ${(detection.confidence * 100).toFixed(0)}%`
-      const textMetrics = ctx.measureText(label)
-      ctx.fillRect(scaledX, scaledY - 25, textMetrics.width + 10, 25)
-      
-      // Draw label text
-      ctx.fillStyle = 'white'
-      ctx.font = '14px Arial'
-      ctx.fillText(label, scaledX + 5, scaledY - 8)
-    })
+      const resp = await fetch(imageBase64)
+      const blob = await resp.blob()
+
+      const form = new FormData()
+      form.append("img", blob, "captured_image.jpg")
+
+      const r = await fetch(`${API_BASE_URL}/v1/verify-photo`, {
+        method: "POST",
+        headers: {
+          "X-Api-Key": API_KEY,
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: form,
+      })
+
+      if (!r.ok) {
+        const errorText = await r.text()
+        throw new Error(`HTTP ${r.status} ${r.statusText}: ${errorText}`)
+      }
+
+      const data: VerificationResponse = await r.json()
+      console.log("Received response:", data)
+      setResult(data)
+      setStatus("Verifikasi selesai!")
+
+      await onDetected(data)
+    } catch (e: any) {
+      console.error("Send image error:", e)
+      setStatus(`Gagal mengirim gambar: ${e?.message || e}`)
+    }
   }
 
   const captureFrame = async () => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    
+    const video = videoRef.current, canvas = canvasRef.current
     if (!video || !canvas) return
-    
     setIsLoading(true)
     setStatus("Memproses gambar...")
-    
     try {
-      // Draw video frame to canvas
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-      
+      const ctx = canvas.getContext("2d")
+      if (!ctx) throw new Error("Gagal mendapatkan context canvas")
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
       ctx.drawImage(video, 0, 0)
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      
-      const detections = await runYOLODetection(imageData)
-      setDetections(detections)
-      
-      const hasBodyDetection = detections.some(d => d.class === 'body' && d.confidence > 0.8)
-      const hasTitleDetection = detections.some(d => d.class === 'title' && d.confidence > 0.8)
-      
-      if (hasBodyDetection && hasTitleDetection) {
-        const imageBase64 = canvas.toDataURL('image/jpeg', 0.9)
-        setCapturedImage(imageBase64)
-        
-        await processWithMedVerify(imageBase64)
-      } else {
-        setStatus("Deteksi tidak optimal. Coba posisikan produk lebih jelas...")
-        setTimeout(() => setStatus("Arahkan kamera ke produk obat..."), 2000)
-      }
-    } catch (error) {
-      console.error("Frame capture error:", error)
+      const base64 = canvas.toDataURL("image/jpeg", 0.9)
+      setCapturedImage(base64)
+      await sendImage(base64)
+    } catch (err) {
+      console.error("Frame capture error:", err)
       setStatus("Gagal memproses gambar. Coba lagi...")
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Process with MedVerify AI service
-  const processWithMedVerify = async (imageBase64: string) => {
-    try {
-      setStatus("Menganalisis dengan AI...")
-      
-      // Convert base64 to blob
-      const response = await fetch(imageBase64)
-      const blob = await response.blob()
-      
-      // Create form data
-      const formData = new FormData()
-      formData.append('img', blob, 'scan.jpg')
-      formData.append('return_partial', 'true')
-      
-      // Generate session ID
-      const sessionId = crypto.randomUUID()
-      
-      // Call MedVerify OCR endpoint
-      const ocrResponse = await fetch('/api/medverify/scan', {
-        method: 'POST',
-        headers: {
-          'X-Session-Id': sessionId
-        },
-        body: formData
-      })
-      
-      if (!ocrResponse.ok) {
-        throw new Error('OCR processing failed')
-      }
-      
-      const ocrResult = await ocrResponse.json()
-      setScanResult(ocrResult)
-      
-      // If we have extracted text/NIE, verify it
-      if (ocrResult.title_text || ocrResult.bpom_number) {
-        setStatus("Memverifikasi produk...")
-        
-        const verifyResponse = await fetch('/api/medverify/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Session-Id': sessionId
-          },
-          body: JSON.stringify({
-            nie: ocrResult.bpom_number,
-            text: ocrResult.title_text
-          })
-        })
-        
-        if (verifyResponse.ok) {
-          const verifyResult = await verifyResponse.json()
-          
-          // Combine OCR and verification results
-          const combinedResult = {
-            ...verifyResult.data,
-            ocrResult,
-            sessionId,
-            capturedImage: imageBase64
-          }
-          
-          setStatus("Scan berhasil!")
-          onDetected(combinedResult)
-        } else {
-          throw new Error('Verification failed')
-        }
-      } else {
-        setStatus("Tidak dapat mengekstrak informasi produk. Coba lagi...")
-      }
-    } catch (error) {
-      console.error("MedVerify processing error:", error)
-      setStatus("Gagal memproses dengan AI. Coba lagi...")
-    }
-  }
-
-  // Auto-capture when detections are stable
-  useEffect(() => {
-    if (detections.length > 0 && !isLoading && !capturedImage) {
-      const hasGoodDetections = detections.some(d => d.confidence > 0.85)
-      if (hasGoodDetections) {
-        // Auto-capture after short delay
-        const timer = setTimeout(() => {
-          captureFrame()
-        }, 1000)
-        
-        return () => clearTimeout(timer)
-      }
-    }
-  }, [detections, isLoading, capturedImage])
-
-  // Continuous detection loop
-  useEffect(() => {
-    if (!videoRef.current || isLoading || capturedImage) return
-    
-    const runDetection = async () => {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      
-      if (!video || !canvas || video.readyState !== 4) return
-      
-      try {
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-        
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        ctx.drawImage(video, 0, 0)
-        
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const detections = await runYOLODetection(imageData)
-        setDetections(detections)
-      } catch (error) {
-        console.error("Detection error:", error)
-      }
-    }
-    
-    const interval = setInterval(runDetection, 200) // Run detection every 200ms
-    return () => clearInterval(interval)
-  }, [isLoading, capturedImage])
-
-  // Draw detections overlay
-  useEffect(() => {
-    if (detections.length > 0) {
-      drawDetections(detections)
-    }
-  }, [detections])
+  const pct = (n?: number) => typeof n === "number" ? `${(n * 100).toFixed(1)}%` : "-"
+  const prod = result?.data?.product
 
   return (
     <motion.div
@@ -326,129 +130,75 @@ export default function YOLOScanner({ onDetected, onClose }: YOLOScannerProps) {
       className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
     >
       <div className="w-full max-w-4xl mx-4 bg-white rounded-2xl overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="bg-gradient-to-r from-teal-600 to-cyan-600 px-6 py-4 text-white relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30"
           >
             <X className="w-5 h-5" />
           </button>
-          
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <Camera className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-xl font-bold">YOLO Product Scanner</h3>
-              <p className="text-teal-100 text-sm">Scan produk obat dengan AI detection</p>
+              <h3 className="text-xl font-bold">Camera Capture</h3>
+              <p className="text-teal-100 text-sm">Ambil foto untuk verifikasi label</p>
             </div>
           </div>
         </div>
 
-        {/* Camera View */}
         <div className="p-6">
           <div className="relative bg-black rounded-xl overflow-hidden mb-4">
-            {/* Video Stream */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-96 object-cover"
-            />
-            
-            {/* Detection Overlay */}
-            <canvas
-              ref={overlayCanvasRef}
-              className="absolute inset-0 w-full h-full"
-              style={{ mixBlendMode: 'multiply' }}
-            />
-            
-            {/* Hidden canvas for processing */}
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-96 object-cover" />
             <canvas ref={canvasRef} className="hidden" />
-            
-            {/* Status Overlay */}
             <div className="absolute top-4 left-4 right-4">
-              <div className="bg-black/70 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm flex items-center gap-2">
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : detections.length > 0 ? (
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-yellow-400" />
-                )}
+              <div className="bg-black/70 rounded-lg px-4 py-2 text-white text-sm flex items-center gap-2">
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                  capturedImage ? <CheckCircle className="w-4 h-4 text-green-400" /> :
+                    <AlertCircle className="w-4 h-4 text-yellow-400" />}
                 <span>{status}</span>
               </div>
             </div>
-            
-            {/* Detection Info */}
-            {detections.length > 0 && (
-              <div className="absolute bottom-4 left-4 right-4">
-                <div className="bg-black/70 backdrop-blur-sm rounded-lg px-4 py-3 text-white text-sm">
-                  <div className="font-medium mb-2">Deteksi Aktif:</div>
-                  {detections.map((detection, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <span className="capitalize">{detection.class}</span>
-                      <span className="text-green-400 font-medium">
-                        {(detection.confidence * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Scan Result */}
-          {scanResult && (
+          {result && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-gray-50 rounded-xl p-4 mb-4"
             >
-              <h4 className="font-semibold mb-2">Hasil Ekstraksi:</h4>
-              {scanResult.title_text && (
-                <div className="text-sm">
-                  <span className="font-medium">Title:</span> {scanResult.title_text} 
-                  <span className="text-green-600 ml-2">({(scanResult.title_conf! * 100).toFixed(1)}%)</span>
-                </div>
-              )}
-              {scanResult.bpom_number && (
-                <div className="text-sm">
-                  <span className="font-medium">BPOM:</span> {scanResult.bpom_number}
-                </div>
+              <h4 className="font-semibold mb-2">Hasil Verifikasi</h4>
+              <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                <div><span className="text-gray-500">Status:</span> <b>{result.data.status || "-"}</b></div>
+                <div><span className="text-gray-500">Confidence:</span> <b>{pct(result.confidence)}</b></div>
+                <div><span className="text-gray-500">Nama Produk:</span> <b>{prod?.name || "-"}</b></div>
+                <div><span className="text-gray-500">NIE:</span> <b>{prod?.nie || "-"}</b></div>
+                <div><span className="text-gray-500">Pabrik:</span> <b>{prod?.manufacturer || "-"}</b></div>
+                <div><span className="text-gray-500">Kategori:</span> <b>{prod?.category || "-"}</b></div>
+                <div><span className="text-gray-500">Terakhir Diperbarui:</span> <b>{prod?.updated_at || "-"}</b></div>
+              </div>
+              {result.message && (
+                <p className="mt-3 text-sm text-gray-700">
+                  <span className="font-medium">Penjelasan:</span> {result.message}
+                </p>
               )}
             </motion.div>
           )}
 
-          {/* Action Buttons */}
           <div className="flex gap-3">
             <Button
               onClick={captureFrame}
-              disabled={isLoading || detections.length === 0}
-              className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white"
+              disabled={isLoading}
+              className="flex-1 bg-gradient-to-r rounded-xl from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white"
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Memproses...
-                </>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memproses...</>
               ) : (
-                <>
-                  <Camera className="w-4 h-4 mr-2" />
-                  Scan Sekarang
-                </>
+                <><Camera className="w-4 h-4 mr-2" />Ambil Foto</>
               )}
             </Button>
-            
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="px-6"
-            >
-              Batal
-            </Button>
+            <Button onClick={onClose} variant="outline" className="px-6 rounded-xl">Batal</Button>
           </div>
         </div>
       </div>

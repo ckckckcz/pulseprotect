@@ -1,4 +1,3 @@
-// app/silva/page.tsx
 'use client';
 
 import ChatInterface from '@/components/widget/chat/ChatInterface';
