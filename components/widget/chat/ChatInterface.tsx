@@ -11,6 +11,7 @@ import Logo from "@/public/logo-white.png";
 import Webcam from "react-webcam";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import CuraMaskot from "@/public/images/Cura Maskor.png"
 import {
   Zap,
   PanelLeft,
@@ -1231,7 +1232,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                 }}
               />
               <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Frame_20-removebg-preview-vVF0A0BdNrREc3Szpd40hDL8AJk7HW.png"
+                src={CuraMaskot}
                 alt="Cura AI Mascot"
                 width={150}
                 height={150}
