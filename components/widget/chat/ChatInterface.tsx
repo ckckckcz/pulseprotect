@@ -342,6 +342,34 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
   const [scannedProductCard, setScannedProductCard] = useState<ScannedProduct | null>(null);
   const [showExitModal, setShowExitModal] = useState(false);
   const [exitAction, setExitAction] = useState<(() => void) | null>(null);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+  const [displayedText, setDisplayedText] = useState("")
+  const welcomeMessages = ["Halo Selamat Datang di Cura AI", "Cura Siap Membantu Kamu!"]
+  const [isKetik, setIsKetik] = useState(true)
+
+  useEffect(() => {
+    const currentMessage = welcomeMessages[currentMessageIndex]
+    let charIndex = 0
+    setDisplayedText("")
+    setIsKetik(true)
+
+    const ketikInterval = setInterval(() => {
+      if (charIndex < currentMessage.length) {
+        setDisplayedText(currentMessage.slice(0, charIndex + 1))
+        charIndex++
+      } else {
+        setIsKetik(false)
+        clearInterval(ketikInterval)
+
+        // Wait 2 seconds before switching to next message
+        setTimeout(() => {
+          setCurrentMessageIndex((prev) => (prev + 1) % welcomeMessages.length)
+        }, 2000)
+      }
+    }, 100) // ketik speed
+
+    return () => clearInterval(ketikInterval)
+  }, [currentMessageIndex])
 
   const [avatarUrl, setAvatarUrl] = useState("");
 
@@ -1150,7 +1178,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
       {/* Sidebar */}
       <div className={`bg-white border-r border-gray-200 text-gray-900 lg:flex hidden flex-col transition-all duration-300 ease-in-out ${isSidebarExpanded ? "w-72" : "w-[69px]"}`}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <div
               className="w-9 h-9 bg-teal-600 rounded-xl flex items-center justify-center cursor-pointer transition-colors duration-200"
@@ -1161,64 +1189,71 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               {isLogoHovered ? <PanelLeft className="w-4 h-4 text-white" /> : <Image src={Logo} alt="Pulse Protect" width={32} height={32} className="w-4 h-4 text-white" />}
             </div>
           </div>
-
-          {/* Navigation Items */}
-          <div className="space-y-2">
-            <Button onClick={startNewChat} variant="ghost" className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"}`}>
-              <Plus className="w-4 h-4 min-w-[16px]" />
-              {isSidebarExpanded && <span className="ml-3">New chat</span>}
-            </Button>
-
-            <Button variant="ghost" className={`w-full hover:text-gray-900 hover:bg-gray-100 rounded-xl ${isSidebarExpanded ? "justify-start" : "justify-center"}`}>
-              <Search className="w-4 h-4 min-w-[16px]" />
-              {isSidebarExpanded && <span className="ml-3">Search chats</span>}
-            </Button>
-          </div>
         </div>
 
         {/* Chat History */}
         <div className="flex-1 overflow-y-auto">
-          {isSidebarExpanded ? (
-            <div className="p-4">
-              <h3 className="text-md font-medium text-gray-900 mb-3">Chats</h3>
-              <div className="space-y-1">
-                {Object.entries(chatRooms).map(([id, room], index) => (
-                  <div key={id} className={`w-full justify-center items-center cursor-pointer px-4 py-1 hover:bg-gray-100 rounded-xl flex group ${chatID === id ? "bg-gray-100" : ""}`} onClick={() => setChatID(id)}>
-                    <span className="text-sm text-gray-900 truncate flex-1">{room.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-900 hover:bg-gray-100 hover:text-gray-900 p-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Optionally: delete chat room
-                        setChatRooms((prev) => {
-                          const updated = { ...prev };
-                          delete updated[id];
-                          // If deleted current, switch to another
-                          if (chatID === id) {
-                            const keys = Object.keys(updated);
-                            setChatID(keys[0] || `room-${Date.now()}`);
-                          }
-                          return updated;
-                        });
-                      }}
-                    >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center pt-4">
-              {chatHistory.slice(0, 5).map((_, index) => (
-                <div key={index} className="w-8 hidden h-8 mb-2 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 cursor-pointer">
-                  <span className="text-xs">{index + 1}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Mascot Image with enhanced animations */}
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 20,
+              duration: 1,
+            }}
+            className="mb-10 relative flex justify-center align-center z-10 mt-20"
+          >
+            <motion.div
+              animate={{
+                y: [0, -20, 5, -15, 0],
+                rotate: [0, 12, -8, 6, 0],
+                scale: [1, 1.08, 0.98, 1.05, 1],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+                ease: "easeInOut",
+              }}
+            >
+              <motion.div
+                className="absolute inset-0 bg-teal-400/30 text-center justify-center align-center flex rounded-full blur-2xl"
+                animate={{
+                  scale: [1, 1.4, 0.9, 1.3, 1],
+                  opacity: [0.2, 0.7, 0.4, 0.6, 0.2],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+              />
+              <Image
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Frame_20-removebg-preview-vVF0A0BdNrREc3Szpd40hDL8AJk7HW.png"
+                alt="Cura AI Mascot"
+                width={150}
+                height={150}
+                className="drop-shadow-2xl relative z-10"
+              />
+            </motion.div>
+          </motion.div>
+
+          <div className="text-center h-20 flex items-center justify-center relative z-10">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-500 to-teal-700 bg-clip-text text-transparent max-w-2xl">
+              {displayedText}
+              {isTyping && (
+                <motion.span
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ duration: 0.8, repeat: Number.POSITIVE_INFINITY }}
+                  className="text-teal-600"
+                >
+                  |
+                </motion.span>
+              )}
+            </h1>
+          </div>
         </div>
 
         {/* User Profile */}
@@ -1411,7 +1446,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                       {/* Action buttons row */}
                       <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
                         <div className="flex items-center space-x-2">
-                          <label className="cursor-pointer">
+                          {/* <label className="cursor-pointer">
                             <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
                             <Button variant="ghost" size="sm" className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm" asChild>
                               <span>
@@ -1423,7 +1458,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           <Button variant="ghost" size="sm" type="button" onClick={openCamera} className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm">
                             <Camera className="w-4 h-4 mr-2" />
                             Kamera
-                          </Button>
+                          </Button> */}
                         </div>
 
                         <div>
@@ -1791,7 +1826,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                     {/* Action buttons row */}
                     <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
                       <div className="flex items-center space-x-2">
-                        <label className="cursor-pointer">
+                        {/* <label className="cursor-pointer">
                           <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
                           <Button variant="ghost" size="sm" className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm" asChild>
                             <span>
@@ -1803,7 +1838,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         <Button variant="ghost" size="sm" type="button" onClick={openCamera} className="text-gray-500 hover:text-black hover:bg-gray-200 rounded-xl px-3 py-1.5 text-sm">
                           <Camera className="w-4 h-4 mr-2" />
                           Kamera
-                        </Button>
+                        </Button> */}
                       </div>
 
                       <div>
@@ -1926,7 +1961,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
               <Button
                 variant="outline"
                 onClick={cancelExit}
-                className="flex-1 rounded-xl border-gray-300 bg-gray-50 hover:bg-gray-100 hover:text-gray-700 text-gray-700 px-6 py-2.5 font-medium flex items-center justify-center gap-2 transition-colors duration-200"
+                className="flex-1 rounded-xl border-gray-300 bg-gray-50 hover:bg-gray-100 hover:text-gray-700 text-gray-700 px-6 py-2.5 font-medium flex items-center justify-center gap-1 transition-colors duration-200"
               >
                 <X className="w-4 h-4" />
                 Batal
