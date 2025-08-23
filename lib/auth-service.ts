@@ -103,7 +103,7 @@ export async function loginWithCredentials(email: string, password: string) {
       // Set cookie only if JWT exists; otherwise ensure removal
       const accessToken = localStorage.getItem('accessToken') || Cookies.get('jwt_access_token');
       if (accessToken) {
-        Cookies.set('user-session', JSON.stringify({
+        Cookies.set('session_id', JSON.stringify({
           userId: user.id,
           email: user.email,
           nama_lengkap: user.nama_lengkap,
@@ -116,7 +116,7 @@ export async function loginWithCredentials(email: string, password: string) {
           sameSite: 'lax'
         });
       } else {
-        try { Cookies.remove('user-session', { path: '/' }); } catch {}
+        try { Cookies.remove('session_id', { path: '/' }); } catch {}
       }
     }
 
@@ -139,7 +139,7 @@ export function logout() {
     localStorage.removeItem('google_auth_state');
 
     // Robust cookie clearing across domain/path variations
-    const cookieNames = ['user-session', 'jwt_access_token', 'jwt_refresh_token'] as const;
+    const cookieNames = ['session_id', 'jwt_access_token', 'jwt_refresh_token'] as const;
     const hostname = window.location.hostname;
     const hostParts = hostname.split('.');
     const domainCandidates = [
@@ -188,7 +188,7 @@ export function checkSession(): UserSession | null {
     }
     
     // Try to get session from cookie
-    const sessionCookie = Cookies.get('user-session');
+    const sessionCookie = Cookies.get('session_id');
     if (sessionCookie) {
       try {
         const cookieData = JSON.parse(sessionCookie);
@@ -296,7 +296,7 @@ export function checkSession(): UserSession | null {
       localStorage.setItem('userSession', JSON.stringify(sessionData));
       
       // Update cookie as well
-      Cookies.set('user-session', JSON.stringify({
+      Cookies.set('session_id', JSON.stringify({
         userId: sessionData.id,
         email: sessionData.email,
         nama_lengkap: sessionData.nama_lengkap,
@@ -390,7 +390,7 @@ export async function refreshUserSession(): Promise<UserSession | null> {
               if (typeof window !== 'undefined') {
                 localStorage.setItem('userSession', JSON.stringify(sessionData));
                 
-                Cookies.set('user-session', JSON.stringify({
+                Cookies.set('session_id', JSON.stringify({
                   userId: user.id,
                   email: user.email,
                   nama_lengkap: user.nama_lengkap,
@@ -440,7 +440,7 @@ export async function refreshUserSession(): Promise<UserSession | null> {
     if (typeof window !== 'undefined') {
       localStorage.setItem('userSession', JSON.stringify(refreshedSession));
       
-      Cookies.set('user-session', JSON.stringify({
+      Cookies.set('session_id', JSON.stringify({
         userId: refreshedSession.id,
         email: refreshedSession.email,
         nama_lengkap: refreshedSession.nama_lengkap,

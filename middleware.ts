@@ -19,7 +19,7 @@ const protectedRoutes = [
 ]
 
 export function middleware(request: NextRequest) {
-  const userSession = request.cookies.get('user-session')
+  const userSession = request.cookies.get('session_id')
   const path = request.nextUrl.pathname
   
   // Check if path requires authentication
@@ -48,7 +48,7 @@ export function middleware(request: NextRequest) {
     if (now > expires) {
       // Session expired, redirect to login
       const response = NextResponse.redirect(new URL('/login', request.url))
-      response.cookies.delete('user-session')
+      response.cookies.delete('session_id')
       return response
     }
     

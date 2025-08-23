@@ -538,13 +538,12 @@ export default function CekObat() {
                 <div><b>Dimensi Karton:</b> {scannedProduct.dimensiKarton}</div>
               </div>
             )}
-            {/* Tampilkan tombol "Diskusi dengan Silva" jika valid (tidak error) */}
             {!scannedProduct.error && (
               <Button
                 onClick={handleDiscuss}
                 className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-semibold px-6 py-2 rounded-lg shadow"
               >
-                Diskusi dengan Silva
+                Diskusi dengan Cura AI
               </Button>
             )}
           </div>

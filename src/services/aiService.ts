@@ -53,9 +53,10 @@ const SessionStateService = {
   async getSessionState(sessionId: string): Promise<SessionState> {
     try {
       const session = localStorage.getItem(`session:${sessionId}`);
-      return session
-        ? JSON.parse(session)
-        : { id: sessionId, messages: [], verificationResult: null };
+      if (!session) {
+        return { id: sessionId, messages: [], verificationResult: null };
+      }
+      return JSON.parse(session);
     } catch (error) {
       console.error('Error getting session state:', error);
       return { id: sessionId, messages: [], verificationResult: null };
@@ -107,7 +108,7 @@ export const aiService = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
           'HTTP-Referer': window.location.origin,
-          'X-Title': 'Silva AI',
+          'X-Title': 'Cura AI',
         },
         body: JSON.stringify({
           model: openRouterModel,
@@ -162,7 +163,7 @@ export const aiService = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
           'HTTP-Referer': window.location.origin,
-          'X-Title': 'Silva AI',
+          'X-Title': 'Cura AI',
         },
         body: JSON.stringify({
           model: openRouterModel,
@@ -216,30 +217,52 @@ async function generateCuraAICompletion(messages: Message[]): Promise<AIResponse
       throw new Error('Missing API_BASE_URL or API_KEY in environment variables');
     }
 
-    // Stabilkan session ID (persist ke localStorage bila belum ada)
-    let sessionId = localStorage.getItem('sessionId');
+    const sessionId = localStorage.getItem('sessionId');
     if (!sessionId) {
-      sessionId = uuidv4();
-      localStorage.setItem('sessionId', sessionId);
+      throw new Error('No sessionId found in localStorage, run /verify first');
     }
+    // console.log('Session ID from /agent:', sessionId);
 
     const session = await SessionStateService.getSessionState(sessionId);
+    // console.log('Session from /agent SessionStateService:', session);
 
     const latestMessage = messages[messages.length - 1];
     if (latestMessage.role !== 'user') {
       throw new Error('Latest message must be from user');
     }
 
-    // Retrieve scannedProduct from localStorage
-    const scannedProductRaw = localStorage.getItem('scannedProduct');
-    const scannedProduct: ScannedProduct | null = scannedProductRaw ? JSON.parse(scannedProductRaw) : null;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const rawById = id ? localStorage.getItem(`scannedProduct:${id}`) : null;
+    const scannedProductRaw = rawById;
+    let scannedProduct: ScannedProduct | null = null;
+    if (scannedProductRaw) {
+      try {
+        scannedProduct = JSON.parse(scannedProductRaw);
+      } catch (e) {
+        console.error('Failed to parse scannedProduct:', e);
+      }
+    }
 
-    // Server kontrak: { session_id, text, scanned_product? }
+    // console.log('Selected scannedProduct source:', {
+    //   rawById: !!rawById,
+    //   scannedProduct,
+    // });
+
+    // Gabungkan scannedProduct ke dalam text
+    let combinedText = latestMessage.content;
+    if (scannedProduct) {
+      const scannedProductStr = JSON.stringify(scannedProduct); // Konversi ke string JSON
+      combinedText = `${latestMessage.content}\n[SCANNED_PRODUCT]\n${scannedProductStr}\n[/SCANNED_PRODUCT]`;
+      // console.log('Combined text with scannedProduct:', combinedText);
+    }
+
     const body = {
       session_id: sessionId,
-      text: latestMessage.content,
-      scanned_product: scannedProduct, // Include scanned product if available
+      text: combinedText,
     };
+
+    // console.log('Request body sent to server:', body);
 
     const response = await fetch(`${API_BASE_URL}/v1/agent`, {
       method: 'POST',
@@ -247,7 +270,7 @@ async function generateCuraAICompletion(messages: Message[]): Promise<AIResponse
         'Content-Type': 'application/json',
         'X-API-Key': API_KEY,
         'ngrok-skip-browser-warning': 'true',
-        'X-Session-Id': sessionId, // Opsional, untuk server yang membaca dari header
+        'X-Session-Id': sessionId,
       },
       body: JSON.stringify(body),
     });
@@ -259,7 +282,6 @@ async function generateCuraAICompletion(messages: Message[]): Promise<AIResponse
 
     const data = await response.json();
 
-    // Server shape: { reply_kind: "agent", answer: string, sources?: any[] }
     const text =
       (typeof data?.answer === 'string' && data.answer) ||
       (typeof data?.text === 'string' && data.text) ||

@@ -146,7 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // sessionExpires will be auto-computed inside saveUserSession if not provided
           });
         } catch (e) {
-          console.warn('Warning: failed to persist user-session on login', e);
+          console.warn('Warning: failed to persist session_id on login', e);
         }
 
         // Set user in state
@@ -205,7 +205,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Store tokens
         jwtService.setTokens(data.accessToken, data.refreshToken);
         
-        // Ensure user-session cookie is set on Google login too
+        // Ensure session_id cookie is set on Google login too
         try {
           authService.saveUserSession({
             id: data.user?.id,
@@ -216,7 +216,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             foto_profile: data.user?.foto_profile,
           });
         } catch (e) {
-          console.warn('Warning: failed to persist user-session on Google login', e);
+          console.warn('Warning: failed to persist session_id on Google login', e);
         }
 
         // Set user in state

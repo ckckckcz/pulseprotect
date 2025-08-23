@@ -1,4 +1,3 @@
-// daftar-obat.tsx
 "use client"
 
 import { motion, useScroll, useTransform } from "framer-motion"
@@ -15,8 +14,8 @@ import YOLOScanner from "@/components/widget/cek-obat/yolo/scaner"
 import Navbar from "@/components/widget/navbar"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { v4 as uuidv4 } from "uuid"
 import { VerificationResponse } from "@/types/yolo"
+import { v4 as uuidv4 } from 'uuid';
 
 export default function DaftarObat() {
   const [selectedCategory, setSelectedCategory] = useState("Semua")
@@ -32,7 +31,6 @@ export default function DaftarObat() {
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string
   const API_KEY = process.env.NEXT_PUBLIC_YOLO_KEY as string
-  const sessionId = uuidv4()
 
   const { scrollY } = useScroll()
   const sidebarShadow = useTransform(scrollY, [0, 50], ["shadow-lg", "shadow-xl ring-1 ring-gray-100"])
@@ -137,53 +135,125 @@ export default function DaftarObat() {
       setSearchStatus("Masukkan nama produk atau NIE untuk mencari.")
       return
     }
-
+  
     setIsLoadingSearch(true)
     setSearchStatus("Mencari produk...")
-
+  
     try {
+      const sessionId = localStorage.getItem('sessionId');
+      // console.log('Initial Session ID from /verify:', sessionId || 'Not set');
+  
       const payload = {
         nie: null,
         text: searchQuery.trim(),
+        session_id: sessionId || undefined,
       }
-
+  
       const res = await fetch(`${API_BASE_URL}/v1/verify`, {
         method: "POST",
         headers: {
-          "X-Api-Key": API_KEY,
-          "X-Session-Id": sessionId,
           "Content-Type": "application/json",
+          "X-Api-Key": API_KEY,
+          "X-Session-Id": sessionId || "",
           "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify(payload),
       })
-
+  
       if (!res.ok) {
         const errorText = await res.text()
         throw new Error(`HTTP ${res.status} ${res.statusText}: ${errorText}`)
       }
-
-      const data: VerificationResponse = await res.json()
-      setModalData(data)
-      setSearchStatus("Pencarian selesai!")
+  
+      const data: VerificationResponse & { session?: string } = await res.json();
+      // console.log('Full Response from /verify:', JSON.stringify(data, null, 2));
+      
+      if (!data.session) {
+        console.warn('Server did not provide session_id. Using fallback.');
+        const tempSessionId = uuidv4();
+        localStorage.setItem('sessionId', tempSessionId);
+        // console.log('Fallback Session ID:', tempSessionId);
+        // Mapping berdasarkan struktur respons aktual
+        setModalData({
+          data: data.data || { product: {} },
+          confidence: data.confidence || 0,
+          source: data.source || "Unknown",
+          explanation: data.explanation || "No session from server",
+        } as VerificationResponse);
+        setSearchStatus("Pencarian selesai dengan session_id sementara. Koordinasi dengan backend diperlukan.");
+      } else {
+        localStorage.setItem('sessionId', data.session);
+        // console.log('Updated Session ID from /verify:', data.session);
+        setModalData(data);
+        setSearchStatus("Pencarian selesai!");
+      }
     } catch (e: any) {
       console.error("Search error:", e)
-      setSearchStatus(`Gagal mencari produk: ${e?.message || e}`)
+      setSearchStatus(`Gagal mencari produk: ${e?.message || e}`);
     } finally {
       setIsLoadingSearch(false)
     }
   }
 
-  const handleDiscussWithSilva = () => {
-    if (modalData) {
-      const id = Date.now().toString()
-      localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(modalData))
+  const handleDiscussWithCura = async () => {
+    if (!modalData) return;
+
+    const id = Date.now().toString();
+    localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(modalData));
+    try {
+      localStorage.setItem("scannedProduct:active", JSON.stringify(modalData));
+      localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(modalData));
+    } catch {}
+
+    let sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      setSearchStatus("Menghasilkan session_id...");
       try {
-        localStorage.setItem("scannedProduct:active", JSON.stringify(modalData))
-        localStorage.setItem(`scannedProduct:${id}`, JSON.stringify(modalData))
-      } catch {}
-      router.push(`/cura-ai?id=${id}`)
+        const payload = {
+          nie: modalData.data?.product?.nie || null,
+          text: modalData.data?.product?.name || "",
+          session_id: undefined,
+        };
+
+        const res = await fetch(`${API_BASE_URL}/v1/verify`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Api-Key": API_KEY,
+            "X-Session-Id": "",
+            "ngrok-skip-browser-warning": "true",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status} ${res.statusText}: ${errorText}`);
+        }
+
+        const data: VerificationResponse & { session?: string } = await res.json();
+        // console.log('Full Response from /verify (via Discuss):', JSON.stringify(data, null, 2));
+
+        if (!data.session) {
+          console.warn('Server did not provide session_id. Using fallback.');
+          const tempSessionId = uuidv4();
+          localStorage.setItem('sessionId', tempSessionId);
+          // console.log('Fallback Session ID (via Discuss):', tempSessionId);
+          setSearchStatus("Session_id sementara digunakan. Koordinasi dengan backend diperlukan.");
+        } else {
+          sessionId = data.session;
+          localStorage.setItem('sessionId', sessionId);
+          // console.log('Updated Session ID from /verify (via Discuss):', sessionId);
+        }
+      } catch (e: any) {
+        console.error("Error generating session via Discuss:", e);
+        setSearchStatus(`Gagal menghasilkan session: ${e?.message || e}`);
+        return;
+      }
+      setSearchStatus("");
     }
+
+    router.push(`/cura-ai?id=${id}`);
   }
 
   useEffect(() => {
@@ -260,7 +330,7 @@ export default function DaftarObat() {
                   )}
                 </Button>
               </div>
-              {/* {searchStatus && (
+              {searchStatus && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -268,7 +338,7 @@ export default function DaftarObat() {
                 >
                   {searchStatus}
                 </motion.div>
-              )} */}
+              )}
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: -20, height: 0 }}
@@ -347,10 +417,10 @@ export default function DaftarObat() {
                         Tutup Detail
                       </Button>
                       <Button
-                        onClick={handleDiscussWithSilva}
+                        onClick={handleDiscussWithCura}
                         className="flex-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white px-6 py-3 rounded-xl font-medium shadow-lg"
                       >
-                        Diskusi dengan Silva
+                        Diskusi dengan Cura AI
                       </Button>
                     </div>
                   </div>

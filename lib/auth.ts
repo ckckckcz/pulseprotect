@@ -338,7 +338,7 @@ export const authService = {
       const sessionExpiry = userData.sessionExpires || now + SESSION_DURATION * 1000;
 
       Cookies.set(
-        "user-session",
+        "session_id",
         JSON.stringify({
           userId: userData.id,
           email: userData.email,
@@ -389,7 +389,7 @@ export const authService = {
       localStorage.removeItem("userSession");
 
       // Robust cookie clearing for multiple domain/path combos
-      const cookieNames = ["user-session", "jwt_access_token", "jwt_refresh_token"] as const;
+      const cookieNames = ["session_id", "jwt_access_token", "jwt_refresh_token"] as const;
       const hostname = window.location.hostname;
       const hostParts = hostname.split(".");
       const domainCandidates = [
@@ -478,7 +478,7 @@ export const authService = {
       }
 
       // Try to get session from cookie
-      const sessionCookie = Cookies.get("user-session");
+      const sessionCookie = Cookies.get("session_id");
       if (sessionCookie) {
         try {
           const cookieData = JSON.parse(sessionCookie);
@@ -615,7 +615,7 @@ export const authService = {
         // Update cookie only if JWT exists; otherwise ensure removal
         if (accessToken) {
           Cookies.set(
-            "user-session",
+            "session_id",
             JSON.stringify({
               userId: sessionData.id,
               email: sessionData.email,
@@ -632,7 +632,7 @@ export const authService = {
             }
           );
         } else {
-          try { Cookies.remove("user-session", { path: "/" }); } catch { }
+          try { Cookies.remove("session_id", { path: "/" }); } catch { }
         }
       }
 
@@ -788,7 +788,7 @@ export const authService = {
                   );
 
                   Cookies.set(
-                    "user-session",
+                    "session_id",
                     JSON.stringify({
                       userId: user.id,
                       email: user.email,
@@ -851,7 +851,7 @@ export const authService = {
         );
 
         Cookies.set(
-          "user-session",
+          "session_id",
           JSON.stringify({
             userId: refreshedSession.id,
             email: refreshedSession.email,

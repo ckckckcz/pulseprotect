@@ -1367,7 +1367,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           <b>Kekuatan:</b> {scannedProductCard.data.product.strength || "-"}
                         </div>
                       </div>
-                      <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
+                      <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan AI Agent.</p>
                     </div>
                   )}
                   {imagePreviews.map((preview, idx) => (
@@ -1396,7 +1396,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           value={input}
                           onChange={handleInputChange}
                           onKeyDown={handleKeyDown}
-                          placeholder="Minta Silva Menjawab..."
+                          placeholder="Minta AI Agent Menjawab..."
                           className="w-full bg-transparent border-none text-black placeholder-gray-500 lg:text-lg text-md resize-none min-h-[38px] overflow-y-auto"
                           style={{ outline: "none" }}
                           rows={1}
@@ -1466,7 +1466,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                   >
                     <Link href="/pricing">
                       <Crown className="w-4 h-4" />
-                      <span>Join Silva Pro</span>
+                      <span>Join AI Agent Pro</span>
                     </Link>
                   </Button>
                 </div>
@@ -1512,7 +1512,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                                 <b>Kekuatan:</b> {message.content.data.product.strength || "-"}
                               </div>
                             </div>
-                            <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan Silva.</p>
+                            <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan AI Agent.</p>
                           </div>
                           {idx === messages.filter((m) => m.role === "system" && m.type === "product-context").length - 1 && <hr className="h-px my-8 bg-gray-200 border-0 dark:bg-gray-700" />}
                         </React.Fragment>
@@ -1776,7 +1776,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         value={input}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
-                        placeholder="Minta Silva Menjawab..."
+                        placeholder="Minta AI Agent Menjawab..."
                         className="w-full bg-transparent border-none text-black placeholder-gray-500 lg:text-lg text-md resize-none min-h-[38px] overflow-y-auto"
                         style={{ outline: "none" }}
                         rows={1}

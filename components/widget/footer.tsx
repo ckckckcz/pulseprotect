@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Globe, Mail, Phone, MapPin, ArrowRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import Logo from "@/public/logo.png"
+import Image from "next/image";
+
 export default function Footer() {
   const partners = [
     { name: "WHO", logo: "/placeholder.svg?height=40&width=120" },
@@ -23,7 +26,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center space-x-1 mb-6">
-              <Zap className="w-12 h-12 text-teal-600 rounded-xl flex items-center justify-center mr-3" fill="currentColor" />
+              <Image className="w-12 h-12 text-teal-600 rounded-xl flex items-center justify-center mr-3" src={Logo} alt=""/>
 
               <span className="text-3xl font-bold">Pulse Protect</span>
             </div>

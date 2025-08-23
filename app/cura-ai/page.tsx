@@ -18,9 +18,9 @@ export default function SilvaPage() {
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense>
       <ChatInterface
-        textContent="Welcome to Silva!"
+        textContent="Welcome to Cura AI!"
         onRegenerate={handleRegenerate}
         onSpeak={handleSpeak}
         onCopy={handleCopy}
