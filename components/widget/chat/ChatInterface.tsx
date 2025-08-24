@@ -60,8 +60,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const models = [
-  { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
   { id: "cura-ai", name: "Cura AI", description: "Cura", requiredMembership: "free" },
+  { id: "google-gemini", name: "Google Gemini", description: "Google AI Studio", requiredMembership: "free" },
   { id: "deepseek-v3", name: "DeepSeek V3", description: "DeepSeek LLM", requiredMembership: "plus" },
   { id: "mistral-small-24b", name: "Mistral Small", description: "Mistral 24b", requiredMembership: "pro" },
 ];
@@ -327,7 +327,7 @@ const EnhancedWaveform: React.FC<{
 };
 
 export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCopy }: ChatActionsProps) {
-  const [selectedModel, setSelectedModel] = useState<AIModel>("google-gemini");
+  const [selectedModel, setSelectedModel] = useState<AIModel>("cura-ai");
   const [user, setUser] = useState<any>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const router = useRouter();
