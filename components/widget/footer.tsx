@@ -30,7 +30,7 @@ export default function Footer() {
 
               <span className="text-3xl font-bold">Pulse Protect</span>
             </div>
-            <p className="text-gray-400 mb-6 leading-relaxed text-lg">Platform deteksi obat palsu untuk melindungi kesehatan masyarakat Indonesia dengan teknologi AI terdepan dan database resmi BPOM.</p>
+            <p className="text-gray-400 mb-6 leading-relaxed text-lg">Platform deteksi obat palsu untuk melindungi kesehatan masyarakat Indonesia dengan teknologi AI.</p>
             <div className="flex space-x-4">
               {/* Social media icons */}
               <div className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-300 cursor-pointer">
