@@ -184,9 +184,6 @@ export default function RegisterPage() {
                 Pulse Protect
               </span>
             </h1>
-            <p className="text-gray-600">
-              Mulai dengan membuat akun untuk mengakses semua fitur eksklusif pulse protect.
-            </p>
           </motion.div>
 
           {/* Google Register Button */}
