@@ -33,6 +33,7 @@ import gabriel from "@/public/images/developer/gabriel.jpg"
 import raul from "@/public/images/developer/raul.jpg"
 import rizki from "@/public/images/developer/rizki.png"
 import rio from "@/public/images/developer/rio.png"
+import michel from "@/public/images/developer/michel.jpg"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -209,12 +210,12 @@ const FloatingAvatars = () => {
     },
     {
       id: 5,
-      src: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-      name: "Lisa Anderson",
+      src: michel,
+      name: "Michel",
       position: { top: "35%", left: "85%" },
       size: "large",
-      delay: 1.2,
-      iconRotation: "rotate-[-50deg]",
+      delay: 0.9,
+      iconRotation: "rotate-[-20deg]",
     },
   ]
 
