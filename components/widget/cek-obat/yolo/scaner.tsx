@@ -20,6 +20,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
   const [status, setStatus] = useState<string>("Menginisialisasi kamera...")
   const [result, setResult] = useState<VerificationResponse | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [isFrozen, setIsFrozen] = useState(false) // State untuk efek freeze
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string
   const API_KEY = process.env.NEXT_PUBLIC_YOLO_KEY as string
@@ -79,7 +80,6 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
       const data = await response.json()
       console.log("Received response:", data)
 
-      // Map response ke format VerificationResponse
       const mappedData: VerificationResponse = {
         status: data.data?.status || "unknown",
         source: data.data?.source || "camera",
@@ -95,7 +95,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
             category: data.data?.product?.category || null,
             composition: data.data?.product?.composition || null,
             updated_at: data.data?.product?.updated_at || null,
-            status: data.data?.product ? "valid" : "invalid", 
+            status: data.data?.product ? "valid" : "invalid",
           },
         },
       }
@@ -106,6 +106,8 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
     } catch (e: any) {
       console.error("Send image error:", e)
       setStatus(`Gagal mengirim gambar: ${e?.message || e}`)
+    } finally {
+      setIsFrozen(false) // Hilangkan efek freeze setelah proses selesai
     }
   }
 
@@ -113,6 +115,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
     const video = videoRef.current, canvas = canvasRef.current
     if (!video || !canvas) return
     setIsLoading(true)
+    setIsFrozen(true) // Aktifkan efek freeze
     setStatus("Memproses gambar...")
     try {
       const ctx = canvas.getContext("2d")
@@ -126,6 +129,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
     } catch (err) {
       console.error("Frame capture error:", err)
       setStatus("Gagal memproses gambar. Coba lagi...")
+      setIsFrozen(false) // Hilangkan efek freeze jika gagal
     } finally {
       setIsLoading(false)
     }
@@ -162,7 +166,20 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
 
         <div className="p-6">
           <div className="relative bg-black rounded-xl overflow-hidden mb-4">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-96 object-cover" />
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-96 object-cover ${isFrozen ? "opacity-0" : "opacity-100"}`} // Sembunyikan video saat freeze
+            />
+            {isFrozen && capturedImage && (
+              <img
+                src={capturedImage}
+                alt="Captured frame"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
             <canvas ref={canvasRef} className="hidden" />
             <div className="absolute top-4 left-4 right-4">
               <div className="bg-black/70 rounded-lg px-4 py-2 text-white text-sm flex items-center gap-2">
