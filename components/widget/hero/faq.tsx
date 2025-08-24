@@ -130,7 +130,7 @@ export default function FAQ() {
                 /* Video YouTube yang disematkan */
                 <iframe
                   ref={referensiVideo}
-                  src="https://www.youtube.com/embed/a38AIsbLlkw?autoplay=1&rel=0"
+                  src="https://www.youtube.com/embed/jD0j3MP9Kz8?si=ybuckrOugvLp-4lr"
                   title="Pemutar video YouTube"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
