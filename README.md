@@ -126,10 +126,10 @@ Games untuk hiburan sekaligus gamifikasi. Terdapat **dua jenis game**:
 
 ### Akun Uji Coba  
 <p>Email: testing@pulseprotect.com</p>
-<p>Kata Sandi: 12345678/p>
+<p>Kata Sandi: 12345678</p>
 
-### Website  
-<link href="https://pulseprotect.vercel.app/" target="_blank">Pulse Protect</link>
+### Website
+[Pulse Protect](https://pulseprotect.vercel.app/)
 
-### Repository AI/ML 
-<link href="https://github.com/GabrielBatavia/AIC-MechaMinds-17" target="_blank">Repo AI/ML</link>
+### Repository AI/ML
+[Repo AI/ML](https://github.com/GabrielBatavia/AIC-MechaMinds-17)
