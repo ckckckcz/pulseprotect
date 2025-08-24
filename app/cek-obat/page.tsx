@@ -272,7 +272,7 @@ export default function CekObat() {
   return (
     <>
       <Navbar />
-      <section className="min-h-screen bg-white lg:mt-24 mt-16 overflow-hidden relative">
+      <section className=" bg-white lg:mt-24 mt-16 overflow-hidden relative">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-teal-100/20 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80 bg-blue-100/15 rounded-full blur-3xl -translate-x-1/3 translate-y-1/3"></div>
@@ -322,7 +322,7 @@ export default function CekObat() {
               </div>
 
               {/* Search Bar */}
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
@@ -341,7 +341,7 @@ export default function CekObat() {
                     Cari Dokter
                   </Button>
                 </div>
-              </motion.div>
+              </motion.div> */}
             </motion.div>
 
             {/* Right Content - Medicine Animation */}
@@ -353,7 +353,7 @@ export default function CekObat() {
             >
               <div className="relative">
                 <motion.div
-                  className="relative w-96 h-96 lg:w-80 lg:h-80 rounded-3xl overflow-hidden shadow-2xl ring-4 sm:ring-8 ring-white/50"
+                  className="relative w-72 h-72 lg:w-80 lg:h-80 rounded-3xl overflow-hidden shadow-2xl ring-4 sm:ring-8 ring-white/50"
                   whileHover={{ scale: 1.05, rotate: 2 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -387,138 +387,6 @@ export default function CekObat() {
         </motion.div>
 
         {/* Enhanced Doctor Carousel */}
-        <motion.div
-          className="relative w-full overflow-hidden mb-1"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 1.2 }}
-        >
-          <div className="text-center mb-8 sm:mb-12 px-4 sm:px-6">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Dokter Terpercaya
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
-              Konsultasi dengan dokter spesialis berpengalaman dan terpercaya di seluruh Indonesia
-            </p>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center items-center py-16">
-              <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
-              <span className="ml-2 text-teal-600 font-medium">Memuat data dokter...</span>
-            </div>
-          ) : error ? (
-            <div className="text-center py-16">
-              <p className="text-red-500">Gagal memuat data dokter: {error}</p>
-              <Button
-                onClick={() => window.location.reload()}
-                className="mt-4 bg-teal-600 hover:bg-teal-700"
-              >
-                Coba Lagi
-              </Button>
-            </div>
-          ) : (
-            <div className="relative overflow-hidden w-full">
-              <div className="w-full mx-auto overflow-hidden" key={animationKey}>
-                <motion.div
-                  className="flex gap-4 pl-4"
-                  animate={controls}
-                  initial={{ x: 0 }}
-                  style={{ willChange: "transform" }}
-                >
-                  {infiniteDoctors.map((doctor, index) => (
-                    <motion.div
-                      key={`${doctor.id}-${index}`}
-                      className="flex-shrink-0 w-[300px]"
-                    >
-                      <Card className=" rounded-xl border border-gray-200 transition-all duration-500 bg-white overflow-hidden h-full">
-                        <CardContent className="p-0">
-                          {/* Doctor Image */}
-                          <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden">
-                            <Image
-                              src={doctor.image || "/placeholder.svg?height=300&width=300"}
-                              alt={doctor.name}
-                              width={350}
-                              height={256}
-                              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-teal-600/40 via-teal-600/10 to-transparent" />
-
-                            {/* Availability Badge */}
-                            <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
-                              <Badge
-                                className={`${doctor.availability === "Tersedia" ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                                  } border-0 font-medium px-2 sm:px-3 py-1 text-xs sm:text-sm`}
-                              >
-                                {doctor.availability}
-                              </Badge>
-                            </div>
-
-                            {/* Rating */}
-                            <div className="absolute top-3 sm:top-4 left-3 sm:left-4 bg-white/90 backdrop-blur-sm rounded-full px-2 sm:px-3 py-1 flex items-center gap-1">
-                              <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-current" />
-                              <span className="text-xs sm:text-sm font-semibold text-gray-900">{doctor.rating}</span>
-                            </div>
-                          </div>
-
-                          {/* Doctor Info */}
-                          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                            <div>
-                              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1 line-clamp-1">{doctor.name}</h3>
-                              <div className="flex items-center gap-2 text-teal-600 mb-2">
-                                <Stethoscope className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                <span className="text-xs sm:text-sm font-semibold line-clamp-1">{doctor.position}</span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-xs sm:text-sm font-medium text-gray-700 line-clamp-1">{doctor.hospital}</p>
-                              <div className="flex items-center gap-1 text-gray-500">
-                                <MapPin className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                <span className="text-xs sm:text-sm line-clamp-1">{doctor.location}</span>
-                              </div>
-                            </div>
-
-                            {/* Stats */}
-                            <div className="grid grid-cols-2 gap-4 pt-3 sm:pt-4 border-t border-gray-100">
-                              <div className="text-center">
-                                <div className="text-xs sm:text-sm font-bold text-gray-900">{doctor.experience}</div>
-                                <div className="text-xs text-gray-500">Pengalaman</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-xs sm:text-sm font-bold text-gray-900">{doctor.patients}</div>
-                                <div className="text-xs text-gray-500">Pasien</div>
-                              </div>
-                            </div>
-
-                            {/* Price and Action */}
-                            <div className="flex items-center justify-between pt-3 sm:pt-4">
-                              <div>
-                                <div className="text-base sm:text-lg font-bold text-teal-600">{doctor.price}</div>
-                                <div className="text-xs text-gray-500">per konsultasi</div>
-                              </div>
-                              <Button
-                                size="sm"
-                                className="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 rounded-[8px] text-white shadow-lg text-xs sm:text-sm px-3 sm:px-4 py-2"
-                              >
-                                Konsultasi
-                                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </div>
-
-              {/* Add gradient overlays to improve infinite scroll effect */}
-              <div className="absolute top-0 bottom-0 left-0 w-16 bg-gradient-to-r from-white to-transparent z-10"></div>
-              <div className="absolute top-0 bottom-0 right-0 w-16 bg-gradient-to-l from-white to-transparent z-10"></div>
-            </div>
-          )}
-        </motion.div>
         {scannedProduct && (
           <div className="my-6 max-w-xl mx-auto bg-white border rounded-lg shadow p-6">
             <h3 className="text-lg font-bold mb-2">Hasil Scan Produk</h3>
@@ -549,7 +417,6 @@ export default function CekObat() {
           </div>
         )}
       </section>
-
       <DaftarObat />
       <Footer />
     </>

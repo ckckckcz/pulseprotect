@@ -40,15 +40,16 @@ export default function DaftarObat() {
     { label: "Nama Produk", value: modalData?.data?.product?.name, icon: Package },
     { label: "NIE/Nomor Registrasi", value: modalData?.data?.product?.nie, icon: FileText },
     { label: "Produsen", value: modalData?.data?.product?.manufacturer, icon: Package2 },
-    { label: "Bentuk Sediaan", value: modalData?.data?.product?.dosage_form, icon: Pill },
-    { label: "Kekuatan", value: modalData?.data?.product?.strength, icon: TestTube },
+    // { label: "Bentuk Sediaan", value: modalData?.data?.product?.dosage_form, icon: Pill },
+    // { label: "Kekuatan", value: modalData?.data?.product?.strength, icon: TestTube },
     { label: "Kategori", value: modalData?.data?.product?.category, icon: Archive },
-    { label: "Komposisi", value: modalData?.data?.product?.composition, icon: TestTube },
+    // { label: "Komposisi", value: modalData?.data?.product?.composition, icon: TestTube },
     { label: "Terakhir Diperbarui", value: modalData?.data?.product?.updated_at, icon: Clock },
-    { label: "Sumber Data", value: modalData?.source, icon: FileText },
+    { label: "Sumber Data", value: "BPOM", icon: FileText },
     { label: "Confidence Score", value: modalData?.confidence ? `${(modalData.confidence * 100).toFixed(1)}%` : undefined, icon: Activity },
     { label: "Penjelasan", value: modalData?.explanation, icon: Archive },
-  ]
+  ];
+  
 
   const getStatusIcon = (status?: string) => {
     if (!status) return <XCircle className="w-4 h-4 text-gray-500" />
@@ -137,7 +138,7 @@ export default function DaftarObat() {
     }
   
     setIsLoadingSearch(true)
-    setSearchStatus("Mencari produk...")
+    // setSearchStatus("Mencari produk...")
   
     try {
       const sessionId = localStorage.getItem('sessionId');
@@ -282,7 +283,7 @@ export default function DaftarObat() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 mt-2">
             <div className="text-center mb-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

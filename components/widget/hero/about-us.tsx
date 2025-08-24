@@ -1,7 +1,41 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
-import Team from "@/public/images/team.png"
+import Team from "@/public/images/team.png";
 import { Button } from "@/components/ui/button";
+import { ShieldCheck, ScanLine, TriangleAlert, Bot, Accessibility, HeartPulse, Building2, Globe2 } from "lucide-react";
+
+const features = [
+  {
+    title: "Verifikasi Obat Berbasis Data BPOM",
+    description:
+      "Pulse Protect memastikan keaslian obat dengan memanfaatkan data resmi dari Badan Pengawas Obat dan Makanan (BPOM). Setiap obat dapat diverifikasi secara cepat dengan memindai kode unik atau memasukkan nomor registrasi, sehingga pengguna terhindar dari risiko obat palsu.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Chatbot Interaktif",
+    description:
+      "Pulse Protect dilengkapi dengan chatbot cerdas yang siap menjawab pertanyaan seputar keaslian obat, cara penggunaan aplikasi, maupun informasi dasar mengenai obat yang diverifikasi. Chatbot membantu pengguna mendapat jawaban cepat tanpa perlu mencari di banyak sumber.",
+    icon: Bot,
+  },
+  // {
+  //   title: "Antarmuka Sederhana & Mudah Digunakan",
+  //   description:
+  //     "Dirancang dengan tampilan yang intuitif, Pulse Protect dapat digunakan oleh siapa saja. Proses verifikasi dilakukan hanya dengan beberapa langkah sederhana, mempersingkat akses ke informasi kesehatan yang krusial.",
+  //   icon: Accessibility,
+  // },
+  // {
+  //   title: "Perlindungan Kesehatan Publik",
+  //   description:
+  //     "Dengan membantu masyarakat menghindari obat ilegal, Pulse Protect mendukung peningkatan keselamatan pasien serta memperkuat kepercayaan publik terhadap sistem kesehatan nasional.",
+  //   icon: HeartPulse,
+  // },
+  {
+    title: "Dukungan Smart City & SDGs",
+    description:
+      "Pulse Protect berkontribusi pada layanan kesehatan yang aman, transparan, dan berkelanjutan dalam ekosistem kota cerdas. Aplikasi ini juga mendukung SDGs nomor 3: Kehidupan Sehat dan Sejahtera dengan memastikan akses masyarakat terhadap obat yang aman dan berkualitas.",
+    icon: Globe2,
+  },
+];
 
 export default function AboutUs() {
   return (
@@ -20,10 +54,10 @@ export default function AboutUs() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.7 }}
-            className="relative"
+            className="relative order-2 lg:order-1"
           >
             <div className="absolute -top-6 lg:-left-6 -left-3 w-28 h-28 lg:w-40 lg:h-40 bg-teal-600 rounded-3xl"></div>
-            <div className="absolute -bottom-6 lgl:-right-6 -right-3 lg:w-32 lg:h-32 w-20 h-20 bg-teal-500/30 rounded-2xl"></div>
+            <div className="absolute -bottom-6 lg:-right-6 -right-3 lg:w-32 lg:h-32 w-20 h-20 bg-teal-500/30 rounded-2xl"></div>
             <div className="relative z-10">
               <Image src={Team} alt="Our Team" width={600} height={400} className="rounded-2xl w-full h-auto" />
             </div>
@@ -35,105 +69,44 @@ export default function AboutUs() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.2 }}
             transition={{ duration: 0.7 }}
-            className="space-y-8"
+            className="space-y-8 order-1 lg:order-2"
           >
             <div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="mb-4"
-              >
-                <div className="inline-block bg-teal-50 border-2 border-teal-100 px-4 py-2 rounded-full">
-                  <span className="text-teal-600 text-sm font-medium flex items-center gap-2">
-                      About Us
-                  </span>
-                </div>              
-              </motion.div>
-
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6"
-              >
-                Kebutuhan Kesehatan Anda <span className="text-teal-600">Adalah Fokus</span> Utama Kami.
-              </motion.h2>
-
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="text-gray-600 text-lg leading-relaxed mb-8"
-              >
-                Secara berkelanjutan kami koordinasi aksi kolaboratif untuk layanan pelanggan generasi berikutnya. Secara khusus dipercepat di seluruh dunia adalah platform turnkey. Secara profesional menyebarkan proses yang didorong oleh
-                tim.
-              </motion.p>
+              <div className="inline-flex items-center gap-2 bg-teal-50 border-2 border-teal-100 px-4 py-2 rounded-full mb-4">
+                <span className="text-teal-600 text-sm font-medium">About Us</span>
+              </div>
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
+                Keaslian Obat <span className="text-teal-600 cardio italic">Terverifikasi</span> untuk Semua.
+              </h2>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                Pulse Protect adalah inisiatif untuk membantu masyarakat Indonesia memastikan keaslian obat melalui verifikasi cepat berbasis data resmi BPOM. Kami mengajak publik berkolaborasi mencegah peredaran obat ilegal, sekaligus menghadirkan pengalaman yang sederhana, akurat, dan dapat dipercaya.
+              </p>
             </div>
 
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-              variants={{
-                hidden: {},
-                visible: {
-                  transition: { staggerChildren: 0.12 }
-                }
-              }}
-              className="space-y-6"
-            >
-              {[
-                {
-                  title: "Ultra Test Anesthesiology Healthcare",
-                  description: "Pasien dapat terhubung dengan penyedia layanan kesehatan untuk konsultasi dari kenyamanan... Baca selengkapnya",
-                },
-                {
-                  title: "Cerebral plus multi-body skin or head testing",
-                  description: "Pasien dapat terhubung dengan penyedia layanan kesehatan untuk konsultasi dari kenyamanan... Baca selengkapnya",
-                },
-                {
-                  title: "Resource for human anti-body operations",
-                  description: "Pasien dapat terhubung dengan penyedia layanan kesehatan untuk konsultasi dari kenyamanan... Baca selengkapnya",
-                },
-              ].map((item, index) => (
+            <div className="space-y-6">
+              {features.map((item, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, x: -20 }}
+                  initial={{ opacity: 0, x: 20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true, amount: 0.2 }}
-                  transition={{ duration: 0.6, delay: 0.15 * index }}
-                  className="flex items-start space-x-4"
+                  transition={{ duration: 0.6, delay: 0.1 * index }}
+                  className="flex items-start gap-4"
                 >
-                  <div className="flex-shrink-0 w-6 h-6 bg-teal-100 rounded-full flex items-center justify-center mt-1">
-                    <div className="relative flex items-center justify-center">
-                      <div className="absolute w-4 h-4 bg-teal-200 rounded-full animate-ping opacity-75"></div>
-                      <div className="absolute w-3 h-3 bg-teal-300 rounded-full animate-pulse"></div>
-                      <div className="relative w-2 h-2 bg-teal-400 rounded-full"></div>
-                    </div>
+                  <div className="flex-shrink-0 w-10 h-10 bg-teal-100/70 rounded-xl flex items-center justify-center">
+                    <item.icon className="h-5 w-5 text-teal-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
-                    <p className="text-gray-600 text-sm leading-relaxed">
-                      {item.description.split("...")[0]}... <span className="text-teal-600 font-medium cursor-pointer hover:underline">Baca selengkapnya</span>
-                    </p>
+                    <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
                   </div>
                 </motion.div>
               ))}
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.7, delay: 0.5 }}
-              className="pt-6"
-            >
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white p-6 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg">Temukan Lebih Banyak 🧐</Button>
-            </motion.div>
+            {/* <Button className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-6 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg">
+              Pelajari Pulse Protect 🛡️
+            </Button> */}
           </motion.div>
         </motion.div>
       </div>

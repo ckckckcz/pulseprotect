@@ -12,35 +12,42 @@ export default function FAQ() {
   const daftarFAQ = [
     {
       id: 0,
-      pertanyaan: "Bagaimana cara saya membuat janji temu?",
-      jawaban: "Untuk membuat janji temu, cukup hubungi kantor kami melalui telepon atau gunakan sistem penjadwalan online kami. Pilih tanggal dan waktu yang Anda inginkan, dan kami akan segera mengkonfirmasi janji temu Anda.",
+      pertanyaan: "Bagaimana cara memverifikasi obat?",
+      jawaban:
+        "Pulse Protect memastikan keaslian obat dengan memanfaatkan data resmi dari Badan Pengawas Obat dan Makanan (BPOM). Cukup pindai kode unik atau masukkan nomor registrasi obat, maka Anda bisa langsung mengetahui status keasliannya.",
     },
     {
       id: 1,
-      pertanyaan: "Apakah konsultan tersedia 24 jam di Rumah Sakit Medicare?",
-      jawaban: "Ya, konsultan kami tersedia 24/7 di Rumah Sakit Medicare. Kami memiliki tim spesialis yang berdedikasi untuk menangani keadaan darurat medis atau konsultasi mendesak kapan saja, baik siang maupun malam.",
+      pertanyaan: "Bagaimana cara melaporkan obat bermasalah?",
+      jawaban:
+        "Pengguna dapat melaporkan obat yang mencurigakan, palsu, atau tidak sesuai standar langsung melalui aplikasi. Laporan Anda akan membantu meningkatkan pengawasan obat di Indonesia.",
     },
     {
       id: 2,
-      pertanyaan: "Apakah saya bisa mendapatkan janji temu di akhir pekan? Saya tidak tersedia di hari kerja.",
-      jawaban: "Tentu saja! Kami memahami bahwa banyak pasien memiliki jadwal sibuk di hari kerja. Kami menawarkan janji temu di akhir pekan pada hari Sabtu dan Minggu. Silakan hubungi bagian penjadwalan kami untuk memesan slot akhir pekan yang Anda inginkan.",
+      pertanyaan: "Apakah ada fitur chatbot untuk membantu pengguna?",
+      jawaban:
+        "Ya, Pulse Protect dilengkapi dengan chatbot interaktif yang siap menjawab pertanyaan mengenai keaslian obat, cara penggunaan aplikasi, maupun informasi dasar seputar obat yang diverifikasi.",
     },
     {
       id: 3,
-      pertanyaan: "Apakah Rumah Sakit Medicare menyediakan layanan darurat?",
-      jawaban: "Ya, Rumah Sakit Medicare menyediakan layanan darurat 24/7 yang komprehensif. Departemen darurat kami dilengkapi dengan peralatan medis mutakhir dan dikelola oleh dokter dan perawat darurat berpengalaman.",
+      pertanyaan: "Apakah aplikasi ini mudah digunakan?",
+      jawaban:
+        "Tentu saja. Pulse Protect dirancang dengan antarmuka sederhana dan intuitif, sehingga siapa pun bisa menggunakannya hanya dalam beberapa langkah sederhana.",
     },
     {
       id: 4,
-      pertanyaan: "Apakah saya bisa menjadwal ulang atau membatalkan janji temu saya?",
-      jawaban: "Ya, Anda bisa menjadwal ulang atau membatalkan janji temu Anda. Kami menyarankan untuk memberi tahu kami setidaknya 24 jam sebelumnya jika memungkinkan. Anda dapat menghubungi kantor kami langsung atau menggunakan portal pasien online kami untuk mengelola janji temu Anda.",
+      pertanyaan: "Apa manfaat Pulse Protect bagi masyarakat?",
+      jawaban:
+        "Dengan membantu masyarakat menghindari obat ilegal, Pulse Protect berkontribusi dalam meningkatkan keselamatan pasien sekaligus memperkuat kepercayaan publik terhadap sistem kesehatan nasional.",
     },
     {
       id: 5,
-      pertanyaan: "Bagaimana cara saya mengakses catatan medis saya?",
-      jawaban: "Anda dapat mengakses catatan medis Anda melalui portal pasien online kami yang aman. Cukup buat akun dengan informasi pribadi Anda, dan Anda akan memiliki akses 24/7 ke hasil tes, riwayat medis, dan rencana perawatan Anda.",
+      pertanyaan: "Apakah aplikasi ini mendukung Smart City & SDGs?",
+      jawaban:
+        "Ya. Pulse Protect mendukung terwujudnya kota cerdas dengan layanan kesehatan yang aman, transparan, dan berkelanjutan. Aplikasi ini juga sejalan dengan SDGs nomor 3: Kehidupan Sehat dan Sejahtera.",
     },
   ];
+
 
   const toggleFAQ = (id: number) => {
     setFAQTerbuka(FAQTerbuka === id ? null : id);
@@ -78,12 +85,12 @@ export default function FAQ() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="mb-4"
             >
-                <div className="inline-block bg-teal-50 border-2 border-teal-100 px-4 py-2 rounded-full">
-                  <span className="text-teal-600 text-sm font-medium flex items-center gap-2">
-                      FAQ
-                  </span>
-                </div>              
-              </motion.div>
+              <div className="inline-block bg-teal-50 border-2 border-teal-100 px-4 py-2 rounded-full">
+                <span className="text-teal-600 text-sm font-medium flex items-center gap-2">
+                  FAQ
+                </span>
+              </div>
+            </motion.div>
 
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
@@ -108,7 +115,7 @@ export default function FAQ() {
                 <>
                   {/* Thumbnail video dengan overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-teal-600/80 to-teal-800/80"></div>
-                  <button 
+                  <button
                     onClick={putarVideo}
                     className="absolute inset-0 flex items-center justify-center w-full h-full cursor-pointer"
                     aria-label="Putar video"

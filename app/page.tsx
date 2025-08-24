@@ -561,7 +561,7 @@ export default function HomePage() {
         <About />
       </motion.div>
 
-      {/* Services Section */}
+      {/* Services Section
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -572,7 +572,7 @@ export default function HomePage() {
         }}
       >
         <Services />
-      </motion.div>
+      </motion.div> */}
 
       {/* How It Works Section */}
       <motion.div
