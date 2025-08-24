@@ -292,10 +292,10 @@ export default function AntiFakeMedicineGames() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="lg:flex flex-row items-center gap-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="rounded-xl bg-white text-black border border-gray-200 hover:bg-gray-100 hover:text-black px-4 py-6 text-sm font-medium flex items-center gap-2">
+                        <Button variant="outline" className="rounded-xl bg-white w-full text-black border border-gray-200 hover:bg-gray-100 hover:text-black px-4 py-6 text-sm font-medium flex items-center gap-2">
                           <span className={`${selectedDifficulty === "easy" ? "bg-green-500" : selectedDifficulty === "medium" ? "bg-yellow-500" : "bg-red-500"} inline-block w-2.5 h-2.5 rounded-full`} />
                           {selectedDifficulty === "easy" ? "Easy" : selectedDifficulty === "medium" ? "Medium" : "Hard"}
                           <ChevronDown className="w-4 h-4 opacity-70" />
@@ -318,7 +318,7 @@ export default function AntiFakeMedicineGames() {
                     </DropdownMenu>
                     <Button
                       onClick={() => handleStartGame("game2")}
-                      className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
+                      className="flex-1 lg:mt-0 mt-2 w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg font-semibold rounded-xl"
                     >
                       <Play className="w-5 h-5 mr-2" />
                       Mulai Bermain
@@ -339,7 +339,7 @@ export default function AntiFakeMedicineGames() {
             </div>
           </div>
         </div>
-        <FooterBanner />
+        {/* <FooterBanner /> */}
         <Footer />
       </div>
     );
