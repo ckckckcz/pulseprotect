@@ -364,9 +364,6 @@ function LoginForm() {
           <h1 className="text-3xl font-bold text-gray-900 mb-1">
             Selamat Datang Kembali
           </h1>
-          <p className="text-gray-600">
-            Masuk untuk akses semua fitur pulseprotect
-          </p>
         </motion.div>
 
         <motion.div
