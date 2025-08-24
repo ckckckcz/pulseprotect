@@ -1070,108 +1070,120 @@ export default function UserProfile() {
               )}
 
               {activeSetting === "settings" && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                    {/* Kiri: Bahasa & Mode Tampilan */}
-                    <div className="p-6 space-y-8 border-b md:border-b-0 md:border-r border-gray-200">
-                      {/* Bahasa */}
-                      <div>
-                        <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
-                          <Globe2 className="w-6 h-6" /> Pilih Bahasa
-                        </h3>
-                        <div className="flex gap-3">
-                          <Button
-                            variant={language === "id" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "id" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setLanguage("id")}
-                          >
-                            <Languages className="w-4 h-4" /> Indonesia
-                          </Button>
-                          <Button
-                            variant={language === "en" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "en" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setLanguage("en")}
-                          >
-                            <Languages className="w-4 h-4" /> English
-                          </Button>
-                        </div>
-                      </div>
-                      {/* Mode Tampilan */}
-                      <div>
-                        <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
-                          <Sun className="w-6 h-6" /> Mode Tampilan
-                        </h3>
-                        <div className="flex gap-3">
-                          <Button
-                            variant={theme === "light" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "light" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setTheme("light")}
-                          >
-                            <Sun className="w-4 h-4" /> Light
-                          </Button>
-                          <Button
-                            variant={theme === "dark" ? "default" : "outline"}
-                            className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "dark" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
-                            onClick={() => setTheme("dark")}
-                          >
-                            <Moon className="w-4 h-4" /> Dark
-                          </Button>
-                        </div>
-                      </div>
+                <>
+                  <div
+                    className="bg-teal-100 mb-5 text-teal-600 p-4  w-full rounded-xl"
+                  >
+                    <div className="flex items-start">
+                      <Info className="w-6 h-6 mr-3 mt-1 flex-shrink-0"/>
+                      <p className="text-sm ">
+                        <span className="font-bold text-center flex justif-center relative align-center">Perhatian:</span> Fitur berikut belum selesai diimplentasikan
+                      </p>
                     </div>
-                    {/* Kanan: Feedback & Tentang */}
-                    <div className="p-6 space-y-8">
-                      {/* Feedback & Dukungan */}
-                      <div>
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          <MessageCircle className="w-5 h-5" /> Feedback & Dukungan
-                        </h3>
-                        <form
-                          onSubmit={async (e) => {
-                            e.preventDefault();
-                            setSendingFeedback(true);
-                            setTimeout(() => {
-                              toast.success("Feedback terkirim, terima kasih!");
-                              setFeedback("");
-                              setSendingFeedback(false);
-                            }, 1200);
-                          }}
-                          className="flex flex-col gap-2"
-                        >
-                          <textarea
-                            value={feedback}
-                            onChange={(e) => setFeedback(e.target.value)}
-                            className="border border-gray-300 rounded-xl p-3 text-sm resize-none"
-                            rows={3}
-                            placeholder="Ketik saran atau laporan masalah Anda di sini..."
-                            required
-                          />
-                          <Button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl" disabled={sendingFeedback || !feedback.trim()}>
-                            {sendingFeedback ? "Mengirim..." : "Kirim Feedback"}
-                          </Button>
-                        </form>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                      {/* Kiri: Bahasa & Mode Tampilan */}
+                      <div className="p-6 space-y-8 border-b md:border-b-0 md:border-r border-gray-200">
+                        {/* Bahasa */}
+                        <div>
+                          <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
+                            <Globe2 className="w-6 h-6" /> Pilih Bahasa
+                          </h3>
+                          <div className="flex gap-3">
+                            <Button
+                              variant={language === "id" ? "default" : "outline"}
+                              className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "id" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                              onClick={() => setLanguage("id")}
+                            >
+                              <Languages className="w-4 h-4" /> Indonesia
+                            </Button>
+                            <Button
+                              variant={language === "en" ? "default" : "outline"}
+                              className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${language === "en" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                              onClick={() => setLanguage("en")}
+                            >
+                              <Languages className="w-4 h-4" /> English
+                            </Button>
+                          </div>
+                        </div>
+                        {/* Mode Tampilan */}
+                        <div>
+                          <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
+                            <Sun className="w-6 h-6" /> Mode Tampilan
+                          </h3>
+                          <div className="flex gap-3">
+                            <Button
+                              variant={theme === "light" ? "default" : "outline"}
+                              className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "light" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                              onClick={() => setTheme("light")}
+                            >
+                              <Sun className="w-4 h-4" /> Light
+                            </Button>
+                            <Button
+                              variant={theme === "dark" ? "default" : "outline"}
+                              className={`flex items-center bg-white rounded-xl border border-gray-200 hover:bg-gray-200 hover:text-gray-900 gap-2 ${theme === "dark" ? "bg-teal-600 text-white hover:bg-teal-700 hover:text-white" : ""}`}
+                              onClick={() => setTheme("dark")}
+                            >
+                              <Moon className="w-4 h-4" /> Dark
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                      {/* Tentang Aplikasi */}
-                      <div>
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          <Info className="w-5 h-5" /> Tentang Aplikasi
-                        </h3>
-                        <div className="text-sm text-gray-700 space-y-1">
-                          <div>
-                            Versi : <span className="font-semibold">1.0.0</span>
+                      {/* Kanan: Feedback & Tentang */}
+                      <div className="p-6 space-y-8">
+                        {/* Feedback & Dukungan */}
+                        <div>
+                          <h3 className="font-semibold mb-2 flex items-center gap-2">
+                            <MessageCircle className="w-5 h-5" /> Feedback & Dukungan
+                          </h3>
+                          <form
+                            onSubmit={async (e) => {
+                              e.preventDefault();
+                              setSendingFeedback(true);
+                              setTimeout(() => {
+                                toast.success("Feedback terkirim, terima kasih!");
+                                setFeedback("");
+                                setSendingFeedback(false);
+                              }, 1200);
+                            }}
+                            className="flex flex-col gap-2"
+                          >
+                            <textarea
+                              value={feedback}
+                              onChange={(e) => setFeedback(e.target.value)}
+                              className="border border-gray-300 rounded-xl p-3 text-sm resize-none"
+                              rows={3}
+                              placeholder="Ketik saran atau laporan masalah Anda di sini..."
+                              required
+                            />
+                            <Button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl" disabled={sendingFeedback || !feedback.trim()}>
+                              {sendingFeedback ? "Mengirim..." : "Kirim Feedback"}
+                            </Button>
+                          </form>
+                        </div>
+                        {/* Tentang Aplikasi */}
+                        <div>
+                          <h3 className="font-semibold mb-2 flex items-center gap-2">
+                            <Info className="w-5 h-5" /> Tentang Aplikasi
+                          </h3>
+                          <div className="text-sm text-gray-700 space-y-1">
+                            <div>
+                              Versi : <span className="font-semibold">1.0.0</span>
+                            </div>
+                            <div>
+                              Tim Pengembang: <span className="font-semibold">MechaMinds</span>
+                            </div>
+                            <div>
+                              Lisensi: <span className="font-semibold">Open Source (MIT)</span>
+                            </div>
+                            {/* T */}
                           </div>
-                          <div>
-                            Tim Pengembang: <span className="font-semibold">MechaMinds</span>
-                          </div>
-                          <div>
-                            Lisensi: <span className="font-semibold">Open Source (MIT)</span>
-                          </div>
-                          {/* T */}
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>

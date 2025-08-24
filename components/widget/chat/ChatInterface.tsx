@@ -1242,7 +1242,7 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
           </motion.div>
 
           <div className="text-center h-20 flex items-center justify-center relative z-10">
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 via-teal-500 to-teal-700 bg-clip-text text-transparent max-w-2xl">
+            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-teal-600 via-teal-500 to-teal-700 bg-clip-text text-transparent max-w-2xl">
               {displayedText}
               {isTyping && (
                 <motion.span

@@ -737,7 +737,6 @@ export default function PricingPage() {
               <span className={`text-sm font-medium ${isYearly ? "text-teal-600" : "text-gray-500"}`}>Tahunan</span>
             </div>
           </motion.div>
-
           {/* Pricing Cards */}
           <motion.div
             initial="hidden"
@@ -901,6 +900,21 @@ export default function PricingPage() {
             </motion.div>
           </motion.div>
         </div>
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="container mx-auto px-4 md:px-6 mb-4"
+      >
+        <Button
+          asChild
+          className="bg-teal-600 text-white hover:bg-teal-700 rounded-xl px-6 py-3 text-sm md:text-base font-medium"
+        >
+          <a href="https://simulator.sandbox.midtrans.com/" target="_blank" rel="noopener noreferrer">
+            Midtrans Payment Simulator
+          </a>
+        </Button>
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.6, delay: 0.2 }} className="container mx-auto px-4 md:px-6">
         {appliedPromo ? (

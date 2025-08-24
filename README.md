@@ -69,7 +69,6 @@ Games untuk hiburan sekaligus gamifikasi. Terdapat **dua jenis game**:
 2.  Styling & Tema
     - Utility-First CSS: Tailwind CSS 3.4.17  
     - Utilities: class-variance-authority, clsx, tailwind-merge  
-    - Manajemen Tema (Dark Mode): next-themes 0.4.4  
 
 3.  Animasi & Efek Visual
     - Animasi Interaktif: Framer Motion 12.23.0  
