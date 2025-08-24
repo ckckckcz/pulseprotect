@@ -20,7 +20,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
   const [status, setStatus] = useState<string>("Menginisialisasi kamera...")
   const [result, setResult] = useState<VerificationResponse | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [isFrozen, setIsFrozen] = useState(false) // State untuk efek freeze
+  const [isFrozen, setIsFrozen] = useState(false)
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string
   const API_KEY = process.env.NEXT_PUBLIC_YOLO_KEY as string
@@ -50,7 +50,6 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
       setStatus("Mengirim gambar ke server...")
       console.log("Sending image to", `${API_BASE_URL}/v1/verify-photo`)
 
-      // Convert base64 to blob
       const byteString = atob(imageBase64.split(',')[1])
       const mimeString = imageBase64.split(',')[0].split(':')[1].split(';')[0]
       const ab = new ArrayBuffer(byteString.length)
@@ -81,33 +80,36 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
       console.log("Received response:", data)
 
       const mappedData: VerificationResponse = {
-        status: data.data?.status || "unknown",
+        status: data.data?.product ? "Valid" : "Tidak Valid",
         source: data.data?.source || "camera",
         confidence: data.confidence || 0,
         explanation: data.message || "No explanation provided",
         data: {
-          product: {
-            nie: data.data?.product?.nie || null,
-            name: data.data?.product?.name || null,
-            manufacturer: data.data?.product?.manufacturer || null,
-            dosage_form: data.data?.product?.dosage_form || null,
-            strength: data.data?.product?.strength || null,
-            category: data.data?.product?.category || null,
-            composition: data.data?.product?.composition || null,
-            updated_at: data.data?.product?.updated_at || null,
-            status: data.data?.product ? "valid" : "invalid",
-          },
+          product: data.data?.product ? {
+            nie: data.data.product.nie || null,
+            name: data.data.product.name || null,
+            manufacturer: data.data.product.manufacturer || null,
+            dosage_form: data.data.product.dosage_form || null,
+            strength: data.data.product.strength || null,
+            category: data.data.product.category || null,
+            composition: data.data.product.composition || null,
+            updated_at: data.data.product.updated_at || null,
+            status: "Valid",
+          } : null,
         },
       }
 
-      setResult(mappedData)
-      setStatus("Verifikasi selesai!")
-      await onDetected(mappedData)
+      setResult(data.data?.product ? mappedData : null)
+      setStatus(data.data?.product ? "Verifikasi selesai! Status: Valid" : "Verifikasi gagal! Status: Tidak Valid")
+      if (data.data?.product) {
+        await onDetected(mappedData)
+      }
     } catch (e: any) {
       console.error("Send image error:", e)
       setStatus(`Gagal mengirim gambar: ${e?.message || e}`)
+      setResult(null)
     } finally {
-      setIsFrozen(false) // Hilangkan efek freeze setelah proses selesai
+      setIsFrozen(false)
     }
   }
 
@@ -115,7 +117,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
     const video = videoRef.current, canvas = canvasRef.current
     if (!video || !canvas) return
     setIsLoading(true)
-    setIsFrozen(true) // Aktifkan efek freeze
+    setIsFrozen(true)
     setStatus("Memproses gambar...")
     try {
       const ctx = canvas.getContext("2d")
@@ -129,7 +131,8 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
     } catch (err) {
       console.error("Frame capture error:", err)
       setStatus("Gagal memproses gambar. Coba lagi...")
-      setIsFrozen(false) // Hilangkan efek freeze jika gagal
+      setIsFrozen(false)
+      setResult(null)
     } finally {
       setIsLoading(false)
     }
@@ -171,7 +174,7 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
               autoPlay
               playsInline
               muted
-              className={`w-full h-96 object-cover ${isFrozen ? "opacity-0" : "opacity-100"}`} // Sembunyikan video saat freeze
+              className={`w-full h-96 object-cover ${isFrozen ? "opacity-0" : "opacity-100"}`}
             />
             {isFrozen && capturedImage && (
               <img
@@ -184,14 +187,14 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
             <div className="absolute top-4 left-4 right-4">
               <div className="bg-black/70 rounded-lg px-4 py-2 text-white text-sm flex items-center gap-2">
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                  capturedImage ? <CheckCircle className="w-4 h-4 text-green-400" /> :
+                  capturedImage && result ? <CheckCircle className="w-4 h-4 text-green-400" /> :
                     <AlertCircle className="w-4 h-4 text-yellow-400" />}
                 <span>{status}</span>
               </div>
             </div>
           </div>
 
-          {result && (
+          {result && prod && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -199,13 +202,13 @@ export default function YOLOScanner({ onClose, onDetected }: CameraCaptureProps)
             >
               <h4 className="font-semibold mb-2">Hasil Verifikasi</h4>
               <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
-                <div><span className="text-gray-500">Status:</span> <b>{prod?.status || "-"}</b></div>
+                <div><span className="text-gray-500">Status:</span> <b>{prod.status}</b></div>
                 <div><span className="text-gray-500">Confidence:</span> <b>{pct(result.confidence)}</b></div>
-                <div><span className="text-gray-500">Nama Produk:</span> <b>{prod?.name || "-"}</b></div>
-                <div><span className="text-gray-500">NIE:</span> <b>{prod?.nie || "-"}</b></div>
-                <div><span className="text-gray-500">Pabrik:</span> <b>{prod?.manufacturer || "-"}</b></div>
-                <div><span className="text-gray-500">Kategori:</span> <b>{prod?.category || "-"}</b></div>
-                <div><span className="text-gray-500">Terakhir Diperbarui:</span> <b>{prod?.updated_at || "-"}</b></div>
+                <div><span className="text-gray-500">Nama Produk:</span> <b>{prod.name || "-"}</b></div>
+                <div><span className="text-gray-500">NIE:</span> <b>{prod.nie || "-"}</b></div>
+                <div><span className="text-gray-500">Pabrik:</span> <b>{prod.manufacturer || "-"}</b></div>
+                <div><span className="text-gray-500">Kategori:</span> <b>{prod.category || "-"}</b></div>
+                <div><span className="text-gray-500">Terakhir Diperbarui:</span> <b>{prod.updated_at || "-"}</b></div>
               </div>
               {result.explanation && (
                 <p className="mt-3 text-sm text-gray-700">

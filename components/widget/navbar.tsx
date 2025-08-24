@@ -210,11 +210,11 @@ export default function Navbar() {
             <Link href="/" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Beranda
             </Link>
-            <Link href="/games" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
-              Games
-            </Link>
             <Link href="/cek-obat" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Cek Obat
+            </Link>
+            <Link href="/games" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
+              Games
             </Link>
             {/* <Link href="/cura-ai" className="font-medium text-gray-800 hover:text-teal-600 transition-colors">
               Cura-AI
@@ -378,11 +378,11 @@ export default function Navbar() {
                 <Link href="/" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Beranda
                 </Link>
-                <Link href="/games" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
-                  Games
-                </Link>
                 <Link href="/cek-obat" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Cek Obat
+                </Link>
+                <Link href="/games" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
+                  Games
                 </Link>
                 {/* <Link href="/cura-ai" className="font-medium text-gray-800 hover:text-teal-600 transition-colors p-3 rounded-xl hover:bg-gray-100">
                   Cura AI

@@ -1385,9 +1385,6 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                           <b>Confidence:</b> {scannedProductCard.confidence ? `${(scannedProductCard.confidence * 100).toFixed(1)}%` : "-"}
                         </div>
                         <div>
-                          <b>Penjelasan:</b> {scannedProductCard.explanation || "-"}
-                        </div>
-                        <div>
                           <b>Nama Produk:</b> {scannedProductCard.data.product.name || "-"}
                         </div>
                         <div>
@@ -1401,6 +1398,9 @@ export default function ChatInterface({ textContent, onRegenerate, onSpeak, onCo
                         </div>
                         <div>
                           <b>Kekuatan:</b> {scannedProductCard.data.product.strength || "-"}
+                        <div>
+                          <b>Penjelasan:</b> {scannedProductCard.explanation || "-"}
+                        </div>
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-teal-700">Produk ini akan selalu disertakan dalam percakapan dengan AI Agent.</p>
