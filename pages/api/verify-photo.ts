@@ -6,8 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Backend ngrok URL from Malang laptop
-    const API_BASE_URL = "https://e07827f42a12.ngrok-free.app"; // Replace with your ngrok URL
+    const API_BASE_URL = ""; // Replace with your ngrok URL
     const API_KEY = process.env.API_KEY || "your-secret-api-key";
 
     const response = await fetch(`${API_BASE_URL}/v1/verify-photo`, {

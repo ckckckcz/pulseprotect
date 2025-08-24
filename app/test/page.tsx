@@ -7,7 +7,7 @@ export default function Home() {
 
   // Base URL for FastAPI
   // const API_BASE_URL = "http://127.0.0.1:8000";
-  const API_BASE_URL = "https://blowfish-willing-ghost.ngrok-free.app"; // For ngrok
+  const API_BASE_URL = ""; // For ngrok
 
   // Handle file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {

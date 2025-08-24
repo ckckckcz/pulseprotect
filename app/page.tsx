@@ -29,6 +29,10 @@ import Partner from "@/components/widget/hero/partner"
 import Confetti from 'react-confetti'
 import { supabase } from "@/lib/supabase"
 import { useTranslation } from 'react-i18next';
+import gabriel from "@/public/images/developer/gabriel.jpg"
+import raul from "@/public/images/developer/raul.jpg"
+import rizki from "@/public/images/developer/rizki.png"
+import rio from "@/public/images/developer/rio.png"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 40 },
@@ -169,8 +173,8 @@ const FloatingAvatars = () => {
   const avatars = [
     {
       id: 1,
-      src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      name: "Sarah Johnson",
+      src: gabriel,
+      name: "Gabriel",
       position: { top: "20%", left: "10%" },
       size: "large",
       delay: 0,
@@ -178,8 +182,8 @@ const FloatingAvatars = () => {
     },
     {
       id: 2,
-      src: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      name: "Michael Chen",
+      src: raul,
+      name: "Raul",
       position: { top: "15%", right: "20%" },
       size: "large",
       delay: 0.3,
@@ -187,8 +191,8 @@ const FloatingAvatars = () => {
     },
     {
       id: 3,
-      src: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      name: "Emily Davis",
+      src: rizki,
+      name: "Rizki",
       position: { bottom: "35%", left: "8%" },
       size: "large",
       delay: 0.6,
@@ -196,8 +200,8 @@ const FloatingAvatars = () => {
     },
     {
       id: 4,
-      src: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      name: "David Wilson",
+      src: rio,
+      name: "Rio",
       position: { bottom: "25%", right: "15%" },
       size: "large",
       delay: 0.9,
@@ -259,7 +263,8 @@ const FloatingAvatars = () => {
               <div className="absolute inset-0 rounded-full bg-white shadow-xl backdrop-blur-sm">
                 <div className="absolute inset-1 rounded-full overflow-hidden bg-white">
                   <img
-                    src={avatar.src || "/placeholder.svg"}
+                    key={avatar.id}
+                    src={typeof avatar.src === "string" ? avatar.src : avatar.src.src}
                     alt={avatar.name}
                     className="w-full h-full object-cover"
                   />
