@@ -104,7 +104,6 @@ Games untuk hiburan sekaligus gamifikasi. Terdapat **dua jenis game**:
 ### AI & Machine Learning 🤖
 
 
-
 ### Tools & Utilitas Lainnya 👀
 
 1.  Manajemen Form
@@ -124,3 +123,13 @@ Games untuk hiburan sekaligus gamifikasi. Terdapat **dua jenis game**:
     - Unique ID Generator: uuid 11.1.0  
 
 ---
+
+### Akun Uji Coba  
+<p>Email: testing@pulseprotect.com</p>
+<p>Kata Sandi: 12345678/p>
+
+### Website  
+<link href="https://pulseprotect.vercel.app/" target="_blank">Pulse Protect</link>
+
+### Repository AI/ML 
+<link href="https://github.com/GabrielBatavia/AIC-MechaMinds-17" target="_blank">Repo AI/ML</link>
