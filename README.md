@@ -1,6 +1,6 @@
 # 💊 Pulse Protect - Obat Asli, Hidup Lebih Pasti
 
-Pulse Protect adalah inisiatif untuk membantu masyarakat Indonesia memastikan **keaslian obat** melalui verifikasi cepat berbasis data resmi **BPOM**. Kami mengajak publik berkolaborasi mencegah peredaran obat ilegal, sekaligus menghadirkan pengalaman yang **sederhana, akurat, dan dapat dipercaya**.
+Pulse Protect adalah inisiatif untuk membantu masyarakat Indonesia memastikan **keaslian obat** melalui verifikasi cepat berbasis data **BPOM**. Kami mengajak publik berkolaborasi mencegah peredaran obat ilegal, sekaligus menghadirkan pengalaman yang **sederhana, akurat, dan dapat dipercaya**.
 
 ---
 
